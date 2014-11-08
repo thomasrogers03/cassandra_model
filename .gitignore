@@ -1,0 +1,11 @@
+db/*.sqlite3
+app/assets/images
+public/images
+public/assets
+log
+tmp
+tmp
+*.png
+.ruby-version
+.ruby-env
+.idea
