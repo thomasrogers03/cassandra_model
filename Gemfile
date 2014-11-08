@@ -2,6 +2,7 @@
 source "https://rubygems.org"
 
 gem 'cassandra-driver'
+gem 'activesupport'
 
 # gem "rails"
 group :test do
