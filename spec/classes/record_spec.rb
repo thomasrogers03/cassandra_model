@@ -13,5 +13,10 @@ describe Record do
     context 'when inherited from a different class' do
       it { expect(ImageData.table_name).to eq('image_data') }
     end
+
+    context 'when overridden' do
+      before { Record.table_name = 'image_data' }
+      it { expect(Record.table_name).to eq('image_data') }
+    end
   end
 end
