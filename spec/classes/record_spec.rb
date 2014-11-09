@@ -1,4 +1,4 @@
-require 'rspec'
+require 'spec_helper'
 
 describe Record do
   class ImageData < Record
