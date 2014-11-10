@@ -1,8 +1,13 @@
 require 'spec_helper'
 
 describe Record do
-  class ImageData < Record
+  class Record
+    def self.connection=(value)
+      @@connection = value
+    end
+  end
 
+  class ImageData < Record
   end
 
   describe '.table_name' do
@@ -52,6 +57,29 @@ describe Record do
     context 'when providing a configuration with missing keys' do
       before { Record.config = {} }
       it { expect(subject).to eq(config) }
+    end
+  end
+
+  describe '.connection' do
+    subject { Record.connection }
+
+    let(:connection) { double(:connection) }
+    let(:config) { {hosts: 'localhost', connect_timeout: 120} }
+
+    before do
+      Record.connection = nil
+      allow(Cassandra).to receive(:cluster).with(config).and_return(connection, double(:second_connection))
+    end
+
+    it 'should create a cassandra connection with the specified configuration' do
+      expect(Record.connection).to eq(connection)
+    end
+
+    context 'when a connection has already been created' do
+      it 'should not create more than one connection' do
+        Record.connection
+        expect(Record.connection).to eq(connection)
+      end
     end
   end
 end

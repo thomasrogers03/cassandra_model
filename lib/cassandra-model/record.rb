@@ -6,7 +6,6 @@ class Record
   }
 
   class << self
-
     def table_name=(value)
       @table_name = value
     end
@@ -21,6 +20,10 @@ class Record
 
     def config
       @@config ||= DEFAULT_CONFIGURATION
+    end
+
+    def connection
+      @@connection ||= Cassandra.cluster(hosts: config['host'], connect_timeout: 120)
     end
   end
 end
