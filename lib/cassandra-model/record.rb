@@ -23,7 +23,9 @@ class Record
     end
 
     def connection
-      @@connection ||= Cassandra.cluster(hosts: config['host'], connect_timeout: 120)
+      connection_configuration = {hosts: config['host'], connect_timeout: 120}
+      connection_configuration[:compression] = config['compression'].to_sym if config['compression']
+      @@connection ||= Cassandra.cluster(connection_configuration)
     end
   end
 end

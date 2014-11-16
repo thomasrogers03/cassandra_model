@@ -68,18 +68,25 @@ describe Record do
 
     before do
       Record.connection = nil
-      allow(Cassandra).to receive(:cluster).with(config).and_return(connection, double(:second_connection))
+      allow(Cassandra).to receive(:cluster).with(hash_including(config)).and_return(connection, double(:second_connection))
     end
 
     it 'should create a cassandra connection with the specified configuration' do
-      expect(Record.connection).to eq(connection)
+      expect(subject).to eq(connection)
     end
 
     context 'when a connection has already been created' do
       it 'should not create more than one connection' do
         Record.connection
-        expect(Record.connection).to eq(connection)
+        expect(subject).to eq(connection)
       end
+    end
+
+    context 'with a different compression method' do
+      let(:config) { {hosts: 'localhost', connect_timeout: 120, compression: :snappy} }
+      before { Record.config = { 'compression' => 'snappy' } }
+
+      it { should == connection }
     end
   end
 end
