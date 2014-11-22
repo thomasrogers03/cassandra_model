@@ -31,5 +31,14 @@ class Record
     def connection
       cluster.connect(config[:keyspace])
     end
+
+    def paginate(*args)
+      page = connection.execute(*args)
+      while page
+        yield page
+        break if page.last_page?
+        page = page.next_page
+      end
+    end
   end
 end
