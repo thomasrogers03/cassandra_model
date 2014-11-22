@@ -1,8 +1,8 @@
 class Record
   DEFAULT_CONFIGURATION = {
-      'host' => 'localhost',
-      'keyspace' => 'default_keyspace',
-      'port' => '9042'
+      :hosts => ['localhost'],
+      keyspace: 'default_keyspace',
+      port: '9042'
   }
 
   class << self
@@ -22,10 +22,14 @@ class Record
       @@config ||= DEFAULT_CONFIGURATION
     end
 
-    def connection
-      connection_configuration = {hosts: config['host'], connect_timeout: 120}
-      connection_configuration[:compression] = config['compression'].to_sym if config['compression']
+    def cluster
+      connection_configuration = {hosts: config[:hosts], connect_timeout: 120}
+      connection_configuration[:compression] = config[:compression].to_sym if config[:compression]
       @@connection ||= Cassandra.cluster(connection_configuration)
+    end
+
+    def connection
+      cluster.connect(config[:keyspace])
     end
   end
 end
