@@ -56,6 +56,20 @@ describe Record do
     end
   end
 
+  describe '.columns=' do
+    it 'should define save the column names' do
+      Record.columns = [:partition, :cluster]
+      expect(Record.columns).to eq([:partition, :cluster])
+    end
+
+    it 'should define an attribute accessor for each colun' do
+      Record.columns = [:partition]
+      record = Record.new({partition: 'Some Partition'})
+      record.partition = 'Partition Key'
+      expect(record.partition).to eq('Partition Key')
+    end
+  end
+
   describe '.config' do
     subject { Record.config }
 
@@ -179,6 +193,78 @@ describe Record do
       Record.statement(query)
       expect(connection).not_to receive(:prepare)
       Record.statement(query)
+    end
+  end
+
+  describe '.where' do
+    let(:clause) { {} }
+    let(:where_clause) { nil }
+    let(:query) { "SELECT * FROM table#{where_clause}" }
+    let(:statement) { double(:statement) }
+    let(:results) { [{'partition' => 'Partition Key'}] }
+
+    before do
+      Record.table_name = :table
+      Record.primary_key = [[:partition], :cluster, :time_stamp]
+      allow(Record).to receive(:statement).with(query).and_return(statement)
+      allow(connection).to receive(:execute).and_return(results)
+    end
+
+    context 'with no clause' do
+      it 'should query for everythin' do
+        expect(connection).to receive(:execute).with(statement).and_return(results)
+        Record.where(clause)
+      end
+
+      it 'should create a Record instance for each returned result' do
+        record = double(:record)
+        allow(Record).to receive(:new).with(partition: 'Partition Key').and_return(record)
+        expect(Record.where(clause).first).to eq(record)
+      end
+    end
+
+    context 'using only the partition key' do
+      let(:clause) do
+        {
+            partition: 'Partition Key'
+        }
+      end
+      let(:where_clause) { ' WHERE partition = ?' }
+
+      it 'should return the result of a select query given a restriction' do
+        expect(connection).to receive(:execute).with(statement, 'Partition Key').and_return(results)
+        Record.where(clause)
+      end
+    end
+
+    context 'using a clustering key' do
+      let(:clause) do
+        {
+            partition: 'Partition Key',
+            cluster: 'Cluster Key'
+        }
+      end
+      let(:where_clause) { ' WHERE partition = ? AND cluster = ?' }
+
+      it 'should return the result of a select query given a restriction' do
+        expect(connection).to receive(:execute).with(statement, 'Partition Key', 'Cluster Key').and_return(results)
+        Record.where(clause)
+      end
+    end
+  end
+
+  describe '#attributes' do
+    before { Record.columns = [:partition] }
+
+    it 'should return the attributes of the created Record' do
+      record = Record.new(partition: 'Partition Key')
+      expect(record.attributes).to eq(partition: 'Partition Key')
+    end
+
+    context 'with an invalid column' do
+      it 'should raise an error' do
+        expect{Record.new(fake_column: 'Partition Key')}.to raise_error("Invalid column 'fake_column' specified")
+      end
     end
   end
 end

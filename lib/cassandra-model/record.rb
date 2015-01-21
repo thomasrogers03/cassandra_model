@@ -5,9 +5,17 @@ class Record
       port: '9042'
   }
 
-  @@statement_cache = {}
+  attr_reader :attributes
 
+  def initialize(attributes)
+    attributes.keys.each { |key| raise "Invalid column '#{key}' specified" unless self.class.columns.include?(key) }
+    @attributes = attributes
+  end
+
+  @@statement_cache = {}
   class << self
+    attr_reader :columns
+
     def table_name=(value)
       @table_name = value
     end
@@ -30,6 +38,14 @@ class Record
       @primary_key
     end
 
+    def columns=(values)
+      @columns = values
+      @columns.each do |column|
+        define_method(:"#{column}=") { |value| @attributes[column] = value }
+        define_method(column.to_sym) { @attributes[column] }
+      end
+    end
+
     def config=(value)
       @@config = DEFAULT_CONFIGURATION.merge(value)
     end
@@ -50,6 +66,17 @@ class Record
 
     def statement(query)
       @@statement_cache[query] ||= connection.prepare(query)
+    end
+
+    def where(clause)
+      where_clause = if clause.size > 0
+                       " WHERE #{clause.map { |key, _| "#{key} = ?" }.join(' AND ') }"
+                     end
+      results = connection.execute(statement("SELECT * FROM #{table_name}#{where_clause}"), *clause.values)
+      results.map do |row|
+        attributes = row.symbolize_keys
+        Record.new(attributes)
+      end
     end
 
     def paginate(*args)
