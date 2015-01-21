@@ -5,15 +5,20 @@ describe Record do
     def self.reset!
       @@connection = nil
       @@cluster = nil
+      @@statement_cache = {}
     end
   end
 
   class ImageData < Record
   end
 
-  let(:cluster) { double(:cluster) }
+  let(:cluster) { double(:cluster, connect: connection) }
+  let(:connection) { double(:connection) }
 
-  before { Record.reset! }
+  before do
+    allow(Cassandra).to receive(:cluster).and_return(cluster)
+    Record.reset!
+  end
 
   describe '.table_name' do
     it 'should be the lower-case plural of the class' do
@@ -160,9 +165,20 @@ describe Record do
     end
   end
 
-  describe '.where' do
-    xit 'should return the result of a select query given a restriction' do
+  describe '.statement' do
+    let(:query) { 'SELECT * FROM everything' }
+    let(:statement) { double(:statement) }
 
+    before { allow(connection).to receive(:prepare).with(query).and_return(statement) }
+
+    it 'should prepare a statement using the created connection' do
+      expect(Record.statement(query)).to eq(statement)
+    end
+
+    it 'should cache the statement for later use' do
+      Record.statement(query)
+      expect(connection).not_to receive(:prepare)
+      Record.statement(query)
     end
   end
 end

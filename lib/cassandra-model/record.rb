@@ -5,6 +5,8 @@ class Record
       port: '9042'
   }
 
+  @@statement_cache = {}
+
   class << self
     def table_name=(value)
       @table_name = value
@@ -44,6 +46,10 @@ class Record
 
     def connection
       cluster.connect(config[:keyspace])
+    end
+
+    def statement(query)
+      @@statement_cache[query] ||= connection.prepare(query)
     end
 
     def paginate(*args)
