@@ -14,6 +14,20 @@ class Record
       @table_name ||= self.to_s.underscore.pluralize
     end
 
+    def primary_key=(values)
+      if values.is_a?(Array)
+        partition_key = values.shift
+        partition_key = [partition_key] unless partition_key.is_a?(Array)
+        @primary_key = [partition_key, *values]
+      else
+        @primary_key = [[values]]
+      end
+    end
+
+    def primary_key
+      @primary_key
+    end
+
     def config=(value)
       @@config = DEFAULT_CONFIGURATION.merge(value)
     end

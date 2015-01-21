@@ -30,6 +30,27 @@ describe Record do
     end
   end
 
+  describe '.primary_key=' do
+    it 'should set the primary key for the given column-family in cql style' do
+      Record.primary_key = [[:partition], :cluster]
+      expect(Record.primary_key).to eq([[:partition], :cluster])
+    end
+
+    context 'when only the partition key is specified' do
+      it 'should map a single value to the cql definition' do
+        Record.primary_key = :partition
+        expect(Record.primary_key).to eq([[:partition]])
+      end
+    end
+
+    context 'when the partition key is specified with a single clustering key' do
+      it 'should map it to the cql definition' do
+        Record.primary_key = [:partition, :cluster]
+        expect(Record.primary_key).to eq([[:partition], :cluster])
+      end
+    end
+  end
+
   describe '.config' do
     subject { Record.config }
 
@@ -136,6 +157,12 @@ describe Record do
         end
         expect(found_page).to eq(true)
       end
+    end
+  end
+
+  describe '.where' do
+    xit 'should return the result of a select query given a restriction' do
+
     end
   end
 end
