@@ -4,7 +4,6 @@ gem 'cassandra-driver'
 gem 'activesupport'
 gem 'object_stream', git: 'git@me:/opt/git/object-stream.git'
 
-# gem "rails"
 group :test do
   gem 'rspec'
   gem 'guard-rspec'
