@@ -80,6 +80,14 @@ class Record
       end
     end
 
+    def first_async(clause)
+      FutureWrapper.new(where_async(clause.merge(limit: 1))) { |results| results.first }
+    end
+
+    def where(clause)
+      where_async(clause).get
+    end
+
     def paginate(*args)
       page = connection.execute(*args)
       while page

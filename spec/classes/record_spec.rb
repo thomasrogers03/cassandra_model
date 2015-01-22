@@ -286,6 +286,28 @@ describe Record do
     end
   end
 
+  describe '.first_async' do
+    let(:clause) { { partition: 'Partition Key' } }
+    let(:record) { double(:record) }
+    let(:future_record) { MockFuture.new([record]) }
+
+    it 'should delegate to where using a limit of 1' do
+      allow(Record).to receive(:where_async).with(clause.merge(limit: 1)).and_return(future_record)
+      expect(Record.first_async(clause).get).to eq(record)
+    end
+  end
+
+  describe '.where' do
+    let(:clause) { {} }
+    let(:record) { double(:record) }
+    let(:future_record) { MockFuture.new([record]) }
+
+    it 'should resolve the future provided by where_async' do
+      allow(Record).to receive(:where_async).with(clause).and_return(future_record)
+      expect(Record.where(clause)).to eq([record])
+    end
+  end
+
   describe '#attributes' do
     before { Record.columns = [:partition] }
 
