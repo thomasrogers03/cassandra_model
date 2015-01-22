@@ -69,13 +69,14 @@ class Record
     end
 
     def where_async(clause)
-      where_clause = if clause.size > 0
-                       " WHERE #{clause.map { |key, _| "#{key} = ?" }.join(' AND ') }"
-                     end
-      results = connection.execute(statement("SELECT * FROM #{table_name}#{where_clause}"), *clause.values)
-      results.map do |row|
-        attributes = row.symbolize_keys
-        Record.new(attributes)
+      limit_clause = limit_clause(clause)
+      where_clause, where_values = where_clause(clause)
+      future = connection.execute_async(statement("SELECT * FROM #{table_name}#{where_clause}#{limit_clause}"), *where_values)
+      FutureWrapper.new(future) do |results|
+        results.map do |row|
+          attributes = row.symbolize_keys
+          Record.new(attributes)
+        end
       end
     end
 
@@ -87,5 +88,25 @@ class Record
         page = page.next_page
       end
     end
+
+    private
+
+    def limit_clause(clause)
+      limit = clause.delete(:limit)
+      if limit
+        integer_limit = limit.to_i
+        raise "Invalid limit '#{limit}'" if integer_limit < 1
+        " LIMIT #{integer_limit}"
+      end
+    end
+
+    def where_clause(clause)
+      where_clause = if clause.size > 0
+                       " WHERE #{clause.map { |key, _| "#{key} = ?" }.join(' AND ') }"
+                     end
+      where_values = *clause.values
+      [where_clause, where_values]
+    end
+
   end
 end

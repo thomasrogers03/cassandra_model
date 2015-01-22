@@ -12,6 +12,20 @@ describe Record do
   class ImageData < Record
   end
 
+  class MockFuture
+    def initialize(result)
+      @result = result
+    end
+
+    def join
+
+    end
+
+    def get
+      @result
+    end
+  end
+
   let(:cluster) { double(:cluster, connect: connection) }
   let(:connection) { double(:connection) }
 
@@ -201,25 +215,44 @@ describe Record do
     let(:where_clause) { nil }
     let(:query) { "SELECT * FROM table#{where_clause}" }
     let(:statement) { double(:statement) }
-    let(:results) { [{'partition' => 'Partition Key'}] }
+    let(:results) { MockFuture.new(['partition' => 'Partition Key']) }
+    let(:record) { double(:record) }
 
     before do
       Record.table_name = :table
       Record.primary_key = [[:partition], :cluster, :time_stamp]
       allow(Record).to receive(:statement).with(query).and_return(statement)
-      allow(connection).to receive(:execute).and_return(results)
+      allow(connection).to receive(:execute_async).and_return(results)
+      allow(Record).to receive(:new).and_return(record)
     end
 
-    context 'with no clause' do
-      it 'should query for everythin' do
-        expect(connection).to receive(:execute).with(statement).and_return(results)
+    it 'should create a Record instance for each returned result' do
+      expect(Record.where_async(clause).get.first).to eq(record)
+    end
+
+    context 'with multiple results' do
+      let(:clause) { { limit: 1 } }
+      let(:where_clause) { ' LIMIT 1' }
+      let(:results) { MockFuture.new([{'partition' => 'Partition Key 1'}, {'partition' => 'Partition Key 2'}]) }
+
+      it 'should support limits' do
+        expect(connection).to receive(:execute_async).with(statement).and_return(results)
         Record.where_async(clause)
       end
 
-      it 'should create a Record instance for each returned result' do
-        record = double(:record)
-        allow(Record).to receive(:new).with(partition: 'Partition Key').and_return(record)
-        expect(Record.where_async(clause).first).to eq(record)
+      context 'with a strange limit' do
+        let(:clause) { { limit: 'bob' } }
+
+        it 'should raise an error' do
+          expect{Record.where_async(clause)}.to raise_error("Invalid limit 'bob'")
+        end
+      end
+    end
+
+    context 'with no clause' do
+      it 'should query for everything' do
+        expect(connection).to receive(:execute_async).with(statement).and_return(results)
+        Record.where_async(clause)
       end
     end
 
@@ -232,7 +265,7 @@ describe Record do
       let(:where_clause) { ' WHERE partition = ?' }
 
       it 'should return the result of a select query given a restriction' do
-        expect(connection).to receive(:execute).with(statement, 'Partition Key').and_return(results)
+        expect(connection).to receive(:execute_async).with(statement, 'Partition Key').and_return(results)
         Record.where_async(clause)
       end
     end
@@ -247,7 +280,7 @@ describe Record do
       let(:where_clause) { ' WHERE partition = ? AND cluster = ?' }
 
       it 'should return the result of a select query given a restriction' do
-        expect(connection).to receive(:execute).with(statement, 'Partition Key', 'Cluster Key').and_return(results)
+        expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key').and_return(results)
         Record.where_async(clause)
       end
     end
