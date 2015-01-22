@@ -68,7 +68,7 @@ class Record
       @@statement_cache[query] ||= connection.prepare(query)
     end
 
-    def where(clause)
+    def where_async(clause)
       where_clause = if clause.size > 0
                        " WHERE #{clause.map { |key, _| "#{key} = ?" }.join(' AND ') }"
                      end

@@ -196,7 +196,7 @@ describe Record do
     end
   end
 
-  describe '.where' do
+  describe '.where_async' do
     let(:clause) { {} }
     let(:where_clause) { nil }
     let(:query) { "SELECT * FROM table#{where_clause}" }
@@ -213,13 +213,13 @@ describe Record do
     context 'with no clause' do
       it 'should query for everythin' do
         expect(connection).to receive(:execute).with(statement).and_return(results)
-        Record.where(clause)
+        Record.where_async(clause)
       end
 
       it 'should create a Record instance for each returned result' do
         record = double(:record)
         allow(Record).to receive(:new).with(partition: 'Partition Key').and_return(record)
-        expect(Record.where(clause).first).to eq(record)
+        expect(Record.where_async(clause).first).to eq(record)
       end
     end
 
@@ -233,7 +233,7 @@ describe Record do
 
       it 'should return the result of a select query given a restriction' do
         expect(connection).to receive(:execute).with(statement, 'Partition Key').and_return(results)
-        Record.where(clause)
+        Record.where_async(clause)
       end
     end
 
@@ -248,7 +248,7 @@ describe Record do
 
       it 'should return the result of a select query given a restriction' do
         expect(connection).to receive(:execute).with(statement, 'Partition Key', 'Cluster Key').and_return(results)
-        Record.where(clause)
+        Record.where_async(clause)
       end
     end
   end

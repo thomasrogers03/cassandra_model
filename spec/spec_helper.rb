@@ -20,7 +20,7 @@ Bundler.require(:default)
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
 RSpec.configure do |config|
-  Dir['./lib/cassandra-model/*'].each { |file| require file }
+  Dir['./lib/cassandra_model/*'].each { |file| require file }
 
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest
