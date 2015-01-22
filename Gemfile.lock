@@ -1,8 +1,8 @@
 GIT
   remote: git@me:/opt/git/object-stream.git
-  revision: 3a2b248b5a9fb885665f95ea4b725811e23e828c
+  revision: c4ef3e19b616f457446b6ba3c73350ed72b6a36f
   specs:
-    object-stream (0.1.0)
+    object_stream (0.1.0)
 
 GEM
   remote: http://rubygems.org/
@@ -107,5 +107,5 @@ DEPENDENCIES
   activesupport
   cassandra-driver
   guard-rspec
-  object-stream!
+  object_stream!
   rspec
