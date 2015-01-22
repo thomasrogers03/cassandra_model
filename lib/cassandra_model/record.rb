@@ -88,6 +88,10 @@ class Record
       where_async(clause).get
     end
 
+    def first(clause)
+      first_async(clause).get
+    end
+
     def paginate(*args)
       page = connection.execute(*args)
       while page

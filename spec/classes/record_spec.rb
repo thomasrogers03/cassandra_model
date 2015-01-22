@@ -308,6 +308,17 @@ describe Record do
     end
   end
 
+  describe '.first' do
+    let(:clause) { {} }
+    let(:record) { double(:record) }
+    let(:future_record) { MockFuture.new(record) }
+
+    it 'should resolve the future provided by first_async' do
+      allow(Record).to receive(:first_async).with(clause).and_return(future_record)
+      expect(Record.first(clause)).to eq(record)
+    end
+  end
+
   describe '#attributes' do
     before { Record.columns = [:partition] }
 
