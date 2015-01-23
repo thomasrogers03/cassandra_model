@@ -6,4 +6,4 @@ class ImageData < Record
 end
 
 Record.config = { hosts: %w(me), keyspace: 'pcrawler' }
-ImageData.where(limit: 1000, page_size: 10).each { |row| puts row.path }
+ImageData.where_async(limit: 100, page_size: 10).to_enum(:each).with_index { |row, index| puts "#{index} -> #{row.path}" }
