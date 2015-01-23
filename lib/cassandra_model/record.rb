@@ -70,11 +70,18 @@ class Record
     end
 
     def where_async(clause)
+      page_size = clause.delete(:page_size)
       limit_clause = limit_clause(clause)
       where_clause, where_values = where_clause(clause)
       statement = statement("SELECT * FROM #{table_name}#{where_clause}#{limit_clause}")
-      future = connection.execute_async(statement, *where_values)
-      FutureWrapper.new(future) { |results| result_records(results) }
+
+      if page_size
+        future = connection.execute_async(statement, *where_values, page_size: page_size)
+        ResultPaginator.new(future) { |row| record_from_result(row) }
+      else
+        future = connection.execute_async(statement, *where_values)
+        FutureWrapper.new(future) { |results| result_records(results) }
+      end
     end
 
     def first_async(clause)

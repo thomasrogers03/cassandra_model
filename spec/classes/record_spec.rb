@@ -109,7 +109,7 @@ describe Record do
         }
       end
 
-      before { Record.config = config  }
+      before { Record.config = config }
 
       it { expect(subject).to eq(config) }
     end
@@ -240,7 +240,7 @@ describe Record do
     end
 
     context 'with multiple results' do
-      let(:clause) { { limit: 1 } }
+      let(:clause) { {limit: 1} }
       let(:where_clause) { ' LIMIT 1' }
       let(:results) { MockFuture.new([{'partition' => 'Partition Key 1'}, {'partition' => 'Partition Key 2'}]) }
 
@@ -250,10 +250,10 @@ describe Record do
       end
 
       context 'with a strange limit' do
-        let(:clause) { { limit: 'bob' } }
+        let(:clause) { {limit: 'bob'} }
 
         it 'should raise an error' do
-          expect{Record.where_async(clause)}.to raise_error("Invalid limit 'bob'")
+          expect { Record.where_async(clause) }.to raise_error("Invalid limit 'bob'")
         end
       end
     end
@@ -293,10 +293,30 @@ describe Record do
         Record.where_async(clause)
       end
     end
+
+    context 'when paginating over results' do
+      let(:clause) { {page_size: 2} }
+      let(:first_page_results) { [{'partition' => 'Partition Key 1'}, {'partition' => 'Partition Key 2'}] }
+      let(:first_page) { MockPage.new(true, nil, first_page_results) }
+      let(:first_page_future) { double(:result, get: first_page) }
+
+      it 'should return an enumerable capable of producing all the records' do
+        allow(connection).to receive(:execute_async).with(statement, page_size: 2).and_return(first_page_future)
+        results = []
+        Record.where_async(clause).each do |result|
+          results << result
+        end
+        expected_records = [
+            Record.new(partition: 'Partition Key 1'),
+            Record.new(partition: 'Partition Key 2')
+        ]
+        expect(results).to eq(expected_records)
+      end
+    end
   end
 
   describe '.first_async' do
-    let(:clause) { { partition: 'Partition Key' } }
+    let(:clause) { {partition: 'Partition Key'} }
     let(:record) { Record.new(partition: 'Partition Key') }
     let(:future_record) { MockFuture.new([record]) }
 
@@ -338,7 +358,7 @@ describe Record do
 
     context 'with an invalid column' do
       it 'should raise an error' do
-        expect{Record.new(fake_column: 'Partition Key')}.to raise_error("Invalid column 'fake_column' specified")
+        expect { Record.new(fake_column: 'Partition Key') }.to raise_error("Invalid column 'fake_column' specified")
       end
     end
   end
