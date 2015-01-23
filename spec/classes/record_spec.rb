@@ -335,6 +335,15 @@ describe Record do
       allow(Record).to receive(:where_async).with(clause).and_return(future_record)
       expect(Record.where(clause)).to eq([record])
     end
+
+    context 'when paginating' do
+      let(:clause) { { page_size: 3 } }
+
+      it 'should just forward the result' do
+        allow(Record).to receive(:where_async).with(clause).and_return(future_record)
+        expect(Record.where(clause)).to eq(future_record)
+      end
+    end
   end
 
   describe '.first' do

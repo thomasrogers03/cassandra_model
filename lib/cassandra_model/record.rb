@@ -89,7 +89,9 @@ class Record
     end
 
     def where(clause)
-      where_async(clause).get
+      page_size = clause[:page_size]
+      future = where_async(clause)
+      page_size ? future : future.get
     end
 
     def first(clause)
