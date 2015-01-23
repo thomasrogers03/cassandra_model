@@ -6,4 +6,4 @@ class ImageData < Record
 end
 
 Record.config = { hosts: %w(me), keyspace: 'pcrawler' }
-puts ImageData.first({})
+puts ImageData.where(limit: 10).map(&:path)
