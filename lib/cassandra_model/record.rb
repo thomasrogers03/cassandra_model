@@ -44,10 +44,7 @@ class Record
 
     def columns=(values)
       @columns = values
-      @columns.each do |column|
-        define_method(:"#{column}=") { |value| @attributes[column] = value }
-        define_method(column.to_sym) { @attributes[column] }
-      end
+      @columns.each { |column| define_attribute(column) }
     end
 
     def config=(value)
@@ -75,14 +72,9 @@ class Record
     def where_async(clause)
       limit_clause = limit_clause(clause)
       where_clause, where_values = where_clause(clause)
-      future = connection.execute_async(statement("SELECT * FROM #{table_name}#{where_clause}#{limit_clause}"), *where_values)
-      FutureWrapper.new(future) do |results|
-        results.map do |row|
-          attributes = row.symbolize_keys
-          record = self.new(attributes)
-          record
-        end
-      end
+      statement = statement("SELECT * FROM #{table_name}#{where_clause}#{limit_clause}")
+      future = connection.execute_async(statement, *where_values)
+      FutureWrapper.new(future) { |results| result_records(results) }
     end
 
     def first_async(clause)
@@ -108,6 +100,11 @@ class Record
 
     private
 
+    def define_attribute(column)
+      define_method(:"#{column}=") { |value| @attributes[column] = value }
+      define_method(column.to_sym) { @attributes[column] }
+    end
+
     def limit_clause(clause)
       limit = clause.delete(:limit)
       if limit
@@ -123,6 +120,15 @@ class Record
                      end
       where_values = *clause.values
       [where_clause, where_values]
+    end
+
+    def result_records(results)
+      results.map { |row| record_from_result(row) }
+    end
+
+    def record_from_result(row)
+      attributes = row.symbolize_keys
+      self.new(attributes)
     end
 
   end
