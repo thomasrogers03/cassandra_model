@@ -80,8 +80,6 @@ class Record
         results.map do |row|
           attributes = row.symbolize_keys
           record = self.new(attributes)
-          puts self
-          puts record.inspect
           record
         end
       end
