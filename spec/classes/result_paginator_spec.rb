@@ -15,6 +15,12 @@ describe ResultPaginator do
       expect { |block| subject.each(&block) }.to yield_with_args('Modified Record 1')
     end
 
+    context 'when no block provided' do
+      it 'should return an enumerator' do
+        expect(subject.each).to be_a_kind_of(Enumerator)
+      end
+    end
+
     context 'with multiple results in the first page' do
       let(:first_page_results) { ['Record 1', 'Record 2'] }
 

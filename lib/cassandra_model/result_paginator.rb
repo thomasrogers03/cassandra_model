@@ -7,6 +7,8 @@ class ResultPaginator
   end
 
   def each(&block)
+    return to_enum(:each) unless block_given?
+
     current_page = @page
     loop do
       page_results = current_page.get
