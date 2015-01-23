@@ -10,6 +10,7 @@ describe Record do
   end
 
   class ImageData < Record
+    ImageData.columns = [:partition]
   end
 
   class MockFuture
@@ -213,21 +214,29 @@ describe Record do
   describe '.where_async' do
     let(:clause) { {} }
     let(:where_clause) { nil }
-    let(:query) { "SELECT * FROM table#{where_clause}" }
+    let(:table_name) { :table }
+    let(:query) { "SELECT * FROM #{table_name}#{where_clause}" }
     let(:statement) { double(:statement) }
     let(:results) { MockFuture.new(['partition' => 'Partition Key']) }
-    let(:record) { double(:record) }
+    let(:record) { Record.new(partition: 'Partition Key') }
 
     before do
-      Record.table_name = :table
+      Record.table_name = table_name
       Record.primary_key = [[:partition], :cluster, :time_stamp]
       allow(Record).to receive(:statement).with(query).and_return(statement)
       allow(connection).to receive(:execute_async).and_return(results)
-      allow(Record).to receive(:new).and_return(record)
     end
 
     it 'should create a Record instance for each returned result' do
       expect(Record.where_async(clause).get.first).to eq(record)
+    end
+
+    context 'with a different record type' do
+      let(:table_name) { :image_data }
+
+      it 'should return records of that type' do
+        expect(ImageData.where_async(clause).get.first).to be_a_kind_of(ImageData)
+      end
     end
 
     context 'with multiple results' do
@@ -288,7 +297,7 @@ describe Record do
 
   describe '.first_async' do
     let(:clause) { { partition: 'Partition Key' } }
-    let(:record) { double(:record) }
+    let(:record) { Record.new(partition: 'Partition Key') }
     let(:future_record) { MockFuture.new([record]) }
 
     it 'should delegate to where using a limit of 1' do
@@ -299,7 +308,7 @@ describe Record do
 
   describe '.where' do
     let(:clause) { {} }
-    let(:record) { double(:record) }
+    let(:record) { Record.new(partition: 'Partition Key') }
     let(:future_record) { MockFuture.new([record]) }
 
     it 'should resolve the future provided by where_async' do
@@ -331,6 +340,16 @@ describe Record do
       it 'should raise an error' do
         expect{Record.new(fake_column: 'Partition Key')}.to raise_error("Invalid column 'fake_column' specified")
       end
+    end
+  end
+
+  describe '#==' do
+    it 'should be true when the attributes match' do
+      expect(Record.new(partition: 'Partition Key')).to eq(Record.new(partition: 'Partition Key'))
+    end
+
+    it 'should be false when the attributes do not match' do
+      expect(Record.new(partition: 'Partition Key')).not_to eq(Record.new(partition: 'Different Key'))
     end
   end
 end

@@ -12,6 +12,10 @@ class Record
     @attributes = attributes
   end
 
+  def ==(rhs)
+    @attributes == rhs.attributes
+  end
+
   @@statement_cache = {}
   class << self
     attr_reader :columns
@@ -75,7 +79,10 @@ class Record
       FutureWrapper.new(future) do |results|
         results.map do |row|
           attributes = row.symbolize_keys
-          Record.new(attributes)
+          record = self.new(attributes)
+          puts self
+          puts record.inspect
+          record
         end
       end
     end
