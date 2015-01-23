@@ -6,4 +6,4 @@ class ImageData < Record
 end
 
 Record.config = { hosts: %w(me), keyspace: 'pcrawler' }
-puts ImageData.where(limit: 10).map(&:path)
+ImageData.where(limit: 1000, page_size: 10).each { |row| puts row.path }
