@@ -1,4 +1,4 @@
-require_relative 'spike/common'
+require_relative 'common'
 
 class ImageData < Record
   ImageData.primary_key = [:path, :data]
