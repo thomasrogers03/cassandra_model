@@ -13,8 +13,7 @@ class Record
   end
 
   def save_async
-    column_values = columns.map { |column| attributes[column] }
-    future = Record.connection.execute_async(Record.statement(query_for_save), *column_values)
+    future = save_row_async(column_values)
     FutureWrapper.new(future) { self }
   end
 
@@ -27,6 +26,14 @@ class Record
   end
 
   private
+
+  def column_values
+    columns.map { |column| attributes[column] }
+  end
+
+  def save_row_async(column_values)
+    Record.connection.execute_async(Record.statement(query_for_save), *column_values)
+  end
 
   def query_for_save
     self.class.query_for_save
