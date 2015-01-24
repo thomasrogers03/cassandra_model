@@ -14,5 +14,5 @@
 # limitations under the License.
 #++
 
-require 'object_stream/result'
-require 'object_stream/result_paginator'
+require 'cassandra_model/result'
+require 'cassandra_model/result_paginator'
