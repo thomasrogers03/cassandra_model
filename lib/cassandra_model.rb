@@ -14,5 +14,5 @@
 # limitations under the License.
 #++
 
-require 'cassandra_model/result'
+require 'cassandra_model/record'
 require 'cassandra_model/result_paginator'
