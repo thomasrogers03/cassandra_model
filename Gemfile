@@ -2,7 +2,7 @@ source 'http://rubygems.org'
 
 gem 'cassandra-driver'
 gem 'activesupport'
-gem 'object_stream', git: 'git@me:/opt/git/object-stream.git'
+gem 'object_stream', git: 'https://github.com/thomasrogers03/object_stream.git'
 
 group :test do
   gem 'rspec'

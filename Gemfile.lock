@@ -1,5 +1,5 @@
 GIT
-  remote: git@me:/opt/git/object-stream.git
+  remote: https://github.com/thomasrogers03/object_stream.git
   revision: 370b830d688fe569ed5a7e569c6b5635f957dbc4
   specs:
     object_stream (0.1.0)
