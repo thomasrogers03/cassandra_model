@@ -26,4 +26,18 @@ describe QueryResult do
       expect(first_class).to eq(second_class)
     end
   end
+
+  describe '#==' do
+    it 'should be true when the attributes are the same' do
+      first_result = QueryResult.create(hello: 'world')
+      second_result = QueryResult.create(hello: 'world')
+      expect(first_result).to eq(second_result)
+    end
+
+    it 'should be false when the attributes are different' do
+      first_result = QueryResult.create(hello: 'world')
+      second_result = QueryResult.create(goobye: 'cruel world')
+      expect(first_result).not_to eq(second_result)
+    end
+  end
 end

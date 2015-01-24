@@ -14,4 +14,8 @@ class QueryResult
     columns.each { |column| klass.send(:define_method, column.to_sym) { self.attributes[column] } }
     result
   end
+
+  def ==(rhs)
+    attributes == rhs.attributes
+  end
 end
