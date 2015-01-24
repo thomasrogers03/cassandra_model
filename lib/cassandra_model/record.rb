@@ -1,6 +1,6 @@
 class Record
   DEFAULT_CONFIGURATION = {
-      :hosts => ['localhost'],
+      hosts: %w(localhost),
       keyspace: 'default_keyspace',
       port: '9042'
   }
@@ -8,7 +8,7 @@ class Record
   attr_reader :attributes
 
   def initialize(attributes)
-    attributes.keys.each { |key| raise "Invalid column '#{key}' specified" unless self.class.columns.include?(key) }
+    attributes.keys.each { |key| raise "Invalid column '#{key}' specified" unless columns.include?(key) }
     @attributes = attributes
   end
 
