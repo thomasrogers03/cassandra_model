@@ -12,8 +12,28 @@ class Record
     @attributes = attributes
   end
 
+  def save_async
+    column_values = columns.map { |column| attributes[column] }
+    future = Record.connection.execute_async(Record.statement(query_for_save), *column_values)
+    FutureWrapper.new(future) { self }
+  end
+
+  def save
+    save_async.get
+  end
+
   def ==(rhs)
     @attributes == rhs.attributes
+  end
+
+  private
+
+  def query_for_save
+    self.class.query_for_save
+  end
+
+  def columns
+    self.class.columns
   end
 
   @@statement_cache = {}
@@ -67,6 +87,20 @@ class Record
 
     def statement(query)
       @@statement_cache[query] ||= connection.prepare(query)
+    end
+
+    def query_for_save
+      column_names = columns.join(', ')
+      column_sanitizers = (%w(?) * columns.size).join(', ')
+      @save_query ||= "INSERT INTO #{table_name} (#{column_names}) VALUES (#{column_sanitizers})"
+    end
+
+    def create_async(attributes)
+      self.new(attributes).save_async
+    end
+
+    def create(attributes)
+      create_async(attributes).get
     end
 
     def where_async(clause)

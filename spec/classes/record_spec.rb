@@ -3,6 +3,8 @@ require 'spec_helper'
 describe Record do
   class Record
     def self.reset!
+      @table_name = nil
+      @save_query = nil
       @@connection = nil
       @@cluster = nil
       @@statement_cache = {}
@@ -211,6 +213,66 @@ describe Record do
     end
   end
 
+  describe '.query_for_save' do
+    let(:columns) { [:partition] }
+    let(:klass) { Record }
+
+    before do
+      klass.table_name = nil
+      klass.instance_variable_set(:@save_query, nil)
+      klass.columns = columns
+    end
+
+    it 'should represent the query for saving all the column values' do
+      expect(klass.query_for_save).to eq('INSERT INTO records (partition) VALUES (?)')
+    end
+
+    it 'should cache the query' do
+      klass.query_for_save
+      expect(klass.instance_variable_get(:@save_query)).to eq('INSERT INTO records (partition) VALUES (?)')
+    end
+
+    context 'with different columns' do
+      let(:columns) { [:partition, :cluster] }
+
+      it 'should represent the query for saving all the column values' do
+        expect(klass.query_for_save).to eq('INSERT INTO records (partition, cluster) VALUES (?, ?)')
+      end
+    end
+
+    context 'with a different record type/table name' do
+      let(:klass) { ImageData }
+
+      it 'should represent the query for saving all the column values' do
+        expect(klass.query_for_save).to eq('INSERT INTO image_data (partition) VALUES (?)')
+      end
+    end
+  end
+
+  describe '.create_async' do
+    let(:attributes) { { partition: 'Partition Key' } }
+    let(:klass) { Record }
+    let(:record) { klass.new(attributes) }
+    let(:future_record) { MockFuture.new(record) }
+
+    before do
+      allow_any_instance_of(Record).to receive(:save_async).and_return(future_record)
+    end
+
+    it 'should return a new record instance with the specified attributes' do
+      expect(Record.create_async(attributes).get).to eq(record)
+    end
+
+    context 'with a different record type' do
+      let(:klass) { ImageData }
+
+      it 'should create an instance of that record' do
+        expect(ImageData).to receive(:new).with(attributes).and_return(record)
+        ImageData.create_async(attributes)
+      end
+    end
+  end
+
   describe '.where_async' do
     let(:clause) { {} }
     let(:where_clause) { nil }
@@ -353,6 +415,20 @@ describe Record do
     end
   end
 
+  describe '.create' do
+    let(:attributes) { { partition: 'Partition Key' } }
+    let(:record) { Record.new(attributes) }
+    let(:future_record) { MockFuture.new(record) }
+
+    before do
+      allow(Record).to receive(:create_async).with(attributes).and_return(future_record)
+    end
+
+    it 'should resolve the future returned by .create_async' do
+      expect(Record.create(attributes)).to eq(record)
+    end
+  end
+
   describe '.where' do
     let(:clause) { {} }
     let(:record) { Record.new(partition: 'Partition Key') }
@@ -401,6 +477,57 @@ describe Record do
       it 'should raise an error' do
         expect { Record.new(fake_column: 'Partition Key') }.to raise_error("Invalid column 'fake_column' specified")
       end
+    end
+  end
+
+  describe '#save_async' do
+    let(:columns) { [:partition] }
+    let(:attributes) { { partition: 'Partition Key' } }
+    let(:query) { "INSERT INTO table (#{columns.join(', ')}) VALUES (#{(%w(?) * columns.size).join(', ')})" }
+    let(:statement) { double(:statement) }
+    let(:results) { MockFuture.new([]) }
+
+    before do
+      Record.table_name = :table
+      Record.columns = columns
+      allow(Record).to receive(:statement).with(query).and_return(statement)
+      allow(connection).to receive(:execute_async).and_return(results)
+    end
+
+    it 'should save the record to the database' do
+      expect(connection).to receive(:execute_async).with(statement, 'Partition Key').and_return(results)
+      Record.new(attributes).save_async
+    end
+
+    it 'should return a future resolving to the record instance' do
+      record = Record.new(partition: 'Partition Key')
+      expect(record.save_async.get).to eq(record)
+    end
+
+    context 'with different columns' do
+      let(:columns) { [:partition, :cluster] }
+      let(:attributes) { { partition: 'Partition Key', cluster: 'Cluster Key' } }
+
+      it 'should save the record to the database using the specified attributes' do
+        expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key').and_return(results)
+        Record.new(attributes).save_async
+      end
+    end
+  end
+
+  describe '#save' do
+    let(:attributes) { { partition: 'Partition Key' } }
+    let(:record) { Record.new(attributes) }
+    let(:record_future) { MockFuture.new(record) }
+
+    it 'should save the record' do
+      expect(record).to receive(:save_async).and_return(record_future)
+      record.save
+    end
+
+    it 'should resolve the future of #save_async' do
+      allow(record).to receive(:save_async).and_return(record_future)
+      expect(record.save).to eq(record)
     end
   end
 
