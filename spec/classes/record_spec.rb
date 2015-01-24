@@ -215,7 +215,8 @@ describe Record do
     let(:clause) { {} }
     let(:where_clause) { nil }
     let(:table_name) { :table }
-    let(:query) { "SELECT * FROM #{table_name}#{where_clause}" }
+    let(:select_clause) { '*' }
+    let(:query) { "SELECT #{select_clause} FROM #{table_name}#{where_clause}" }
     let(:statement) { double(:statement) }
     let(:results) { MockFuture.new(['partition' => 'Partition Key']) }
     let(:record) { Record.new(partition: 'Partition Key') }
@@ -223,12 +224,33 @@ describe Record do
     before do
       Record.table_name = table_name
       Record.primary_key = [[:partition], :cluster, :time_stamp]
+      Record.columns = [:partition, :cluster, :time_stamp]
       allow(Record).to receive(:statement).with(query).and_return(statement)
       allow(connection).to receive(:execute_async).and_return(results)
     end
 
     it 'should create a Record instance for each returned result' do
       expect(Record.where_async(clause).get.first).to eq(record)
+    end
+
+    context 'when selecting a subset of columns' do
+      let(:clause) { { select: :partition} }
+      let(:select_clause) { :partition }
+
+      it 'should return a QueryResult instead of a record' do
+        expect(Record.where_async(clause).get.first).to be_a_kind_of(QueryResult)
+      end
+
+      context 'with multiple columns selected' do
+        let(:clause) { { select: [:partition, :cluster]} }
+        let(:select_clause) { %w(partition cluster).join(', ') }
+        let(:results) { MockFuture.new([{'partition' => 'Partition Key', cluster: 'Cluster Key'}]) }
+        let(:record) { QueryResult.new(partition: 'Partition Key', cluster: 'Cluster Key') }
+
+        it 'should select all the specified columns' do
+          expect(Record.where_async(clause).get.first).to eq(record)
+        end
+      end
     end
 
     context 'with a different record type' do

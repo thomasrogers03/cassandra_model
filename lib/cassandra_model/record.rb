@@ -70,17 +70,18 @@ class Record
     end
 
     def where_async(clause)
+      select_clause, use_query_result = select_clause(clause)
       page_size = clause.delete(:page_size)
       limit_clause = limit_clause(clause)
       where_clause, where_values = where_clause(clause)
-      statement = statement("SELECT * FROM #{table_name}#{where_clause}#{limit_clause}")
+      statement = statement("SELECT #{select_clause} FROM #{table_name}#{where_clause}#{limit_clause}")
 
       if page_size
         future = connection.execute_async(statement, *where_values, page_size: page_size)
-        ResultPaginator.new(future) { |row| record_from_result(row) }
+        ResultPaginator.new(future) { |row| record_from_result(row, use_query_result) }
       else
         future = connection.execute_async(statement, *where_values)
-        FutureWrapper.new(future) { |results| result_records(results) }
+        FutureWrapper.new(future) { |results| result_records(results, use_query_result) }
       end
     end
 
@@ -123,6 +124,17 @@ class Record
       end
     end
 
+    def select_clause(clause)
+      select = clause.delete(:select)
+      select_clause = if select
+                        select.is_a?(Array) ? select.join(', ') : select
+                      else
+                        '*'
+                      end
+      use_query_result = !!select
+      [select_clause, use_query_result]
+    end
+
     def where_clause(clause)
       where_clause = if clause.size > 0
                        " WHERE #{clause.map { |key, _| "#{key} = ?" }.join(' AND ') }"
@@ -131,13 +143,13 @@ class Record
       [where_clause, where_values]
     end
 
-    def result_records(results)
-      results.map { |row| record_from_result(row) }
+    def result_records(results, use_query_result)
+      results.map { |row| record_from_result(row, use_query_result) }
     end
 
-    def record_from_result(row)
+    def record_from_result(row, use_query_result)
       attributes = row.symbolize_keys
-      self.new(attributes)
+      use_query_result ? QueryResult.create(attributes) : self.new(attributes)
     end
 
   end
