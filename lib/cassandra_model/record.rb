@@ -48,8 +48,6 @@ class Record
   @@statement_cache = {}
   @@keyspace = nil
   class << self
-    attr_reader :columns
-
     def table_name=(value)
       @table_name = value
     end
@@ -72,11 +70,6 @@ class Record
       @primary_key
     end
 
-    def columns=(values)
-      @columns = values
-      @columns.each { |column| define_attribute(column) }
-    end
-
     def config=(value)
       @@config = DEFAULT_CONFIGURATION.merge(value)
     end
@@ -96,11 +89,19 @@ class Record
     end
 
     def partition_key
-      @@partition_key ||= keyspace.table(table_name.to_s).send(:partition_key).map { |column| column.name.to_sym }
+      @partition_key ||= keyspace.table(table_name.to_s).send(:partition_key).map { |column| column.name.to_sym }
     end
 
     def clustering_columns
-      @@clustering_columns ||= keyspace.table(table_name.to_s).send(:clustering_columns).map { |column| column.name.to_sym }
+      @clustering_columns ||= keyspace.table(table_name.to_s).send(:clustering_columns).map { |column| column.name.to_sym }
+    end
+
+    def columns
+      unless @columns
+        @columns = keyspace.table(table_name.to_s).columns.map { |column| column.name.to_sym }
+        @columns.each { |column| define_attribute(column) }
+      end
+      @columns
     end
 
     def connection

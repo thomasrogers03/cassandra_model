@@ -5,12 +5,17 @@ describe Record do
     def self.reset!
       @table_name = nil
       @save_query = nil
+      @partition_key = nil
+      @clustering_columns = nil
+      @columns = nil
       @@connection = nil
       @@cluster = nil
       @@statement_cache = {}
       @@keyspace = nil
-      @@partition_key = nil
-      @@clustering_columns = nil
+    end
+
+    def self.columns=(columns)
+      @columns = columns
     end
   end
 
@@ -34,13 +39,17 @@ describe Record do
 
   let(:cluster) { double(:cluster, connect: connection) }
   let(:connection) { double(:connection) }
-  let(:keyspace) { double(:keyspace) }
+  let(:column_object) { double(:column, name: 'partition') }
+  let(:table_object) { double(:table, columns: [column_object]) }
+  let(:keyspace) { double(:keyspace, table: table_object) }
 
   before do
     allow(Cassandra).to receive(:cluster).and_return(cluster)
     allow(cluster).to receive(:keyspace).with(Record.config[:keyspace]).and_return(keyspace)
+    Record.columns = [:partition, :cluster]
     Record.reset!
     ImageData.reset!
+    ImageData.columns = [:partition, :cluster]
   end
 
   describe '.keyspace' do
@@ -55,7 +64,7 @@ describe Record do
     end
   end
 
-  shared_examples_for 'a primary key part' do |method|
+  shared_examples_for 'a set of columns' do |method|
     let(:column) { double(:column, name: 'partition') }
     let(:table) { double(:table, method => [column]) }
     let(:table_name) { 'records' }
@@ -93,8 +102,39 @@ describe Record do
     end
   end
 
-  it_behaves_like 'a primary key part', :partition_key
-  it_behaves_like 'a primary key part', :clustering_columns
+  it_behaves_like 'a set of columns', :partition_key
+  it_behaves_like 'a set of columns', :clustering_columns
+
+  describe '.columns' do
+    before do
+      Record.columns = nil
+      ImageData.columns = nil
+    end
+
+    it_behaves_like 'a set of columns', :columns
+
+    describe 'defining methods for record columns' do
+      let(:column_object) { double(:column, name: 'partition') }
+      let(:table_object) { double(:table, columns: [column_object]) }
+
+      it 'should define a method to assign and retrieve the column' do
+        record = Record.new(partition: 'Partition Key')
+        record.partition = 'Different Key'
+        expect(record.partition).to eq('Different Key')
+      end
+
+      context 'with multiple columns' do
+        let(:other_column_object) { double(:column, name: 'clustering') }
+        let(:table_object) { double(:table, columns: [column_object, other_column_object]) }
+
+        it 'should define a method to assign and retrieve the additional column' do
+          record = Record.new(clustering: 'Clustering Key')
+          record.clustering = 'Different Key'
+          expect(record.clustering).to eq('Different Key')
+        end
+      end
+    end
+  end
 
   describe '.table_name' do
     it 'should be the lower-case plural of the class' do
@@ -129,20 +169,6 @@ describe Record do
         Record.primary_key = [:partition, :cluster]
         expect(Record.primary_key).to eq([[:partition], :cluster])
       end
-    end
-  end
-
-  describe '.columns=' do
-    it 'should define save the column names' do
-      Record.columns = [:partition, :cluster]
-      expect(Record.columns).to eq([:partition, :cluster])
-    end
-
-    it 'should define an attribute accessor for each colun' do
-      Record.columns = [:partition]
-      record = Record.new({partition: 'Some Partition'})
-      record.partition = 'Partition Key'
-      expect(record.partition).to eq('Partition Key')
     end
   end
 
@@ -279,7 +305,7 @@ describe Record do
     before do
       klass.table_name = nil
       klass.instance_variable_set(:@save_query, nil)
-      klass.columns = columns
+      klass.instance_variable_set(:@columns, columns)
     end
 
     it 'should represent the query for saving all the column values' do
