@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/thomasrogers03/object_stream.git
-  revision: 370b830d688fe569ed5a7e569c6b5635f957dbc4
+  revision: 10c8b1c0689a0d0d0b92dc127bdc3bc99f1bde5e
   specs:
     object_stream (0.1.0)
 
