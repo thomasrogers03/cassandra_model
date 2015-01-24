@@ -9,6 +9,8 @@ describe Record do
       @@cluster = nil
       @@statement_cache = {}
       @@keyspace = nil
+      @@partition_key = nil
+      @@clustering_columns = nil
     end
   end
 
@@ -32,17 +34,16 @@ describe Record do
 
   let(:cluster) { double(:cluster, connect: connection) }
   let(:connection) { double(:connection) }
+  let(:keyspace) { double(:keyspace) }
 
   before do
     allow(Cassandra).to receive(:cluster).and_return(cluster)
+    allow(cluster).to receive(:keyspace).with(Record.config[:keyspace]).and_return(keyspace)
     Record.reset!
+    ImageData.reset!
   end
 
   describe '.keyspace' do
-    let(:keyspace) { double(:keyspace) }
-
-    before { allow(cluster).to receive(:keyspace).with(Record.config[:keyspace]).and_return(keyspace) }
-
     it 'should be the keyspace object used to connect to the cluster' do
       expect(Record.keyspace).to eq(keyspace)
     end
@@ -53,6 +54,47 @@ describe Record do
       Record.keyspace
     end
   end
+
+  shared_examples_for 'a primary key part' do |method|
+    let(:column) { double(:column, name: 'partition') }
+    let(:table) { double(:table, method => [column]) }
+    let(:table_name) { 'records' }
+    let(:keyspace) do
+      keyspace = double(:keyspace)
+      allow(keyspace).to receive(:table).with(table_name).and_return(table)
+      keyspace
+    end
+
+    it 'should be the partition key for this table' do
+      expect(Record.send(method)).to eq([:partition])
+    end
+
+    it 'should cache the partition key' do
+      Record.send(method)
+      expect(keyspace).not_to receive(:table)
+      Record.send(method)
+    end
+
+    context 'with a different table name' do
+      let(:table_name) { 'image_data' }
+
+      it 'should be the partition key for that table' do
+        expect(ImageData.send(method)).to eq([:partition])
+      end
+    end
+
+    context 'with multiple partition key parts' do
+      let(:other_column) { double(:column, name: 'partition_part_two') }
+      let(:table) { double(:table, method => [column, other_column]) }
+
+      it 'should be the partition key for this table' do
+        expect(Record.send(method)).to eq([:partition, :partition_part_two])
+      end
+    end
+  end
+
+  it_behaves_like 'a primary key part', :partition_key
+  it_behaves_like 'a primary key part', :clustering_columns
 
   describe '.table_name' do
     it 'should be the lower-case plural of the class' do

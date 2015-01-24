@@ -95,6 +95,14 @@ class Record
       @@keyspace ||= cluster.keyspace(config[:keyspace])
     end
 
+    def partition_key
+      @@partition_key ||= keyspace.table(table_name.to_s).send(:partition_key).map { |column| column.name.to_sym }
+    end
+
+    def clustering_columns
+      @@clustering_columns ||= keyspace.table(table_name.to_s).send(:clustering_columns).map { |column| column.name.to_sym }
+    end
+
     def connection
       cluster.connect(config[:keyspace])
     end
