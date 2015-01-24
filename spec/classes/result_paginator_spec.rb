@@ -48,4 +48,12 @@ describe ResultPaginator do
       end
     end
   end
+
+  describe '#each_slice' do
+    context 'when no block provided' do
+      it 'should return an enumerator' do
+        expect(subject.each_slice).to be_a_kind_of(Enumerator)
+      end
+    end
+  end
 end
