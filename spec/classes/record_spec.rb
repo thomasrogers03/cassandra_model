@@ -62,6 +62,11 @@ describe Record do
       expect(cluster).not_to receive(:keyspace)
       Record.keyspace
     end
+
+    it 'should connect to the cluster' do
+      expect(Record).to receive(:connection)
+      Record.keyspace
+    end
   end
 
   shared_examples_for 'a set of columns' do |method|

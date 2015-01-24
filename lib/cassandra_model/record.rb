@@ -85,7 +85,11 @@ class Record
     end
 
     def keyspace
-      @@keyspace ||= cluster.keyspace(config[:keyspace])
+      unless @@keyspace
+        connection
+        @@keyspace = cluster.keyspace(config[:keyspace])
+      end
+      @@keyspace
     end
 
     def partition_key
