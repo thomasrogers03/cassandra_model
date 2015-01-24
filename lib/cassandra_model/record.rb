@@ -145,8 +145,8 @@ class Record
     private
 
     def define_attribute(column)
-      define_method(:"#{column}=") { |value| @attributes[column] = value }
-      define_method(column.to_sym) { @attributes[column] }
+      define_method(:"#{column}=") { |value| self.attributes[column] = value }
+      define_method(column.to_sym) { self.attributes[column] }
     end
 
     def limit_clause(clause)
