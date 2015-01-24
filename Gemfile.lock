@@ -1,6 +1,6 @@
 GIT
   remote: git@me:/opt/git/object-stream.git
-  revision: c4ef3e19b616f457446b6ba3c73350ed72b6a36f
+  revision: 370b830d688fe569ed5a7e569c6b5635f957dbc4
   specs:
     object_stream (0.1.0)
 
@@ -13,9 +13,9 @@ GEM
       minitest (~> 5.1)
       thread_safe (~> 0.3, >= 0.3.4)
       tzinfo (~> 1.1)
-    cassandra-driver (1.1.1)
+    cassandra-driver (2.0.0)
       ione (~> 1.2)
-    cassandra-driver (1.1.1-java)
+    cassandra-driver (2.0.0-java)
       ione (~> 1.2)
     celluloid (0.16.0)
       timers (~> 4.0.0)
