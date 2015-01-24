@@ -107,7 +107,7 @@ class Record
       select_clause, use_query_result = select_params(clause)
       page_size = clause.delete(:page_size)
       limit_clause = limit_clause(clause)
-      where_clause, where_values = where_clause(clause)
+      where_clause, where_values = where_params(clause)
       statement = statement("SELECT #{select_clause} FROM #{table_name}#{where_clause}#{limit_clause}")
 
       if page_size
@@ -171,12 +171,15 @@ class Record
       select.is_a?(Array) ? select.join(', ') : select
     end
 
-    def where_clause(clause)
-      where_clause = if clause.size > 0
-                       " WHERE #{clause.map { |key, _| "#{key} = ?" }.join(' AND ') }"
-                     end
+    def where_params(clause)
+      where_clause = where_clause(clause) if clause.size > 0
       where_values = *clause.values
       [where_clause, where_values]
+    end
+
+    def where_clause(clause)
+      restriction = clause.keys.map { |key| "#{key} = ?" }.join(' AND ')
+      " WHERE #{restriction}"
     end
 
     def result_records(results, use_query_result)
