@@ -43,7 +43,10 @@ class Record
     self.class.columns
   end
 
+  @@connection = nil
+  @@cluster = nil
   @@statement_cache = {}
+  @@keyspace = nil
   class << self
     attr_reader :columns
 
@@ -86,6 +89,10 @@ class Record
       connection_configuration = {hosts: config[:hosts], connect_timeout: 120}
       connection_configuration[:compression] = config[:compression].to_sym if config[:compression]
       @@connection ||= Cassandra.cluster(connection_configuration)
+    end
+
+    def keyspace
+      @@keyspace ||= cluster.keyspace(config[:keyspace])
     end
 
     def connection

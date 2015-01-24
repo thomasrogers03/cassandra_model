@@ -8,6 +8,7 @@ describe Record do
       @@connection = nil
       @@cluster = nil
       @@statement_cache = {}
+      @@keyspace = nil
     end
   end
 
@@ -35,6 +36,22 @@ describe Record do
   before do
     allow(Cassandra).to receive(:cluster).and_return(cluster)
     Record.reset!
+  end
+
+  describe '.keyspace' do
+    let(:keyspace) { double(:keyspace) }
+
+    before { allow(cluster).to receive(:keyspace).with(Record.config[:keyspace]).and_return(keyspace) }
+
+    it 'should be the keyspace object used to connect to the cluster' do
+      expect(Record.keyspace).to eq(keyspace)
+    end
+
+    it 'should cache the keyspace object' do
+      Record.keyspace
+      expect(cluster).not_to receive(:keyspace)
+      Record.keyspace
+    end
   end
 
   describe '.table_name' do
