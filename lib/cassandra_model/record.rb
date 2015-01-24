@@ -104,7 +104,7 @@ class Record
     end
 
     def where_async(clause)
-      select_clause, use_query_result = select_clause(clause)
+      select_clause, use_query_result = select_params(clause)
       page_size = clause.delete(:page_size)
       limit_clause = limit_clause(clause)
       where_clause, where_values = where_clause(clause)
@@ -158,15 +158,17 @@ class Record
       end
     end
 
-    def select_clause(clause)
+    def select_params(clause)
       select = clause.delete(:select)
-      select_clause = if select
-                        select.is_a?(Array) ? select.join(', ') : select
-                      else
-                        '*'
-                      end
-      use_query_result = !!select
-      [select_clause, use_query_result]
+      [select_clause(select), !!select]
+    end
+
+    def select_clause(select)
+      select ? multi_select_clause(select) : '*'
+    end
+
+    def multi_select_clause(select)
+      select.is_a?(Array) ? select.join(', ') : select
     end
 
     def where_clause(clause)
