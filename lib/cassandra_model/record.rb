@@ -8,7 +8,7 @@ class Record
   attr_reader :attributes
 
   def initialize(attributes)
-    attributes.keys.each { |key| raise "Invalid column '#{key}' specified" unless columns.include?(key) }
+    attributes.keys.each { |column| raise "Invalid column '#{column}' specified" unless columns.include?(column) }
     @attributes = attributes
   end
 
