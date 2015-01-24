@@ -84,7 +84,7 @@ class Record
       end
     end
 
-    def first_async(clause)
+    def first_async(clause = {})
       FutureWrapper.new(where_async(clause.merge(limit: 1))) { |results| results.first }
     end
 
@@ -94,7 +94,7 @@ class Record
       page_size ? future : future.get
     end
 
-    def first(clause)
+    def first(clause = {})
       first_async(clause).get
     end
 

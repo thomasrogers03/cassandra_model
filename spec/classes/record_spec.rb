@@ -324,6 +324,11 @@ describe Record do
       allow(Record).to receive(:where_async).with(clause.merge(limit: 1)).and_return(future_record)
       expect(Record.first_async(clause).get).to eq(record)
     end
+
+    it 'should default the where clause to {}' do
+      expect(Record).to receive(:where_async).with(limit: 1)
+      Record.first_async
+    end
   end
 
   describe '.where' do
@@ -354,6 +359,11 @@ describe Record do
     it 'should resolve the future provided by first_async' do
       allow(Record).to receive(:first_async).with(clause).and_return(future_record)
       expect(Record.first(clause)).to eq(record)
+    end
+
+    it 'should default the where clause to {}' do
+      expect(Record).to receive(:first_async).with({}).and_return(future_record)
+      Record.first
     end
   end
 
