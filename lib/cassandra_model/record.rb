@@ -81,7 +81,11 @@ class Record
     def cluster
       connection_configuration = {hosts: config[:hosts], connect_timeout: 120}
       connection_configuration[:compression] = config[:compression].to_sym if config[:compression]
-      @@connection ||= Cassandra.cluster(connection_configuration)
+      @@cluster ||= Cassandra.cluster(connection_configuration)
+    end
+
+    def connection
+      @@connection ||= cluster.connect(config[:keyspace])
     end
 
     def keyspace
@@ -106,10 +110,6 @@ class Record
         @columns.each { |column| define_attribute(column) }
       end
       @columns
-    end
-
-    def connection
-      cluster.connect(config[:keyspace])
     end
 
     def statement(query)

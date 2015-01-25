@@ -244,11 +244,19 @@ describe Record do
     let(:config) { {keyspace: 'keyspace'} }
     let(:connection) { double(:connection) }
 
-    it 'should connect to the cluster using the pre-configured key-space' do
-      allow(Cassandra).to receive(:cluster).and_return(cluster)
-      allow(cluster).to receive(:connect).with('keyspace').and_return(connection)
+    before do
       Record.config = config
+      allow(cluster).to receive(:connect).with('keyspace').and_return(connection)
+    end
+
+    it 'should connect to the cluster using the pre-configured key-space' do
       expect(Record.connection).to eq(connection)
+    end
+
+    it 'should cache the connection' do
+      Record.connection
+      expect(cluster).not_to receive(:connect).with('keyspace')
+      Record.connection
     end
   end
 
