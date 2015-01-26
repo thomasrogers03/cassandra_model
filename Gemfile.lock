@@ -1,8 +1,16 @@
-GIT
-  remote: https://github.com/thomasrogers03/object_stream.git
-  revision: 10c8b1c0689a0d0d0b92dc127bdc3bc99f1bde5e
+PATH
+  remote: .
   specs:
-    object_stream (0.1.0)
+    cassandra_model (0.1.2)
+      activesupport (~> 4.2.0)
+      cassandra-driver (~> 2.0.0)
+      thomas_utils (~> 0.1.1)
+
+GIT
+  remote: https://github.com/thomasrogers03/thomas_utils.git
+  revision: 527e1a69defebf603c631bfac510e89a24304e19
+  specs:
+    thomas_utils (0.1.1)
 
 GEM
   remote: http://rubygems.org/
@@ -106,6 +114,7 @@ PLATFORMS
 DEPENDENCIES
   activesupport
   cassandra-driver
+  cassandra_model!
   guard-rspec
-  object_stream!
   rspec
+  thomas_utils!

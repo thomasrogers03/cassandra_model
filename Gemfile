@@ -1,8 +1,12 @@
 source 'http://rubygems.org'
 
-gem 'cassandra-driver'
-gem 'activesupport', require: 'active_support/all'
-gem 'object_stream', git: 'https://github.com/thomasrogers03/object_stream.git'
+gemspec
+
+group :development do
+  gem 'cassandra-driver'
+  gem 'activesupport', require: 'active_support/all'
+  gem 'thomas_utils', git: 'https://github.com/thomasrogers03/thomas_utils.git'
+end
 
 group :test do
   gem 'rspec'

@@ -9,4 +9,7 @@ Gem::Specification.new do |s|
   s.files = Dir['{lib}/**/*.rb', 'bin/*', 'LICENSE.txt', '*.md']
   s.require_path = 'lib'
   s.homepage = ''
+  s.add_runtime_dependency 'cassandra-driver', '~> 2.0.0'
+  s.add_runtime_dependency 'activesupport', '~> 4.2.0'
+  s.add_runtime_dependency 'thomas_utils', '~> 0.1.1'
 end
