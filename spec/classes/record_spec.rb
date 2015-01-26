@@ -692,6 +692,15 @@ describe Record do
       Record.new(attributes).delete_async
     end
 
+    context 'with different attributes' do
+      let(:attributes) { { partition: 'Different Partition Key', cluster: 'Different Cluster Key' } }
+
+      it 'should delete the record from the database' do
+        expect(connection).to receive(:execute_async).with(statement, 'Different Partition Key', 'Different Cluster Key')
+        Record.new(attributes).delete_async
+      end
+    end
+
     context 'with a different table name' do
       let(:table_name) { :image_data }
 

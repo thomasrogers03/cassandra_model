@@ -1,5 +1,6 @@
 require 'active_support/all'
 require 'cassandra'
+require 'thomas_utils'
 require 'bundler'
 Bundler.require(:default)
 
