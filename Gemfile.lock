@@ -4,13 +4,13 @@ PATH
     cassandra_model (0.1.2)
       activesupport (>= 4.0)
       cassandra-driver (>= 1.1)
-      thomas_utils (>= 0.1.0)
+      thomas_utils (>= 0.1.2)
 
 GIT
   remote: https://github.com/thomasrogers03/thomas_utils.git
-  revision: 527e1a69defebf603c631bfac510e89a24304e19
+  revision: 3d022907df34951e9d7458d5a4606c428bb23021
   specs:
-    thomas_utils (0.1.1)
+    thomas_utils (0.1.2)
 
 GEM
   remote: http://rubygems.org/
@@ -23,14 +23,10 @@ GEM
       tzinfo (~> 1.1)
     cassandra-driver (2.0.0)
       ione (~> 1.2)
-    cassandra-driver (2.0.0-java)
-      ione (~> 1.2)
     celluloid (0.16.0)
       timers (~> 4.0.0)
     coderay (1.1.0)
     diff-lcs (1.2.5)
-    ffi (1.9.6)
-    ffi (1.9.6-java)
     ffi (1.9.6-x64-mingw32)
     formatador (0.2.5)
     guard (2.11.1)
@@ -48,11 +44,9 @@ GEM
       guard-compat (~> 1.1)
       rspec (>= 2.99.0, < 4.0)
     hitimes (1.2.2)
-    hitimes (1.2.2-java)
     i18n (0.7.0)
     ione (1.2.0)
     json (1.8.2)
-    json (1.8.2-java)
     listen (2.8.5)
       celluloid (>= 0.15.2)
       rb-fsevent (>= 0.9.3)
@@ -64,15 +58,6 @@ GEM
     notiffany (0.0.3)
       nenv (~> 0.1)
       shellany (~> 0.0)
-    pry (0.10.1)
-      coderay (~> 1.1.0)
-      method_source (~> 0.8.1)
-      slop (~> 3.4)
-    pry (0.10.1-java)
-      coderay (~> 1.1.0)
-      method_source (~> 0.8.1)
-      slop (~> 3.4)
-      spoon (~> 0.0)
     pry (0.10.1-x64-mingw32)
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
@@ -95,11 +80,8 @@ GEM
     rspec-support (3.1.2)
     shellany (0.0.1)
     slop (3.6.0)
-    spoon (0.0.4)
-      ffi
     thor (0.19.1)
     thread_safe (0.3.4)
-    thread_safe (0.3.4-java)
     timers (4.0.1)
       hitimes
     tzinfo (1.2.2)
@@ -107,8 +89,6 @@ GEM
     win32console (1.3.2)
 
 PLATFORMS
-  java
-  ruby
   x64-mingw32
 
 DEPENDENCIES
