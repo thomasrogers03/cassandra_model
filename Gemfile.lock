@@ -2,9 +2,9 @@ PATH
   remote: .
   specs:
     cassandra_model (0.1.2)
-      activesupport
-      cassandra-driver
-      thomas_utils
+      activesupport (>= 4.0)
+      cassandra-driver (>= 1.1)
+      thomas_utils (>= 0.1.0)
 
 GIT
   remote: https://github.com/thomasrogers03/thomas_utils.git
