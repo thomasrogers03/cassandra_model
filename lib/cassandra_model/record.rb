@@ -17,6 +17,15 @@ class Record
     FutureWrapper.new(future) { self }
   end
 
+  def delete_async
+    statement = Record.statement(self.class.query_for_delete)
+    Record.connection.execute_async(statement, 'Partition Key', 'Cluster Key')
+  end
+
+  def delete
+    delete_async.join
+  end
+
   def save
     save_async.get
   end
@@ -120,6 +129,11 @@ class Record
       column_names = columns.join(', ')
       column_sanitizers = (%w(?) * columns.size).join(', ')
       @save_query ||= "INSERT INTO #{table_name} (#{column_names}) VALUES (#{column_sanitizers})"
+    end
+
+    def query_for_delete
+      where_clause = (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ')
+      @delete_qeury ||= "DELETE FROM #{table_name} WHERE #{where_clause}"
     end
 
     def create_async(attributes)

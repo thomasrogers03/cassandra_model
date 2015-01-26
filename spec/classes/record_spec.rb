@@ -5,6 +5,7 @@ describe Record do
     def self.reset!
       @table_name = nil
       @save_query = nil
+      @delete_qeury = nil
       @partition_key = nil
       @clustering_columns = nil
       @columns = nil
@@ -318,7 +319,7 @@ describe Record do
     before do
       klass.table_name = nil
       klass.instance_variable_set(:@save_query, nil)
-      klass.instance_variable_set(:@columns, columns)
+      klass.columns = columns
     end
 
     it 'should represent the query for saving all the column values' do
@@ -343,6 +344,44 @@ describe Record do
 
       it 'should represent the query for saving all the column values' do
         expect(klass.query_for_save).to eq('INSERT INTO image_data (partition) VALUES (?)')
+      end
+    end
+  end
+
+  describe '.query_for_delete' do
+    let(:partition_key) { [:partition] }
+    let(:clustering_columns) { [] }
+    let(:klass) { Record }
+
+    before do
+      klass.table_name = nil
+      klass.columns = partition_key + clustering_columns
+      allow(klass).to receive(:partition_key).and_return(partition_key)
+      allow(klass).to receive(:clustering_columns).and_return(clustering_columns)
+    end
+
+    it 'should represent the query for saving all the column values' do
+      expect(klass.query_for_delete).to eq('DELETE FROM records WHERE partition = ?')
+    end
+
+    it 'should cache the query' do
+      klass.query_for_delete
+      expect(klass.instance_variable_get(:@delete_qeury)).to eq('DELETE FROM records WHERE partition = ?')
+    end
+
+    context 'with different columns' do
+      let(:clustering_columns) { [:cluster] }
+
+      it 'should represent the query for deleting all the column values' do
+        expect(klass.query_for_delete).to eq('DELETE FROM records WHERE partition = ? AND cluster = ?')
+      end
+    end
+
+    context 'with a different record type/table name' do
+      let(:klass) { ImageData }
+
+      it 'should represent the query for saving all the column values' do
+        expect(klass.query_for_delete).to eq('DELETE FROM image_data WHERE partition = ?')
       end
     end
   end
@@ -626,6 +665,68 @@ describe Record do
     it 'should resolve the future of #save_async' do
       allow(record).to receive(:save_async).and_return(record_future)
       expect(record.save).to eq(record)
+    end
+  end
+
+  describe '#delete_async' do
+    let(:partition_key) { [:partition] }
+    let(:clustering_columns) { [:cluster] }
+    let(:attributes) { { partition: 'Partition Key', cluster: 'Cluster Key' } }
+    let(:table_name) { :table }
+    let(:where_clause) { (partition_key + clustering_columns).map{ |column| "#{column} = ?" }.join(' AND ') }
+    let(:query) { "DELETE FROM #{table_name} WHERE #{where_clause}" }
+    let(:statement) { double(:statement) }
+    let(:results) { MockFuture.new([]) }
+
+    before do
+      Record.table_name = table_name
+      Record.columns = partition_key + clustering_columns
+      allow(Record).to receive(:partition_key).and_return(partition_key)
+      allow(Record).to receive(:clustering_columns).and_return(clustering_columns)
+      allow(Record).to receive(:statement).with(query).and_return(statement)
+      allow(connection).to receive(:execute_async).and_return(results)
+    end
+
+    it 'should delete the record from the database' do
+      expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key')
+      Record.new(attributes).delete_async
+    end
+
+    context 'with a different table name' do
+      let(:table_name) { :image_data }
+
+      it 'should delete the record from the database' do
+        expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key')
+        Record.new(attributes).delete_async
+      end
+    end
+
+    context 'with different partition and clustering keys' do
+      let(:partition_key) { [:different_partition] }
+      let(:clustering_columns) { [:different_cluster] }
+      let(:attributes) { { different_partition: 'Partition Key', different_cluster: 'Cluster Key' } }
+
+      it 'should delete the record from the database' do
+        expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key')
+        Record.new(attributes).delete_async
+      end
+    end
+  end
+
+  describe '#delete' do
+    let(:attributes) { { partition: 'Partition Key' } }
+    let(:record) { Record.new(attributes) }
+    let(:record_future) { MockFuture.new(record) }
+
+    it 'should save the record' do
+      expect(record).to receive(:delete_async).and_return(record_future)
+      record.delete
+    end
+
+    it 'should join the future of #delete_async' do
+      allow(record).to receive(:delete_async).and_return(record_future)
+      expect(record_future).to receive(:join)
+      record.delete
     end
   end
 
