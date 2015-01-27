@@ -3,7 +3,7 @@ source 'http://rubygems.org'
 gemspec
 
 group :development do
-  gem 'cassandra-driver'
+  gem 'cassandra-driver', '~> 1.1.1'
   gem 'activesupport', require: 'active_support/all'
   gem 'thomas_utils', git: 'https://github.com/thomasrogers03/thomas_utils.git'
 end
