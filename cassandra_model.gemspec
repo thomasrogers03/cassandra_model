@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'cassandra_model'
-  s.version = '0.1.2'
+  s.version = '0.1.3'
   s.license = 'Apache License 2.0'
   s.summary = ''
   s.description = ''
@@ -11,5 +11,5 @@ Gem::Specification.new do |s|
   s.homepage = ''
   s.add_runtime_dependency 'cassandra-driver', '>= 1.1'
   s.add_runtime_dependency 'activesupport', '>= 4.0'
-  s.add_runtime_dependency 'thomas_utils', '>= 0.1.2'
+  s.add_runtime_dependency 'thomas_utils', '>= 0.1.3'
 end

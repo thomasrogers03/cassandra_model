@@ -4,13 +4,13 @@ PATH
     cassandra_model (0.1.2)
       activesupport (>= 4.0)
       cassandra-driver (>= 1.1)
-      thomas_utils (>= 0.1.2)
+      thomas_utils (>= 0.1.3)
 
 GIT
   remote: https://github.com/thomasrogers03/thomas_utils.git
-  revision: 3d022907df34951e9d7458d5a4606c428bb23021
+  revision: d8784f40227b4dad59d5c2a3700f81fb01125c99
   specs:
-    thomas_utils (0.1.2)
+    thomas_utils (0.1.3)
 
 GEM
   remote: http://rubygems.org/

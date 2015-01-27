@@ -15,7 +15,7 @@ module CassandraModel
 
     def save_async
       future = save_row_async(column_values)
-      FutureWrapper.new(future) { self }
+      ThomasUtils::FutureWrapper.new(future) { self }
     end
 
     def delete_async
@@ -158,12 +158,12 @@ module CassandraModel
           ResultPaginator.new(future) { |row| record_from_result(row, use_query_result) }
         else
           future = connection.execute_async(statement, *where_values)
-          FutureWrapper.new(future) { |results| result_records(results, use_query_result) }
+          ThomasUtils::FutureWrapper.new(future) { |results| result_records(results, use_query_result) }
         end
       end
 
       def first_async(clause = {})
-        FutureWrapper.new(where_async(clause.merge(limit: 1))) { |results| results.first }
+        ThomasUtils::FutureWrapper.new(where_async(clause.merge(limit: 1))) { |results| results.first }
       end
 
       def where(clause)
