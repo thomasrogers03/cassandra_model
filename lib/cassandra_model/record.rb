@@ -54,6 +54,7 @@ module CassandraModel
       self.class.columns
     end
 
+    @@config = nil
     @@connection = nil
     @@cluster = nil
     @@statement_cache = {}
@@ -86,7 +87,10 @@ module CassandraModel
       end
 
       def config
-        @@config ||= DEFAULT_CONFIGURATION
+        unless @@config
+          @@config = load_config()
+        end
+        @@config
       end
 
       def cluster
@@ -186,6 +190,15 @@ module CassandraModel
       end
 
       private
+
+      def load_config
+        if File.exists?('./config/cassandra.yml')
+          yaml_config = File.open('./config/cassandra.yml') { |file| YAML.load(file.read) }
+          DEFAULT_CONFIGURATION.merge(yaml_config)
+        else
+          DEFAULT_CONFIGURATION
+        end
+      end
 
       def define_attribute(column)
         define_method(:"#{column}=") { |value| self.attributes[column] = value }

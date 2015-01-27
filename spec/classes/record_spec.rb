@@ -10,6 +10,7 @@ module CassandraModel
         @partition_key = nil
         @clustering_columns = nil
         @columns = nil
+        @@config = nil
         @@connection = nil
         @@cluster = nil
         @@statement_cache = {}
@@ -192,6 +193,28 @@ module CassandraModel
 
       it 'should use a default configuration' do
         expect(subject).to eq(config)
+      end
+
+      context 'when config/cassandra.yml exists' do
+        let(:config) { {hosts: %w(behemoth), keyspace: 'keyspace', port: '7777'} }
+
+        before do
+          io = StringIO.new
+          io << YAML.dump(config)
+          io.rewind
+          allow(File).to receive(:exists?).with('./config/cassandra.yml').and_return(true)
+          allow(File).to receive(:open).with('./config/cassandra.yml').and_yield(io)
+        end
+
+        it 'should load configuration from that file' do
+          expect(subject).to eq(config)
+        end
+
+        context 'when providing a configuration with missing keys' do
+          let(:config) {{ hosts: %w(behemoth) }}
+
+          it { expect(subject).to eq(Record::DEFAULT_CONFIGURATION.merge(config)) }
+        end
       end
 
       context 'when specifying the options' do
