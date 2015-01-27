@@ -200,7 +200,7 @@ module CassandraModel
 
         before do
           io = StringIO.new
-          io << YAML.dump(config)
+          io << YAML.dump(config.stringify_keys)
           io.rewind
           allow(File).to receive(:exists?).with('./config/cassandra.yml').and_return(true)
           allow(File).to receive(:open).with('./config/cassandra.yml').and_yield(io)
@@ -214,6 +214,17 @@ module CassandraModel
           let(:config) {{ hosts: %w(behemoth) }}
 
           it { expect(subject).to eq(Record::DEFAULT_CONFIGURATION.merge(config)) }
+        end
+
+        context 'when rails is present' do
+          let(:config) { { :production => {hosts: %w(behemoth), keyspace: 'keyspace', port: '7777'}} }
+          let(:rails) { double(:rails, env: 'production') }
+
+          before { stub_const('Rails', rails) }
+
+          it 'should load the configuration from that file with the rails environment' do
+            expect(subject).to eq(config[:production])
+          end
         end
       end
 

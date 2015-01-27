@@ -193,11 +193,17 @@ module CassandraModel
 
       def load_config
         if File.exists?('./config/cassandra.yml')
-          yaml_config = File.open('./config/cassandra.yml') { |file| YAML.load(file.read) }
+          yaml_config = yaml_config()
           DEFAULT_CONFIGURATION.merge(yaml_config)
         else
           DEFAULT_CONFIGURATION
         end
+      end
+
+      def yaml_config
+        yaml_config = File.open('./config/cassandra.yml') { |file| YAML.load(file.read) }
+        yaml_config = yaml_config[Rails.env] if defined?(Rails)
+        yaml_config.symbolize_keys
       end
 
       def define_attribute(column)
