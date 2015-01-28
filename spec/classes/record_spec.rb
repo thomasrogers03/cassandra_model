@@ -26,20 +26,6 @@ module CassandraModel
       ImageData.columns = [:partition]
     end
 
-    class MockFuture
-      def initialize(result)
-        @result = result
-      end
-
-      def join
-
-      end
-
-      def get
-        @result
-      end
-    end
-
     let(:cluster) { double(:cluster, connect: connection) }
     let(:connection) { double(:connection) }
     let(:column_object) { double(:column, name: 'partition') }
