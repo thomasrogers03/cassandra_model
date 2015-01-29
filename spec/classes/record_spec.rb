@@ -37,22 +37,7 @@ module CassandraModel
       allow(cluster).to receive(:keyspace).with(Record.config[:keyspace]).and_return(keyspace)
     end
 
-    describe '.keyspace' do
-      it 'should be the keyspace object used to connect to the cluster' do
-        expect(Record.keyspace).to eq(keyspace)
-      end
-
-      it 'should cache the keyspace object' do
-        Record.keyspace
-        expect(cluster).not_to receive(:keyspace)
-        Record.keyspace
-      end
-
-      it 'should connect to the cluster' do
-        expect(Record).to receive(:connection)
-        Record.keyspace
-      end
-    end
+    it_behaves_like 'a model with a connection', Record
 
     shared_examples_for 'a set of columns' do |method|
       let(:column) { double(:column, name: 'partition') }
