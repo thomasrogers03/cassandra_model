@@ -14,6 +14,8 @@
 # limitations under the License.
 #++
 
+require 'cassandra_model/connection'
 require 'cassandra_model/record'
 require 'cassandra_model/result_paginator'
 require 'cassandra_model/query_result'
+require 'cassandra_model/counter_record'
