@@ -21,7 +21,7 @@ GEM
       minitest (~> 5.1)
       thread_safe (~> 0.3, >= 0.3.4)
       tzinfo (~> 1.1)
-    cassandra-driver (1.1.1)
+    cassandra-driver (1.2.0)
       ione (~> 1.2)
     celluloid (0.16.0)
       timers (~> 4.0.0)
@@ -93,7 +93,7 @@ PLATFORMS
 
 DEPENDENCIES
   activesupport
-  cassandra-driver (~> 1.1.1)
+  cassandra-driver (~> 1.1)
   cassandra_model!
   guard-rspec
   rspec
