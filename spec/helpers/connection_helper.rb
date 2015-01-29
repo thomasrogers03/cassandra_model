@@ -1,0 +1,11 @@
+module CassandraModel
+  module Connection
+    def self.reset!
+      @@config = nil
+      @@connection = nil
+      @@cluster = nil
+      @@statement_cache = {}
+      @@keyspace = nil
+    end
+  end
+end
