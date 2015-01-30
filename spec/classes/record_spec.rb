@@ -318,6 +318,17 @@ module CassandraModel
         expect(Record.where_async(clause).get.first).to eq(record)
       end
 
+      context 'when restricting by multiple values' do
+        let(:clause) { { partition: ['Partition Key', 'Other Partition Key'] } }
+        let(:where_clause) { ' WHERE partition IN (?, ?)' }
+        let(:results) { MockFuture.new([{'partition' => 'Partition Key'}, {'partition' => 'Other Partition Key'}]) }
+
+        it 'should query using an IN' do
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Other Partition Key').and_return(results)
+          Record.where_async(clause)
+        end
+      end
+
       context 'when selecting a subset of columns' do
         let(:clause) { { select: :partition} }
         let(:select_clause) { :partition }

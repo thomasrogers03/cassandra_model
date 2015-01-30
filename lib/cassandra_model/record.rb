@@ -180,13 +180,23 @@ module CassandraModel
 
       def where_params(clause)
         where_clause = where_clause(clause) if clause.size > 0
-        where_values = *clause.values
+        where_values = clause.values.flatten(1)
         [where_clause, where_values]
       end
 
       def where_clause(clause)
-        restriction = clause.keys.map { |key| "#{key} = ?" }.join(' AND ')
+        restriction = clause.map do |key, value|
+          value.is_a?(Array) ? multi_value_restriction(key, value) : single_value_restriction(key)
+        end.join(' AND ')
         " WHERE #{restriction}"
+      end
+
+      def single_value_restriction(key)
+        "#{key} = ?"
+      end
+
+      def multi_value_restriction(key, value)
+        "#{key} IN (#{(%w(?) * value.count).join(', ')})"
       end
 
       def result_records(results, use_query_result)
