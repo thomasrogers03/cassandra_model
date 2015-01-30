@@ -8,7 +8,7 @@ PATH
 
 GIT
   remote: https://github.com/thomasrogers03/thomas_utils.git
-  revision: d8784f40227b4dad59d5c2a3700f81fb01125c99
+  revision: 3f1e8904d0cae29cb20b889d2d4a17d1f46805da
   specs:
     thomas_utils (0.1.3)
 
