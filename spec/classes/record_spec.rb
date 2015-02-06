@@ -334,7 +334,7 @@ module CassandraModel
         let(:select_clause) { :partition }
 
         it 'should return a QueryResult instead of a record' do
-          expect(Record.request_async(clause).get.first).to be_a_kind_of(QueryResult)
+          expect(Record.request_async({}, clause).get.first).to be_a_kind_of(QueryResult)
         end
 
         context 'with multiple columns selected' do
@@ -344,7 +344,7 @@ module CassandraModel
           let(:record) { QueryResult.new(partition: 'Partition Key', cluster: 'Cluster Key') }
 
           it 'should select all the specified columns' do
-            expect(Record.request_async(clause).get.first).to eq(record)
+            expect(Record.request_async({}, clause).get.first).to eq(record)
           end
         end
       end
@@ -364,14 +364,14 @@ module CassandraModel
 
         it 'should support limits' do
           expect(connection).to receive(:execute_async).with(statement).and_return(results)
-          Record.request_async(clause)
+          Record.request_async({}, clause)
         end
 
         context 'with a strange limit' do
           let(:clause) { {limit: 'bob'} }
 
           it 'should raise an error' do
-            expect { Record.request_async(clause) }.to raise_error("Invalid limit 'bob'")
+            expect { Record.request_async({}, clause) }.to raise_error("Invalid limit 'bob'")
           end
         end
       end
@@ -421,7 +421,7 @@ module CassandraModel
         it 'should return an enumerable capable of producing all the records' do
           allow(connection).to receive(:execute_async).with(statement, page_size: 2).and_return(first_page_future)
           results = []
-          Record.request_async(clause).each do |result|
+          Record.request_async({}, clause).each do |result|
             results << result
           end
           expected_records = [
@@ -435,16 +435,17 @@ module CassandraModel
 
     describe '.first_async' do
       let(:clause) { {partition: 'Partition Key'} }
+      let(:options) { { select: :partition } }
       let(:record) { Record.new(partition: 'Partition Key') }
       let(:future_record) { MockFuture.new([record]) }
 
       it 'should delegate to request using a limit of 1' do
-        allow(Record).to receive(:request_async).with(clause.merge(limit: 1)).and_return(future_record)
-        expect(Record.first_async(clause).get).to eq(record)
+        allow(Record).to receive(:request_async).with(clause, options.merge(limit: 1)).and_return(future_record)
+        expect(Record.first_async(clause, options).get).to eq(record)
       end
 
       it 'should default the request clause to {}' do
-        expect(Record).to receive(:request_async).with(limit: 1)
+        expect(Record).to receive(:request_async).with({}, limit: 1)
         Record.first_async
       end
     end
@@ -465,36 +466,38 @@ module CassandraModel
 
     describe '.request' do
       let(:clause) { {} }
+      let(:options) { { limit: 1 } }
       let(:record) { Record.new(partition: 'Partition Key') }
       let(:future_record) { MockFuture.new([record]) }
 
       it 'should resolve the future provided by request_async' do
-        allow(Record).to receive(:request_async).with(clause).and_return(future_record)
-        expect(Record.request(clause)).to eq([record])
+        allow(Record).to receive(:request_async).with(clause, options).and_return(future_record)
+        expect(Record.request(clause, options)).to eq([record])
       end
 
       context 'when paginating' do
-        let(:clause) { { page_size: 3 } }
+        let(:options) { { page_size: 3 } }
 
         it 'should just forward the result' do
-          allow(Record).to receive(:request_async).with(clause).and_return(future_record)
-          expect(Record.request(clause)).to eq(future_record)
+          allow(Record).to receive(:request_async).with(clause, options).and_return(future_record)
+          expect(Record.request(clause, options)).to eq(future_record)
         end
       end
     end
 
     describe '.first' do
       let(:clause) { {} }
+      let(:options) { { select: :partition } }
       let(:record) { double(:record) }
       let(:future_record) { MockFuture.new(record) }
 
       it 'should resolve the future provided by first_async' do
-        allow(Record).to receive(:first_async).with(clause).and_return(future_record)
-        expect(Record.first(clause)).to eq(record)
+        allow(Record).to receive(:first_async).with(clause, options).and_return(future_record)
+        expect(Record.first(clause, options)).to eq(record)
       end
 
       it 'should default the request clause to {}' do
-        expect(Record).to receive(:first_async).with({}).and_return(future_record)
+        expect(Record).to receive(:first_async).with({}, {}).and_return(future_record)
         Record.first
       end
     end

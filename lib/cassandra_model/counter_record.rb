@@ -55,8 +55,8 @@ module CassandraModel
         @counter_columns ||=  columns - (partition_key + clustering_columns)
       end
 
-      def request_async(clause)
-        super(clause.merge(select: counter_columns))
+      def request_async(clause, options = {})
+        super(clause, options.merge(select: counter_columns))
       end
     end
   end

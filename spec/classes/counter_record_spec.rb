@@ -77,6 +77,13 @@ module CassandraModel
         end
       end
 
+      context 'when options are provided' do
+        it 'should pass the options to the underlying request' do
+          expect(Record).to receive(:request_async).with({}, hash_including(limit: 10))
+          CounterRecord.request_async({}, limit: 10)
+        end
+      end
+
       context 'with different restrictions' do
         let(:where_clause) { ' WHERE partition = ? AND cluster = ?' }
         let(:restriction) { ['Partition Key', 'Cluster Key'] }

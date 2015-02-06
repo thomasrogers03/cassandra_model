@@ -110,10 +110,10 @@ module CassandraModel
         create_async(attributes).get
       end
 
-      def request_async(clause)
-        select_clause, use_query_result = select_params(clause)
-        page_size = clause.delete(:page_size)
-        limit_clause = limit_clause(clause)
+      def request_async(clause, options = {})
+        select_clause, use_query_result = select_params(options)
+        page_size = options[:page_size]
+        limit_clause = limit_clause(options)
         where_clause, where_values = where_params(clause)
         statement = statement("SELECT #{select_clause} FROM #{table_name}#{where_clause}#{limit_clause}")
 
@@ -126,18 +126,18 @@ module CassandraModel
         end
       end
 
-      def first_async(clause = {})
-        ThomasUtils::FutureWrapper.new(request_async(clause.merge(limit: 1))) { |results| results.first }
+      def first_async(clause = {}, options = {})
+        ThomasUtils::FutureWrapper.new(request_async(clause, options.merge(limit: 1))) { |results| results.first }
       end
 
-      def request(clause)
-        page_size = clause[:page_size]
-        future = request_async(clause)
+      def request(clause, options = {})
+        page_size = options[:page_size]
+        future = request_async(clause, options)
         page_size ? future : future.get
       end
 
-      def first(clause = {})
-        first_async(clause).get
+      def first(clause = {}, options = {})
+        first_async(clause, options).get
       end
 
       def paginate(*args)
@@ -156,8 +156,8 @@ module CassandraModel
         define_method(column.to_sym) { self.attributes[column] }
       end
 
-      def limit_clause(clause)
-        limit = clause.delete(:limit)
+      def limit_clause(options)
+        limit = options[:limit]
         if limit
           integer_limit = limit.to_i
           raise "Invalid limit '#{limit}'" if integer_limit < 1
@@ -165,8 +165,8 @@ module CassandraModel
         end
       end
 
-      def select_params(clause)
-        select = clause.delete(:select)
+      def select_params(options)
+        select = options[:select]
         [select_clause(select), !!select]
       end
 
