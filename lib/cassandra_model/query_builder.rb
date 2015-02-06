@@ -1,0 +1,37 @@
+class QueryBuilder
+
+  def initialize(record_klass)
+    @record_klass = record_klass
+    @params = {}
+    @options = {}
+  end
+
+  def async
+    @record_klass.request_async(@params, @options)
+  end
+
+  def get
+    @record_klass.request(@params, @options)
+  end
+
+  def where(params)
+    @params.merge!(params)
+    self
+  end
+
+  def select(*columns)
+    @options[:select] ||= []
+    @options[:select].concat(columns)
+    self
+  end
+
+  def limit(limit)
+    @options[:limit] = limit
+    self
+  end
+
+  def paginate(page_size)
+    @options[:page_size] = page_size
+    self
+  end
+end
