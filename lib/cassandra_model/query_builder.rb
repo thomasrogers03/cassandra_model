@@ -1,4 +1,6 @@
 class QueryBuilder
+  include Enumerable
+  extend Forwardable
 
   def initialize(record_klass)
     @record_klass = record_klass
@@ -12,6 +14,18 @@ class QueryBuilder
 
   def get
     @record_klass.request(@params, @options)
+  end
+
+  def first_async
+    @record_klass.first_async(@params, @options)
+  end
+
+  def first
+    @record_klass.first(@params, @options)
+  end
+
+  def each(&block)
+    get.each(&block)
   end
 
   def where(params)

@@ -1,9 +1,12 @@
 require 'rspec'
 
 describe QueryBuilder do
-  let(:record) { double(:record, request_async: nil, request: nil) }
+  let(:results) { %w(results) }
+  let(:record) { double(:record, request_async: nil, request: results) }
 
   subject { QueryBuilder.new(record) }
+
+  it { is_expected.to be_a_kind_of(Enumerable) }
 
   shared_examples_for 'a method returning the builder' do |method|
     it 'should return itself' do
@@ -22,6 +25,34 @@ describe QueryBuilder do
     it 'should execute the built query' do
       expect(record).to receive(:request).with({}, {})
       subject.get
+    end
+  end
+
+  describe '#first_async' do
+    it 'should execute the built query' do
+      expect(record).to receive(:first_async).with({}, {})
+      subject.first_async
+    end
+  end
+
+  describe '#first' do
+    it 'should execute the built query' do
+      expect(record).to receive(:first).with({}, {})
+      subject.first
+    end
+  end
+
+  describe '#each' do
+    it 'should pass the block to the result of the query' do
+      results = nil
+      subject.each { |row| results = row }
+      expect(results).to eq('results')
+    end
+
+    context 'when no block provided' do
+      it 'should return an enumerator' do
+        expect(subject.each).to be_a_kind_of(Enumerator)
+      end
     end
   end
 
@@ -44,6 +75,8 @@ describe QueryBuilder do
 
     it_behaves_like 'a where query', :request_async, :async
     it_behaves_like 'a where query', :request, :get
+    it_behaves_like 'a where query', :first_async, :first_async
+    it_behaves_like 'a where query', :first, :first
   end
 
   shared_examples_for 'an option query' do |method, option, request_method, query_method|
@@ -65,6 +98,8 @@ describe QueryBuilder do
 
     it_behaves_like 'an option query', :select, :select, :request_async, :async
     it_behaves_like 'an option query', :select, :select, :request, :get
+    it_behaves_like 'an option query', :select, :select, :first_async, :first_async
+    it_behaves_like 'an option query', :select, :select, :first, :first
 
     it 'should be able to chain selects asynchronously' do
       expect(record).to receive(:request_async).with({}, select: params)
