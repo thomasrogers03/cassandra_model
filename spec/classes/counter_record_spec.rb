@@ -51,7 +51,7 @@ module CassandraModel
       end
     end
 
-    describe '.where_async' do
+    describe '.request_async' do
       let(:attributes) { {cluster: 6} }
       let(:results) { MockFuture.new([attributes]) }
       let(:query_result) { [QueryResult.new(attributes)] }
@@ -66,14 +66,14 @@ module CassandraModel
       end
 
       it 'should select only the counter columns' do
-        expect(CounterRecord.where_async({}).get).to eq(query_result)
+        expect(CounterRecord.request_async({}).get).to eq(query_result)
       end
 
       context 'with different counter columns' do
         let(:counter_columns) { [:different_counter, :extra_counter] }
 
         it 'should select only the counter columns' do
-          expect(CounterRecord.where_async({}).get).to eq(query_result)
+          expect(CounterRecord.request_async({}).get).to eq(query_result)
         end
       end
 
@@ -82,7 +82,7 @@ module CassandraModel
         let(:restriction) { ['Partition Key', 'Cluster Key'] }
 
         it 'should select only the counter columns for the queried keys' do
-          expect(CounterRecord.where_async(partition: 'Partition Key', cluster: 'Cluster Key').get).to eq(query_result)
+          expect(CounterRecord.request_async(partition: 'Partition Key', cluster: 'Cluster Key').get).to eq(query_result)
         end
       end
     end

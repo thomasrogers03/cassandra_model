@@ -110,7 +110,7 @@ module CassandraModel
         create_async(attributes).get
       end
 
-      def where_async(clause)
+      def request_async(clause)
         select_clause, use_query_result = select_params(clause)
         page_size = clause.delete(:page_size)
         limit_clause = limit_clause(clause)
@@ -127,12 +127,12 @@ module CassandraModel
       end
 
       def first_async(clause = {})
-        ThomasUtils::FutureWrapper.new(where_async(clause.merge(limit: 1))) { |results| results.first }
+        ThomasUtils::FutureWrapper.new(request_async(clause.merge(limit: 1))) { |results| results.first }
       end
 
-      def where(clause)
+      def request(clause)
         page_size = clause[:page_size]
-        future = where_async(clause)
+        future = request_async(clause)
         page_size ? future : future.get
       end
 
