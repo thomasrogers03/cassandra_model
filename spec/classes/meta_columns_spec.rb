@@ -14,7 +14,17 @@ module CassandraModel
       end
 
       def self.reset!
-        @deferred_column_readers = nil
+        @deferred_column_writers = nil
+        @async_deferred_column_readers = nil
+        @async_deferred_column_writers = nil
+      end
+
+      def save
+        MockRecord.after_save(self)
+      end
+
+      def save_async
+        MockRecord.after_save_async(self)
       end
     end
 
@@ -24,6 +34,11 @@ module CassandraModel
 
     shared_examples_for 'a record defining meta columns' do
       let(:on_load) { ->(attributes) { "#{attributes[:partition]} World" } }
+      let(:on_load_async) do
+        ->(attributes) do
+          MockFuture.new("#{attributes[:partition]} World")
+        end
+      end
       let(:attributes) { { partition: 'Hello' } }
 
       shared_examples_for 'a method defining meta columns' do |method|
@@ -39,16 +54,6 @@ module CassandraModel
             record = subject.new(attributes)
             record.data = 'Goodbye World'
             expect(record.data).to eq('Goodbye World')
-          end
-
-          it 'should only call the block once' do
-            on_load = double(:proc, call: nil)
-            subject.send(method, :data, on_load: on_load)
-            record = subject.new(attributes)
-
-            record.data
-            expect(on_load).not_to receive(:call)
-            record.data
           end
 
           it 'should define a method to save a deferred column based on the record attributes' do
@@ -72,14 +77,22 @@ module CassandraModel
         end
       end
 
-      it_behaves_like 'a method defining meta columns', :deferred_column
+      context 'with synchronous deferred columns' do
+        it_behaves_like 'a method defining meta columns', :deferred_column
+
+        it 'should only call the block once' do
+          on_load = double(:proc, call: nil)
+          subject.deferred_column(:data, on_load: on_load)
+          record = subject.new(attributes)
+
+          record.data
+          expect(on_load).not_to receive(:call)
+          record.data
+        end
+      end
 
       context 'with a asynchronous deferred columns' do
-        let(:on_load) do
-          ->(attributes) do
-            MockFuture.new("#{attributes[:partition]} World")
-          end
-        end
+        let(:on_load) { on_load_async }
         it_behaves_like 'a method defining meta columns', :async_deferred_column
 
         it 'should immediately begin loading the deferred column on post-initialization' do
@@ -89,6 +102,39 @@ module CassandraModel
           record = subject.new(attributes)
           expect(on_load).not_to receive(:call)
           record.data
+        end
+      end
+
+      describe '#save' do
+        context 'with synchronous deferred columns' do
+          it 'should save the deferred columns' do
+            on_save = double(:proc)
+            subject.deferred_column(:data, on_load: on_load, on_save: on_save)
+            expect(on_save).to receive(:call).with(attributes, 'Hello World')
+            subject.new(attributes).save
+          end
+        end
+
+        context 'with asynchronous deferred columns' do
+          let(:on_load) { on_load_async }
+          let(:future) { MockFuture.new('OK') }
+
+          it 'should save the deferred columns' do
+            on_save = double(:proc, call: future)
+            subject.async_deferred_column(:data, on_load: on_load, on_save: on_save)
+            expect(subject.new(attributes).save).to eq(%w(OK))
+          end
+        end
+      end
+
+      describe '#save_async' do
+        let(:on_load) { on_load_async }
+        let(:future) { MockFuture.new('OK') }
+
+        it 'should save the deferred columns' do
+          on_save = double(:proc, call: future)
+          subject.async_deferred_column(:data, on_load: on_load, on_save: on_save)
+          expect(subject.new(attributes).save_async.map(&:get)).to eq(%w(OK))
         end
       end
 
