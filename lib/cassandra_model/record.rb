@@ -1,8 +1,10 @@
 require_relative 'connection'
+require_relative 'query_helper'
 
 module CassandraModel
   class Record
     extend CassandraModel::Connection
+    extend CassandraModel::QueryHelper
 
     attr_reader :attributes
 
@@ -138,15 +140,6 @@ module CassandraModel
 
       def first(clause = {}, options = {})
         first_async(clause, options).get
-      end
-
-      def paginate(*args)
-        page = connection.execute(*args)
-        while page
-          yield page
-          break if page.last_page?
-          page = page.next_page
-        end
       end
 
       private

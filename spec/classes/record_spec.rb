@@ -39,6 +39,11 @@ module CassandraModel
 
     it_behaves_like 'a model with a connection', Record
 
+    context 'when mixing in query methods' do
+      subject { Record }
+      it_behaves_like 'a query helper'
+    end
+
     shared_examples_for 'a set of columns' do |method|
       let(:column) { double(:column, name: 'partition') }
       let(:table) { double(:table, method => [column]) }
@@ -143,40 +148,6 @@ module CassandraModel
         it 'should map it to the cql definition' do
           Record.primary_key = [:partition, :cluster]
           expect(Record.primary_key).to eq([[:partition], :cluster])
-        end
-      end
-    end
-
-    describe '.paginate' do
-      let(:next_page) { nil }
-      let(:last_page) { true }
-      let(:result) { double(:result, :last_page? => last_page, next_page: next_page) }
-      let(:connection) { double(:connection) }
-      let(:query) { 'SELECT * FROM everything' }
-
-      before do
-        allow(Record).to receive(:connection).and_return(connection)
-        allow(connection).to receive(:execute).with(query, page_size: 10).and_return(result)
-      end
-
-      it 'should yield the result of a query' do
-        expect { |b| Record.paginate(query, {page_size: 10}, &b) }.to yield_with_args(result)
-      end
-
-      context 'with multiple pages' do
-        let(:last_page) { false }
-        let(:next_page) do
-          page = double(:result, last_page?: true)
-          allow(page).to receive(:next_page) { raise 'Cannot load next_page on last page' }
-          page
-        end
-
-        it 'should yield all the results' do
-          found_page = false
-          Record.paginate(query, page_size: 10) do |page|
-            found_page = page == next_page
-          end
-          expect(found_page).to eq(true)
         end
       end
     end
