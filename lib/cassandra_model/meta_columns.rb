@@ -7,6 +7,12 @@ module CassandraModel
       create_save_method(name, options)
     end
 
+    def async_deferred_column(name, options)
+      name = name.to_sym
+      async_create_attr_accessor(name, options)
+      create_save_method(name, options)
+    end
+
     private
 
     def create_save_method(name, options)
@@ -18,10 +24,15 @@ module CassandraModel
 
     def create_attr_accessor(name, options)
       create_attr_reader(name, options)
-      create_attr_write(name)
+      create_attr_writer(name)
     end
 
-    def create_attr_write(name)
+    def async_create_attr_accessor(name, options)
+      async_create_attr_reader(name, options)
+      create_attr_writer(name)
+    end
+
+    def create_attr_writer(name)
       define_method(:"#{name}=") do |value|
         @attributes[name] = value
       end
@@ -35,6 +46,21 @@ module CassandraModel
           @attributes[name]
         else
           @attributes[name] = on_load.call(@attributes)
+        end
+      end
+    end
+
+    def async_create_attr_reader(name, options)
+      on_load = options[:on_load]
+      raise 'No on_load method provided' unless on_load
+      define_method(name) do
+        if @attributes.include?(name)
+          @attributes[name]
+        else
+          future = on_load.call(@attributes)
+          @attributes[name] = if future
+                                future.get
+                              end
         end
       end
     end
