@@ -10,6 +10,11 @@ module CassandraModel
         @partition_key = nil
         @clustering_columns = nil
         @columns = nil
+
+        @deferred_column_writers = nil
+        @async_deferred_column_readers = nil
+        @async_deferred_column_writers = nil
+
         Connection.reset!
       end
 
@@ -42,6 +47,7 @@ module CassandraModel
     context 'when mixing in query methods' do
       subject { Record }
       it_behaves_like 'a query helper'
+      it_behaves_like 'a record defining meta columns'
     end
 
     shared_examples_for 'a set of columns' do |method|

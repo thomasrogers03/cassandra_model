@@ -1,16 +1,19 @@
 require_relative 'connection'
 require_relative 'query_helper'
+require_relative 'meta_columns'
 
 module CassandraModel
   class Record
     extend CassandraModel::Connection
     extend CassandraModel::QueryHelper
+    extend CassandraModel::MetaColumns
 
     attr_reader :attributes
 
     def initialize(attributes)
       attributes.keys.each { |column| raise "Invalid column '#{column}' specified" unless columns.include?(column) }
       @attributes = attributes
+      self.class.after_initialize(self)
     end
 
     def save_async
