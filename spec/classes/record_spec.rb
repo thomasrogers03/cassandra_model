@@ -131,27 +131,6 @@ module CassandraModel
       end
     end
 
-    describe '.primary_key=' do
-      it 'should set the primary key for the given column-family in cql style' do
-        Record.primary_key = [[:partition], :cluster]
-        expect(Record.primary_key).to eq([[:partition], :cluster])
-      end
-
-      context 'when only the partition key is specified' do
-        it 'should map a single value to the cql definition' do
-          Record.primary_key = :partition
-          expect(Record.primary_key).to eq([[:partition]])
-        end
-      end
-
-      context 'when the partition key is specified with a single clustering key' do
-        it 'should map it to the cql definition' do
-          Record.primary_key = [:partition, :cluster]
-          expect(Record.primary_key).to eq([[:partition], :cluster])
-        end
-      end
-    end
-
     describe '.statement' do
       let(:query) { 'SELECT * FROM everything' }
       let(:statement) { double(:statement) }
@@ -279,7 +258,6 @@ module CassandraModel
 
       before do
         Record.table_name = table_name
-        Record.primary_key = [[:partition], :cluster, :time_stamp]
         Record.columns = [:partition, :cluster, :time_stamp]
         allow(Record).to receive(:statement).with(query).and_return(statement)
         allow(connection).to receive(:execute_async).and_return(results)

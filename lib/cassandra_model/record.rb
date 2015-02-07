@@ -63,20 +63,6 @@ module CassandraModel
         @table_name ||= self.name.demodulize.underscore.pluralize
       end
 
-      def primary_key=(values)
-        if values.is_a?(Array)
-          partition_key = values.shift
-          partition_key = [partition_key] unless partition_key.is_a?(Array)
-          @primary_key = [partition_key, *values]
-        else
-          @primary_key = [[values]]
-        end
-      end
-
-      def primary_key
-        @primary_key
-      end
-
       def partition_key
         @partition_key ||= keyspace.table(table_name.to_s).send(:partition_key).map { |column| column.name.to_sym }
       end
