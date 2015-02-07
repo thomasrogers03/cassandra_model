@@ -6,19 +6,28 @@ module CassandraModel
     class MockRecord
       extend MetaColumns
 
+      attr_reader :attributes
+
       def initialize(attributes)
         @attributes = attributes
+        MockRecord.after_initialize(self)
+      end
+
+      def self.reset!
+        @deferred_column_readers = nil
       end
     end
 
     subject { MockRecord }
 
+    before { MockRecord.reset! }
+
     shared_examples_for 'a record defining meta columns' do
       let(:on_load) { ->(attributes) { "#{attributes[:partition]} World" } }
+      let(:attributes) { { partition: 'Hello' } }
 
       shared_examples_for 'a method defining meta columns' do |method|
         describe ".#{method}" do
-          let(:attributes) { { partition: 'Hello' } }
 
           it 'should define a method to load a deferred column based on the record attributes' do
             subject.send(method, :data, on_load: on_load)
@@ -72,6 +81,15 @@ module CassandraModel
           end
         end
         it_behaves_like 'a method defining meta columns', :async_deferred_column
+
+        it 'should immediately begin loading the deferred column on post-initialization' do
+          on_load = double(:proc, call: nil)
+          subject.async_deferred_column(:data, on_load: on_load)
+
+          record = subject.new(attributes)
+          expect(on_load).not_to receive(:call)
+          record.data
+        end
       end
 
     end

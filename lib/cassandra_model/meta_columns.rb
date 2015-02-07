@@ -3,6 +3,7 @@ module CassandraModel
 
     def deferred_column(name, options)
       name = name.to_sym
+
       create_attr_accessor(name, options)
       create_save_method(name, options)
     end
@@ -11,6 +12,15 @@ module CassandraModel
       name = name.to_sym
       async_create_attr_accessor(name, options)
       create_save_method(name, options)
+    end
+
+    def after_initialize(record)
+      futures = if @deferred_column_readers
+                  @deferred_column_readers.inject({}) do |memo, (column, callback)|
+                    memo.merge!(column => callback.call(record.attributes))
+                  end
+                end
+      record.instance_variable_set(:@deferred_futures, futures)
     end
 
     private
@@ -41,6 +51,7 @@ module CassandraModel
     def create_attr_reader(name, options)
       on_load = options[:on_load]
       raise 'No on_load method provided' unless on_load
+
       define_method(name) do
         if @attributes.include?(name)
           @attributes[name]
@@ -53,16 +64,21 @@ module CassandraModel
     def async_create_attr_reader(name, options)
       on_load = options[:on_load]
       raise 'No on_load method provided' unless on_load
+
+      @deferred_column_readers ||= {}
+      @deferred_column_readers[name] = on_load
+
       define_method(name) do
         if @attributes.include?(name)
           @attributes[name]
         else
-          future = on_load.call(@attributes)
+          future = @deferred_futures[name]
           @attributes[name] = if future
                                 future.get
                               end
         end
       end
     end
+
   end
 end
