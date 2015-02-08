@@ -103,10 +103,14 @@ module CassandraModel
 
       def request_async(clause, options = {})
         select_clause, use_query_result = select_params(options)
+        order_by = options[:order_by]
+        order_by_clause = if order_by
+                            " ORDER BY #{multi_csv_clause(order_by)}"
+                          end
         page_size = options[:page_size]
         limit_clause = limit_clause(options)
         where_clause, where_values = where_params(clause)
-        statement = statement("SELECT #{select_clause} FROM #{table_name}#{where_clause}#{limit_clause}")
+        statement = statement("SELECT #{select_clause} FROM #{table_name}#{where_clause}#{limit_clause}#{order_by_clause}")
 
         if page_size
           future = connection.execute_async(statement, *where_values, page_size: page_size)
@@ -153,10 +157,10 @@ module CassandraModel
       end
 
       def select_clause(select)
-        select ? multi_select_clause(select) : '*'
+        select ? multi_csv_clause(select) : '*'
       end
 
-      def multi_select_clause(select)
+      def multi_csv_clause(select)
         select.is_a?(Array) ? select.join(', ') : select
       end
 

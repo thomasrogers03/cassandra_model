@@ -92,27 +92,33 @@ module CassandraModel
       end
     end
 
-    describe '#select' do
-      let(:params) { [:partition, :cluster] }
+    shared_examples_for 'a comma separated option' do |method, option|
+      describe "##{method}" do
+        let(:params) { [:partition, :cluster] }
 
-      it_behaves_like 'a method returning the builder', :select
+        it_behaves_like 'a method returning the builder', method
 
-      it_behaves_like 'an option query', :select, :select, :request_async, :async
-      it_behaves_like 'an option query', :select, :select, :request, :get
-      it_behaves_like 'an option query', :select, :select, :first_async, :first_async
-      it_behaves_like 'an option query', :select, :select, :first, :first
+        it_behaves_like 'an option query', method, option, :request_async, :async
+        it_behaves_like 'an option query', method, option, :request, :get
+        it_behaves_like 'an option query', method, option, :first_async, :first_async
+        it_behaves_like 'an option query', method, option, :first, :first
 
-      it 'should be able to chain selects asynchronously' do
-        expect(record).to receive(:request_async).with({}, select: params)
-        subject.select(params[0]).select(params[1]).async
-      end
+        it "should be able to chain #{method}s asynchronously" do
+          expect(record).to receive(:request_async).with({}, option => params)
+          subject.send(method, params[0]).send(method, params[1]).async
+        end
 
-      it 'should be able to chain selects immediately' do
-        expect(record).to receive(:request).with({}, select: params)
-        subject.select(params[0]).select(params[1]).get
+        it "should be able to chain #{method}s immediately" do
+          expect(record).to receive(:request).with({}, option => params)
+          subject.send(method, params[0]).send(method, params[1]).get
+        end
+
       end
 
     end
+
+    it_behaves_like 'a comma separated option', :select, :select
+    it_behaves_like 'a comma separated option', :order, :order_by
 
     describe '#limit' do
       let(:params) { 100 }

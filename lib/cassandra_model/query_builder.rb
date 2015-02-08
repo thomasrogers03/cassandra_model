@@ -40,6 +40,12 @@ module CassandraModel
       self
     end
 
+    def order(*columns)
+      @options[:order_by] ||= []
+      @options[:order_by].concat(columns)
+      self
+    end
+
     def limit(limit)
       @options[:limit] = limit
       self

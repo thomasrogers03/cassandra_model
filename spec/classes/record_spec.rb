@@ -229,7 +229,7 @@ module CassandraModel
     end
 
     describe '.create_async' do
-      let(:attributes) { { partition: 'Partition Key' } }
+      let(:attributes) { {partition: 'Partition Key'} }
       let(:klass) { Record }
       let(:record) { klass.new(attributes) }
       let(:future_record) { MockFuture.new(record) }
@@ -257,7 +257,8 @@ module CassandraModel
       let(:where_clause) { nil }
       let(:table_name) { :table }
       let(:select_clause) { '*' }
-      let(:query) { "SELECT #{select_clause} FROM #{table_name}#{where_clause}" }
+      let(:order_clause) { nil }
+      let(:query) { "SELECT #{select_clause} FROM #{table_name}#{where_clause}#{order_clause}" }
       let(:statement) { double(:statement) }
       let(:results) { MockFuture.new(['partition' => 'Partition Key']) }
       let(:record) { Record.new(partition: 'Partition Key') }
@@ -274,7 +275,7 @@ module CassandraModel
       end
 
       context 'when restricting by multiple values' do
-        let(:clause) { { partition: ['Partition Key', 'Other Partition Key'] } }
+        let(:clause) { {partition: ['Partition Key', 'Other Partition Key']} }
         let(:where_clause) { ' WHERE partition IN (?, ?)' }
         let(:results) { MockFuture.new([{'partition' => 'Partition Key'}, {'partition' => 'Other Partition Key'}]) }
 
@@ -285,7 +286,7 @@ module CassandraModel
       end
 
       context 'when selecting a subset of columns' do
-        let(:clause) { { select: :partition} }
+        let(:clause) { {select: :partition} }
         let(:select_clause) { :partition }
 
         it 'should return a QueryResult instead of a record' do
@@ -293,13 +294,45 @@ module CassandraModel
         end
 
         context 'with multiple columns selected' do
-          let(:clause) { { select: [:partition, :cluster]} }
+          let(:clause) { {select: [:partition, :cluster]} }
           let(:select_clause) { %w(partition cluster).join(', ') }
           let(:results) { MockFuture.new([{'partition' => 'Partition Key', cluster: 'Cluster Key'}]) }
           let(:record) { QueryResult.new(partition: 'Partition Key', cluster: 'Cluster Key') }
 
           it 'should select all the specified columns' do
             expect(Record.request_async({}, clause).get.first).to eq(record)
+          end
+        end
+      end
+
+      context 'when ordering by a subset of columns' do
+        let(:clause) { {order_by: :cluster} }
+        let(:order_clause) { ' ORDER BY cluster' }
+        let(:results) do
+          MockFuture.new([
+                             {'partition' => 'Partition Key', cluster: 'Cluster Key', cluster: 'Other Cluster Key'},
+                             {'partition' => 'Partition Key', cluster: 'Cluster Key 2', cluster: 'Other Cluster Key'},
+                             {'partition' => 'Partition Key', cluster: 'Cluster Key 2', cluster: 'Other Cluster Key 2'}
+                         ])
+        end
+        let(:record_one) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key', cluster: 'Other Cluster Key') }
+        let(:record_two) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key 2', cluster: 'Other Cluster Key') }
+        let(:record_three) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key 2', cluster: 'Other Cluster Key 2') }
+
+        before do
+          Record.columns = [:partition, :cluster, :other_cluster]
+        end
+
+        it 'should order the results by the specified column' do
+          expect(Record.request_async({}, clause).get).to eq([record_one, record_two, record_three])
+        end
+
+        context 'with multiple columns selected' do
+          let(:clause) { {order_by: [:cluster, :other_cluster]} }
+          let(:order_clause) { ' ORDER BY cluster, other_cluster' }
+
+          it 'should order by all the specified columns' do
+            expect(Record.request_async({}, clause).get).to eq([record_one, record_two, record_three])
           end
         end
       end
@@ -390,7 +423,7 @@ module CassandraModel
 
     describe '.first_async' do
       let(:clause) { {partition: 'Partition Key'} }
-      let(:options) { { select: :partition } }
+      let(:options) { {select: :partition} }
       let(:record) { Record.new(partition: 'Partition Key') }
       let(:future_record) { MockFuture.new([record]) }
 
@@ -406,7 +439,7 @@ module CassandraModel
     end
 
     describe '.create' do
-      let(:attributes) { { partition: 'Partition Key' } }
+      let(:attributes) { {partition: 'Partition Key'} }
       let(:record) { Record.new(attributes) }
       let(:future_record) { MockFuture.new(record) }
 
@@ -421,7 +454,7 @@ module CassandraModel
 
     describe '.request' do
       let(:clause) { {} }
-      let(:options) { { limit: 1 } }
+      let(:options) { {limit: 1} }
       let(:record) { Record.new(partition: 'Partition Key') }
       let(:future_record) { MockFuture.new([record]) }
 
@@ -431,7 +464,7 @@ module CassandraModel
       end
 
       context 'when paginating' do
-        let(:options) { { page_size: 3 } }
+        let(:options) { {page_size: 3} }
 
         it 'should just forward the result' do
           allow(Record).to receive(:request_async).with(clause, options).and_return(future_record)
@@ -442,7 +475,7 @@ module CassandraModel
 
     describe '.first' do
       let(:clause) { {} }
-      let(:options) { { select: :partition } }
+      let(:options) { {select: :partition} }
       let(:record) { double(:record) }
       let(:future_record) { MockFuture.new(record) }
 
@@ -474,7 +507,7 @@ module CassandraModel
 
     describe '#save_async' do
       let(:columns) { [:partition] }
-      let(:attributes) { { partition: 'Partition Key' } }
+      let(:attributes) { {partition: 'Partition Key'} }
       let(:query) { "INSERT INTO table (#{columns.join(', ')}) VALUES (#{(%w(?) * columns.size).join(', ')})" }
       let(:statement) { double(:statement) }
       let(:results) { MockFuture.new([]) }
@@ -498,7 +531,7 @@ module CassandraModel
 
       context 'with different columns' do
         let(:columns) { [:partition, :cluster] }
-        let(:attributes) { { partition: 'Partition Key', cluster: 'Cluster Key' } }
+        let(:attributes) { {partition: 'Partition Key', cluster: 'Cluster Key'} }
 
         it 'should save the record to the database using the specified attributes' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key').and_return(results)
@@ -508,7 +541,7 @@ module CassandraModel
     end
 
     describe '#save' do
-      let(:attributes) { { partition: 'Partition Key' } }
+      let(:attributes) { {partition: 'Partition Key'} }
       let(:record) { Record.new(attributes) }
       let(:record_future) { MockFuture.new(record) }
 
@@ -526,9 +559,9 @@ module CassandraModel
     describe '#delete_async' do
       let(:partition_key) { [:partition] }
       let(:clustering_columns) { [:cluster] }
-      let(:attributes) { { partition: 'Partition Key', cluster: 'Cluster Key' } }
+      let(:attributes) { {partition: 'Partition Key', cluster: 'Cluster Key'} }
       let(:table_name) { :table }
-      let(:where_clause) { (partition_key + clustering_columns).map{ |column| "#{column} = ?" }.join(' AND ') }
+      let(:where_clause) { (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ') }
       let(:query) { "DELETE FROM #{table_name} WHERE #{where_clause}" }
       let(:statement) { double(:statement) }
       let(:results) { MockFuture.new([]) }
@@ -548,7 +581,7 @@ module CassandraModel
       end
 
       context 'with different attributes' do
-        let(:attributes) { { partition: 'Different Partition Key', cluster: 'Different Cluster Key' } }
+        let(:attributes) { {partition: 'Different Partition Key', cluster: 'Different Cluster Key'} }
 
         it 'should delete the record from the database' do
           expect(connection).to receive(:execute_async).with(statement, 'Different Partition Key', 'Different Cluster Key')
@@ -568,7 +601,7 @@ module CassandraModel
       context 'with different partition and clustering keys' do
         let(:partition_key) { [:different_partition] }
         let(:clustering_columns) { [:different_cluster] }
-        let(:attributes) { { different_partition: 'Partition Key', different_cluster: 'Cluster Key' } }
+        let(:attributes) { {different_partition: 'Partition Key', different_cluster: 'Cluster Key'} }
 
         it 'should delete the record from the database' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key')
@@ -578,7 +611,7 @@ module CassandraModel
     end
 
     describe '#delete' do
-      let(:attributes) { { partition: 'Partition Key' } }
+      let(:attributes) { {partition: 'Partition Key'} }
       let(:record) { Record.new(attributes) }
       let(:record_future) { MockFuture.new(record) }
 
