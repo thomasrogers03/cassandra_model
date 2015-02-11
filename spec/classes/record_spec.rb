@@ -279,6 +279,16 @@ module CassandraModel
         expect(Record.request_async(clause).get.first).to eq(record)
       end
 
+      context 'when the restriction key is a KeyComparer' do
+        let(:clause) { {:partition.gt => 'Partition Key'} }
+        let(:where_clause) { ' WHERE partition > ?' }
+
+        it 'should query using the specified comparer' do
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key').and_return(results)
+          Record.request_async(clause)
+        end
+      end
+
       context 'when restricting by multiple values' do
         let(:clause) { {partition: ['Partition Key', 'Other Partition Key']} }
         let(:where_clause) { ' WHERE partition IN (?, ?)' }

@@ -179,7 +179,11 @@ module CassandraModel
 
       def where_clause(clause)
         restriction = clause.map do |key, value|
-          value.is_a?(Array) ? multi_value_restriction(key, value) : single_value_restriction(key)
+          if key.is_a?(ThomasUtils::KeyComparer)
+            "#{key} ?"
+          else
+            value.is_a?(Array) ? multi_value_restriction(key, value) : single_value_restriction(key)
+          end
         end.join(' AND ')
         " WHERE #{restriction}"
       end
