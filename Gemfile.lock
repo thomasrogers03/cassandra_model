@@ -4,13 +4,13 @@ PATH
     cassandra_model (0.2.4)
       activesupport (>= 4.0)
       cassandra-driver (~> 1.1)
-      thomas_utils (>= 0.1.3)
+      thomas_utils (>= 0.1.4)
 
 GIT
   remote: https://github.com/thomasrogers03/thomas_utils.git
-  revision: 3f1e8904d0cae29cb20b889d2d4a17d1f46805da
+  revision: 084d19950f61fad751f2467fa4b767c31f8a2a08
   specs:
-    thomas_utils (0.1.3)
+    thomas_utils (0.1.4)
 
 GEM
   remote: http://rubygems.org/
@@ -27,6 +27,7 @@ GEM
       timers (~> 4.0.0)
     coderay (1.1.0)
     diff-lcs (1.2.5)
+    ffi (1.9.6)
     ffi (1.9.6-x64-mingw32)
     formatador (0.2.5)
     guard (2.11.1)
@@ -58,6 +59,10 @@ GEM
     notiffany (0.0.3)
       nenv (~> 0.1)
       shellany (~> 0.0)
+    pry (0.10.1)
+      coderay (~> 1.1.0)
+      method_source (~> 0.8.1)
+      slop (~> 3.4)
     pry (0.10.1-x64-mingw32)
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
@@ -97,4 +102,4 @@ DEPENDENCIES
   cassandra_model!
   guard-rspec
   rspec
-  thomas_utils!
+  thomas_utils (~> 0.1.4)!
