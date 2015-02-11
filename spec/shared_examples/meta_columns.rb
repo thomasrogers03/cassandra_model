@@ -72,39 +72,40 @@ module CassandraModel
       end
     end
 
-    describe '.after_save' do
+    describe '.save_deferred_columns' do
       context 'with synchronous deferred columns' do
         it 'should save the deferred columns' do
           on_save = double(:proc)
           subject.deferred_column(:data, on_load: on_load, on_save: on_save)
           expect(on_save).to receive(:call).with(attributes, 'Hello World')
           record = subject.new(attributes)
-          subject.after_save(record)
+          subject.save_deferred_columns(record)
         end
-      end
 
-      context 'with asynchronous deferred columns' do
-        let(:on_load) { on_load_async }
-        let(:future) { MockFuture.new('OK') }
-
-        it 'should save the deferred columns' do
-          on_save = double(:proc, call: future)
-          subject.async_deferred_column(:data, on_load: on_load, on_save: on_save)
-          record = subject.new(attributes)
-          expect(subject.after_save(record)).to include('OK')
+        it 'should be called by #save_async' do
+          expect(subject).to receive(:save_deferred_columns)
+          subject.new(attributes).save_async
         end
       end
     end
 
-    describe '.after_save_async' do
+    describe '.save_async_deferred_columns' do
       let(:on_load) { on_load_async }
       let(:future) { MockFuture.new('OK') }
 
-      it 'should save the deferred columns' do
+      it 'should save the async deferred columns' do
         on_save = double(:proc, call: future)
         subject.async_deferred_column(:data, on_load: on_load, on_save: on_save)
         record = subject.new(attributes)
-        expect(subject.after_save_async(record).map(&:get)).to include('OK')
+        expect(subject.save_async_deferred_columns(record).map(&:get)).to include('OK')
+      end
+
+      it 'should be resolve by #save_async' do
+        future = double(:future)
+        record = subject.new(attributes)
+        allow(subject).to receive(:save_async_deferred_columns).with(record).and_return([future])
+        expect(future).to receive(:get)
+        record.save_async
       end
     end
 

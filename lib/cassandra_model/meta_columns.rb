@@ -23,23 +23,22 @@ module CassandraModel
       record.instance_variable_set(:@deferred_futures, futures)
     end
 
-    def after_save(record)
-      save_deferred_columns(record) if @deferred_column_writers
-      save_async_deferred_columns(record)
+    def save_deferred_columns(record)
+      do_save_deferred_columns(record) if @deferred_column_writers
     end
 
-    def after_save_async(record)
-      @async_deferred_column_writers.map { |column, callback| callback.call(record.attributes, record.send(column)) }
+    def save_async_deferred_columns(record)
+      do_save_async_deferred_columns(record) if @async_deferred_column_writers
     end
 
     private
 
-    def save_async_deferred_columns(record)
-      after_save_async(record).map(&:get) if @async_deferred_column_writers
+    def do_save_deferred_columns(record)
+      @deferred_column_writers.each { |column, callback| callback.call(record.attributes, record.send(column)) }
     end
 
-    def save_deferred_columns(record)
-      @deferred_column_writers.each { |column, callback| callback.call(record.attributes, record.send(column)) }
+    def do_save_async_deferred_columns(record)
+      @async_deferred_column_writers.map { |column, callback| callback.call(record.attributes, record.send(column)) }
     end
 
     def create_save_method(name, options)

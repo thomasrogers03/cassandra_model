@@ -19,12 +19,10 @@ module CassandraModel
         @async_deferred_column_writers = nil
       end
 
-      def save
-        MockRecord.after_save(self)
-      end
-
       def save_async
-        MockRecord.after_save_async(self)
+        MockRecord.save_deferred_columns(self)
+        futures = MockRecord.save_async_deferred_columns(self)
+        futures.map(&:get) if futures
       end
     end
 

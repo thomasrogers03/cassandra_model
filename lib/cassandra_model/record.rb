@@ -17,6 +17,7 @@ module CassandraModel
     end
 
     def save_async
+      save_deferred_columns
       future = save_row_async(column_values)
       ThomasUtils::FutureWrapper.new(future) { self }
     end
@@ -47,6 +48,12 @@ module CassandraModel
 
     def save_row_async(column_values)
       Record.connection.execute_async(Record.statement(query_for_save), *column_values)
+    end
+
+    def save_deferred_columns
+      self.class.save_deferred_columns(self)
+      deferred_column_futures = self.class.save_async_deferred_columns(self)
+      deferred_column_futures.map(&:get) if deferred_column_futures
     end
 
     def query_for_save
