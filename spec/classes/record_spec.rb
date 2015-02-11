@@ -32,6 +32,7 @@ module CassandraModel
     let(:column_object) { double(:column, name: 'partition') }
     let(:table_object) { double(:table, columns: [column_object]) }
     let(:keyspace) { double(:keyspace, table: table_object) }
+    let(:statement) { double(:statement) }
 
     before do
       allow(Cassandra).to receive(:cluster).and_return(cluster)
@@ -46,6 +47,12 @@ module CassandraModel
 
     context 'when mixing in query methods' do
       subject { Record }
+
+      before do
+        allow(Record).to receive(:statement).and_return(statement)
+        allow(connection).to receive(:execute_async).and_return(MockFuture.new('OK'))
+      end
+
       it_behaves_like 'a query helper'
       it_behaves_like 'a record defining meta columns'
     end
@@ -139,7 +146,6 @@ module CassandraModel
 
     describe '.statement' do
       let(:query) { 'SELECT * FROM everything' }
-      let(:statement) { double(:statement) }
 
       before { allow(connection).to receive(:prepare).with(query).and_return(statement) }
 
@@ -259,7 +265,6 @@ module CassandraModel
       let(:select_clause) { '*' }
       let(:order_clause) { nil }
       let(:query) { "SELECT #{select_clause} FROM #{table_name}#{where_clause}#{order_clause}" }
-      let(:statement) { double(:statement) }
       let(:results) { MockFuture.new(['partition' => 'Partition Key']) }
       let(:record) { Record.new(partition: 'Partition Key') }
 
@@ -509,7 +514,6 @@ module CassandraModel
       let(:columns) { [:partition] }
       let(:attributes) { {partition: 'Partition Key'} }
       let(:query) { "INSERT INTO table (#{columns.join(', ')}) VALUES (#{(%w(?) * columns.size).join(', ')})" }
-      let(:statement) { double(:statement) }
       let(:results) { MockFuture.new([]) }
 
       before do
@@ -563,7 +567,6 @@ module CassandraModel
       let(:table_name) { :table }
       let(:where_clause) { (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ') }
       let(:query) { "DELETE FROM #{table_name} WHERE #{where_clause}" }
-      let(:statement) { double(:statement) }
       let(:results) { MockFuture.new([]) }
 
       before do
