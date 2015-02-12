@@ -16,6 +16,7 @@ module CassandraModel
     it_behaves_like 'a query helper method', :where, { partition: 'Partition Key' }
     it_behaves_like 'a query helper method', :select, :partition
     it_behaves_like 'a query helper method', :paginate, 5000
+    it_behaves_like 'a query helper method', :order, :cluster
     it_behaves_like 'a query helper method', :limit, 100
   end
 end
