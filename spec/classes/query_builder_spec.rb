@@ -3,7 +3,7 @@ require 'rspec'
 module CassandraModel
   describe QueryBuilder do
     let(:results) { %w(results) }
-    let(:record) { double(:record, request_async: nil, request: results) }
+    let(:record) { double(:record, request_async: nil, request: results, request_cql: nil) }
 
     subject { QueryBuilder.new(record) }
 
@@ -136,6 +136,15 @@ module CassandraModel
 
       it_behaves_like 'an option query', :paginate, :page_size, :request_async, :async
       it_behaves_like 'an option query', :paginate, :page_size, :request, :get
+    end
+
+    describe '#to_cql' do
+      let(:record) { Record }
+
+      it 'should create the cql query from the specified restrictitions' do
+        expected_cql = Record.request_meta({partition: 'Partition Key'}, limit: 100).first
+        expect(subject.where(partition: 'Partition Key').limit(100).to_cql).to eq(expected_cql)
+      end
     end
 
   end

@@ -17,6 +17,10 @@ module CassandraModel
       @record_klass.request(@params, @options)
     end
 
+    def to_cql
+      @record_klass.request_meta(@params, @options).first
+    end
+
     def first_async
       @record_klass.first_async(@params, @options)
     end
