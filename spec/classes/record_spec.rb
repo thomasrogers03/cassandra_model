@@ -434,6 +434,18 @@ module CassandraModel
           expect(results).to eq(expected_records)
         end
       end
+
+      context 'when using options and restrictions' do
+        let(:clause) { {partition: 'Partition Key', cluster: 'Cluster Key'} }
+        let(:options) { {select: [:partition, :cluster], order_by: :cluster, limit: 100} }
+        let(:where_clause) { ' WHERE partition = ? AND cluster = ? ORDER BY cluster LIMIT 100' }
+        let(:select_clause) { 'partition, cluster' }
+
+        it 'should order options and restrictions in the query properly' do
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key').and_return(results)
+          Record.request_async(clause, options)
+        end
+      end
     end
 
     describe '.first_async' do

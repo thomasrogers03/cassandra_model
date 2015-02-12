@@ -109,15 +109,8 @@ module CassandraModel
       end
 
       def request_async(clause, options = {})
-        select_clause, use_query_result = select_params(options)
-        order_by = options[:order_by]
-        order_by_clause = if order_by
-                            " ORDER BY #{multi_csv_clause(order_by)}"
-                          end
-        page_size = options[:page_size]
-        limit_clause = limit_clause(options)
-        where_clause, where_values = where_params(clause)
-        statement = statement("SELECT #{select_clause} FROM #{table_name}#{where_clause}#{limit_clause}#{order_by_clause}")
+        page_size, request_query, use_query_result, where_values = request_cql(clause, options)
+        statement = statement(request_query)
 
         if page_size
           future = connection.execute_async(statement, *where_values, page_size: page_size)
@@ -126,6 +119,19 @@ module CassandraModel
           future = connection.execute_async(statement, *where_values)
           ThomasUtils::FutureWrapper.new(future) { |results| result_records(results, use_query_result) }
         end
+      end
+
+      def request_cql(clause, options)
+        select_clause, use_query_result = select_params(options)
+        order_by = options[:order_by]
+        order_by_clause = if order_by
+                            " ORDER BY #{multi_csv_clause(order_by)}"
+                          end
+        page_size = options[:page_size]
+        limit_clause = limit_clause(options)
+        where_clause, where_values = where_params(clause)
+        request_query = "SELECT #{select_clause} FROM #{table_name}#{where_clause}#{order_by_clause}#{limit_clause}"
+        [page_size, request_query, use_query_result, where_values]
       end
 
       def first_async(clause = {}, options = {})
