@@ -52,11 +52,16 @@ module CassandraModel
 
     class << self
       def counter_columns
-        @counter_columns ||=  columns - (partition_key + clustering_columns)
+        @counter_columns ||= columns - (partition_key + clustering_columns)
       end
 
       def request_async(clause, options = {})
-        super(clause, options.merge(select: counter_columns))
+        selected_columns = if options[:select]
+                             options[:select] | counter_columns
+                           else
+                             counter_columns
+                           end
+        super(clause, options.merge(select: selected_columns))
       end
     end
   end

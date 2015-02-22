@@ -82,6 +82,20 @@ module CassandraModel
           expect(Record).to receive(:request_async).with({}, hash_including(limit: 10))
           CounterRecord.request_async({}, limit: 10)
         end
+
+        context 'when selecting additional columns' do
+          it 'should include those columns along with the count' do
+            expect(Record).to receive(:request_async).with({}, hash_including(select: partition_key + counter_columns))
+            CounterRecord.request_async({}, select: partition_key)
+          end
+        end
+
+        context 'when selecting the counter column' do
+          it 'should only specify to select it once' do
+            expect(Record).to receive(:request_async).with({}, hash_including(select: counter_columns))
+            CounterRecord.request_async({}, select: counter_columns)
+          end
+        end
       end
 
       context 'with different restrictions' do
@@ -158,7 +172,7 @@ module CassandraModel
 
     describe '#save_async' do
       it 'should indicate that it is not implemented' do
-        expect{CounterRecord.new({}).save_async}.to raise_error(NotImplementedError)
+        expect { CounterRecord.new({}).save_async }.to raise_error(NotImplementedError)
       end
     end
 
