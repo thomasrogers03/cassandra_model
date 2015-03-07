@@ -8,9 +8,9 @@ PATH
 
 GIT
   remote: https://github.com/thomasrogers03/thomas_utils.git
-  revision: 084d19950f61fad751f2467fa4b767c31f8a2a08
+  revision: 643933075f91771bcb2e17d884524996725d6284
   specs:
-    thomas_utils (0.1.4)
+    thomas_utils (0.1.6)
 
 GEM
   remote: http://rubygems.org/
@@ -26,10 +26,12 @@ GEM
     celluloid (0.16.0)
       timers (~> 4.0.0)
     coderay (1.1.0)
+    concurrent-ruby (0.8.0)
+      ref (~> 1.0, >= 1.0.5)
     diff-lcs (1.2.5)
     ffi (1.9.6-x64-mingw32)
     formatador (0.2.5)
-    guard (2.11.1)
+    guard (2.12.4)
       formatador (>= 0.2.4)
       listen (~> 2.7)
       lumberjack (~> 1.0)
@@ -38,6 +40,10 @@ GEM
       pry (>= 0.9.12)
       shellany (~> 0.0)
       thor (>= 0.18.1)
+    guard-bundler (2.1.0)
+      bundler (~> 1.0)
+      guard (~> 2.2)
+      guard-compat (~> 1.1)
     guard-compat (1.2.1)
     guard-rspec (4.5.0)
       guard (~> 2.1)
@@ -55,7 +61,7 @@ GEM
     method_source (0.8.2)
     minitest (5.5.1)
     nenv (0.2.0)
-    notiffany (0.0.3)
+    notiffany (0.0.6)
       nenv (~> 0.1)
       shellany (~> 0.0)
     pry (0.10.1-x64-mingw32)
@@ -66,6 +72,7 @@ GEM
     rb-fsevent (0.9.4)
     rb-inotify (0.9.5)
       ffi (>= 0.5.0)
+    ref (1.0.5)
     rspec (3.1.0)
       rspec-core (~> 3.1.0)
       rspec-expectations (~> 3.1.0)
@@ -95,6 +102,9 @@ DEPENDENCIES
   activesupport
   cassandra-driver (~> 1.1)
   cassandra_model!
+  concurrent-ruby
+  guard
+  guard-bundler
   guard-rspec
-  rspec
+  rspec (~> 3.1.0)
   thomas_utils (~> 0.1.4)!
