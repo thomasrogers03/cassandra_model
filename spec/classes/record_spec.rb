@@ -36,6 +36,10 @@ module CassandraModel
 
     before do
       allow(Cassandra).to receive(:cluster).and_return(cluster)
+      allow(Concurrent::Future).to receive(:execute) do |&block|
+        result = block.call
+        double(:future, value: result)
+      end
       Record.columns = [:partition, :cluster]
       Record.reset!
       ImageData.reset!
@@ -543,6 +547,10 @@ module CassandraModel
         Record.columns = columns
         allow(Record).to receive(:statement).with(query).and_return(statement)
         allow(connection).to receive(:execute_async).and_return(results)
+      end
+
+      it 'should wrap everything in a future' do
+        expect(Record.new(attributes).save_async).to be_a_kind_of(ThomasUtils::Future)
       end
 
       it 'should save the record to the database' do

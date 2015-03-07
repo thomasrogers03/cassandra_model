@@ -2,7 +2,7 @@ require 'active_support/all'
 require 'cassandra'
 require 'thomas_utils'
 require 'bundler'
-Bundler.require(:default)
+Bundler.require(:default, :development, :test)
 
 require_relative 'helpers/mock_page'
 require_relative 'helpers/mock_future'
