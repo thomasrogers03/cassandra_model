@@ -61,6 +61,37 @@ module CassandraModel
       it_behaves_like 'a record defining meta columns'
     end
 
+    describe '.reset_local_schema!' do
+      let(:partition_key) { double(:column, name: 'partition') }
+      let(:clustering_column) { double(:column, name: 'clustering') }
+      let(:columns) { [partition_key, clustering_column] }
+      let(:updated_partition_key) { double(:column, name: 'updated_partition') }
+      let(:updated_clustering_column) { double(:column, name: 'updated_clustering') }
+      let(:updated_columns) { [updated_partition_key, updated_clustering_column] }
+      let(:table_object) do
+        table = double(:table)
+        allow(table).to receive(:partition_key).and_return([partition_key], [updated_partition_key])
+        allow(table).to receive(:clustering_columns).and_return([clustering_column], [updated_clustering_column])
+        allow(table).to receive(:columns).and_return(columns, updated_columns)
+        table
+      end
+
+      subject { Record }
+
+      before do
+        Record.partition_key
+        Record.clustering_columns
+        Record.columns
+        Record.reset_local_schema!
+      end
+
+      describe 'updating the schema with the new table structure' do
+        its(:partition_key) { is_expected.to eq([:updated_partition]) }
+        its(:clustering_columns) { is_expected.to eq([:updated_clustering]) }
+        its(:columns) { is_expected.to eq([:updated_partition, :updated_clustering]) }
+      end
+    end
+
     shared_examples_for 'a set of columns' do |method|
       let(:column) { double(:column, name: 'partition') }
       let(:table) { double(:table, method => [column]) }

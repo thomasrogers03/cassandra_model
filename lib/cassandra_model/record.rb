@@ -75,6 +75,12 @@ module CassandraModel
         @table_name ||= self.name.demodulize.underscore.pluralize
       end
 
+      def reset_local_schema!
+        @partition_key = nil
+        @clustering_columns = nil
+        @columns = nil
+      end
+
       def partition_key
         @partition_key ||= keyspace.table(table_name.to_s).send(:partition_key).map { |column| column.name.to_sym }
       end
