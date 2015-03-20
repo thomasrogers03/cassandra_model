@@ -11,6 +11,10 @@ module CassandraModel
       ThomasUtils::FutureWrapper.new(future) { self }
     end
 
+    def increment!(options)
+      increment_async!(options).get
+    end
+
     def save_async
       raise NotImplementedError
     end

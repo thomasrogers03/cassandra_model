@@ -170,6 +170,23 @@ module CassandraModel
       end
     end
 
+    describe '#increment!' do
+      let(:record) { CounterRecord.new(partition: 'Other Partition Key', cluster: 'Cluster Key') }
+
+      before do
+        allow(record).to receive(:increment_async!).with(counter: 1).and_return(MockFuture.new(record))
+      end
+
+      it 'should delegate to #increment_async!' do
+        expect(record).to receive(:increment_async!).with(counter: 1)
+        record.increment!(counter: 1)
+      end
+
+      it 'should return the record' do
+        expect(record.increment!(counter: 1)).to eq(record)
+      end
+    end
+
     describe '#save_async' do
       it 'should indicate that it is not implemented' do
         expect { CounterRecord.new({}).save_async }.to raise_error(NotImplementedError)
