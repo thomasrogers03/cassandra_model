@@ -8,6 +8,10 @@ module CassandraModel
     let(:table_name) { :books }
     let(:options) { {name: table_name, columns: columns, partition_key: partition_key, clustering_columns: clustering_columns} }
 
+    subject { TableDefinition.new(options) }
+
+    its(:name) { is_expected.to eq(table_name) }
+
     describe '#to_cql' do
       subject { TableDefinition.new(options).to_cql }
 
@@ -39,5 +43,24 @@ module CassandraModel
         it { is_expected.to eq('CREATE TABLE books (title text, series int, episode int, body text, PRIMARY KEY ((title), series, episode))') }
       end
     end
+
+    describe '#table_id' do
+      subject { TableDefinition.new(options).table_id }
+
+      it 'should be the md5 hash of the column definition' do
+        is_expected.to eq(Digest::MD5.hexdigest('title text, series int, body text'))
+      end
+
+      context 'with different columns' do
+        let(:columns) { {title: :text, series: :int, episode: :int, body: :text} }
+
+        it { is_expected.to eq(Digest::MD5.hexdigest('title text, series int, episode int, body text')) }
+      end
+    end
+
+    describe '#name_in_cassandra' do
+      its(:name_in_cassandra) { is_expected.to eq("#{subject.name}_#{subject.table_id}") }
+    end
+
   end
 end

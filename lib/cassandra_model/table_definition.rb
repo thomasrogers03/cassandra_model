@@ -1,5 +1,7 @@
 module CassandraModel
   class TableDefinition
+    attr_reader :name
+
     def initialize(options)
       @partition_key = options[:partition_key]
       @clustering_columns = options[:clustering_columns]
@@ -8,8 +10,25 @@ module CassandraModel
     end
 
     def to_cql
-      columns = @columns.map { |name, type| "#{name} #{type}" } * ', '
-      "CREATE TABLE #{@name} (#{columns}, PRIMARY KEY ((#{@partition_key * ', '}), #{@clustering_columns * ', '}))"
+      "CREATE TABLE #{@name} (#{columns}, PRIMARY KEY (#{primary_key})"
+    end
+
+    def table_id
+      Digest::MD5.hexdigest(columns)
+    end
+
+    def name_in_cassandra
+      "#{name}_#{table_id}"
+    end
+
+    private
+
+    def columns
+      @columns.map { |name, type| "#{name} #{type}" } * ', '
+    end
+
+    def primary_key
+      "(#{@partition_key * ', '}), #{@clustering_columns * ', '})"
     end
   end
 end
