@@ -12,6 +12,8 @@ module CassandraModel
 
     its(:name) { is_expected.to eq(table_name) }
 
+    its(:name_in_cassandra) { is_expected.to eq("#{subject.name}_#{subject.table_id}") }
+
     describe '#to_cql' do
       subject { TableDefinition.new(options).to_cql }
 
@@ -56,10 +58,6 @@ module CassandraModel
 
         it { is_expected.to eq(Digest::MD5.hexdigest('title text, series int, episode int, body text')) }
       end
-    end
-
-    describe '#name_in_cassandra' do
-      its(:name_in_cassandra) { is_expected.to eq("#{subject.name}_#{subject.table_id}") }
     end
 
   end
