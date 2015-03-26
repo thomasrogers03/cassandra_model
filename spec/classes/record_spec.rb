@@ -360,14 +360,14 @@ module CassandraModel
         let(:order_clause) { ' ORDER BY cluster' }
         let(:results) do
           MockFuture.new([
-                             {'partition' => 'Partition Key', cluster: 'Cluster Key', cluster: 'Other Cluster Key'},
-                             {'partition' => 'Partition Key', cluster: 'Cluster Key 2', cluster: 'Other Cluster Key'},
-                             {'partition' => 'Partition Key', cluster: 'Cluster Key 2', cluster: 'Other Cluster Key 2'}
+                             {'partition' => 'Partition Key', cluster: 'Cluster Key', other_cluster: 'Other Cluster Key'},
+                             {'partition' => 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key'},
+                             {'partition' => 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key 2'}
                          ])
         end
-        let(:record_one) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key', cluster: 'Other Cluster Key') }
-        let(:record_two) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key 2', cluster: 'Other Cluster Key') }
-        let(:record_three) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key 2', cluster: 'Other Cluster Key 2') }
+        let(:record_one) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key', other_cluster: 'Other Cluster Key') }
+        let(:record_two) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key') }
+        let(:record_three) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key 2') }
 
         before do
           Record.columns = [:partition, :cluster, :other_cluster]
