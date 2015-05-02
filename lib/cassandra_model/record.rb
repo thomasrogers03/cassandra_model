@@ -96,7 +96,7 @@ module CassandraModel
       end
 
       def columns
-        internal_columns.tap do |columns|
+        @columns || internal_columns.tap do |columns|
           columns.each { |column| define_attribute(column) }
         end
       end
