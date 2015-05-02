@@ -8,8 +8,6 @@ module CassandraModel
     extend CassandraModel::QueryHelper
     extend CassandraModel::MetaColumns
 
-    attr_reader :attributes
-
     def initialize(attributes)
       attributes.keys.each { |column| raise "Invalid column '#{column}' specified" unless columns.include?(column) }
       @attributes = attributes
@@ -42,7 +40,15 @@ module CassandraModel
       @attributes == rhs.attributes
     end
 
+    def attributes
+      internal_attributes
+    end
+
     private
+
+    def internal_attributes
+      @attributes
+    end
 
     def column_values
       columns.map { |column| attributes[column] }
@@ -90,11 +96,13 @@ module CassandraModel
       end
 
       def columns
-        unless @columns
-          @columns = keyspace.table(table_name.to_s).columns.map { |column| column.name.to_sym }
-          @columns.each { |column| define_attribute(column) }
+        internal_columns.tap do |columns|
+          columns.each { |column| define_attribute(column) }
         end
-        @columns
+      end
+
+      def internal_columns
+        @columns ||= keyspace.table(table_name.to_s).columns.map { |column| column.name.to_sym }
       end
 
       def query_for_save
