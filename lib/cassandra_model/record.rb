@@ -49,7 +49,11 @@ module CassandraModel
     end
 
     def column_values
-      internal_columns.map { |column| attributes[column] }
+      internal_columns.map { |column| internal_attributes[column] }
+    end
+
+    def internal_attributes
+      attributes
     end
 
     def save_row_async(column_values)
