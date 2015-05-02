@@ -17,11 +17,7 @@ module CassandraModel
     end
 
     def save_async
-      ThomasUtils::Future.new do
-        save_deferred_columns
-        future = save_row_async(column_values)
-        ThomasUtils::FutureWrapper.new(future) { self }
-      end
+      internal_save_async
     end
 
     def delete_async
@@ -43,6 +39,14 @@ module CassandraModel
     end
 
     private
+
+    def internal_save_async
+      ThomasUtils::Future.new do
+        save_deferred_columns
+        future = save_row_async(column_values)
+        ThomasUtils::FutureWrapper.new(future) { self }
+      end
+    end
 
     def column_values
       internal_columns.map { |column| attributes[column] }
