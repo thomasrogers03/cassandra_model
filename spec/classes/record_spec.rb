@@ -640,6 +640,14 @@ module CassandraModel
       end
     end
 
+    describe '#invalidate!' do
+      it 'should invalidate the Record' do
+        record = Record.new({})
+        record.invalidate!
+        expect(record.valid).to eq(false)
+      end
+    end
+
     describe '#delete_async' do
       let(:partition_key) { [:partition] }
       let(:clustering_columns) { [:cluster] }

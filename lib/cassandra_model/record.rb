@@ -21,6 +21,10 @@ module CassandraModel
       internal_save_async
     end
 
+    def invalidate!
+      @valid = false
+    end
+
     def delete_async
       internal_delete_async
     end
