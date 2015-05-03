@@ -555,6 +555,11 @@ module CassandraModel
     describe '#attributes' do
       before { Record.columns = [:partition] }
 
+      it 'should be a valid record initially' do
+        record = Record.new(partition: 'Partition Key')
+        expect(record.valid).to eq(true)
+      end
+
       it 'should return the attributes of the created Record' do
         record = Record.new(partition: 'Partition Key')
         expect(record.attributes).to eq(partition: 'Partition Key')
@@ -648,6 +653,17 @@ module CassandraModel
       it 'should delete the record from the database' do
         expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {})
         Record.new(attributes).delete_async
+      end
+
+      it 'should return a future resolving to the record instance' do
+        record = Record.new(partition: 'Partition Key')
+        expect(record.delete_async.get).to eq(record)
+      end
+
+      it 'should invalidate the record instance' do
+        record = Record.new(partition: 'Partition Key')
+        record.delete_async
+        expect(record.valid).to eq(false)
       end
 
       context 'with different attributes' do

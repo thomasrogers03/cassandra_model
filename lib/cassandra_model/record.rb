@@ -8,10 +8,11 @@ module CassandraModel
     extend CassandraModel::QueryHelper
     extend CassandraModel::MetaColumns
 
-    attr_reader :attributes
+    attr_reader :attributes, :valid
 
     def initialize(attributes, options = { validate: true })
       validate_attributes!(attributes) if options[:validate]
+      @valid = true
       @attributes = attributes
       self.class.after_initialize(self)
     end
@@ -45,10 +46,13 @@ module CassandraModel
     end
 
     def internal_delete_async
+      @valid = false
+
       statement = Record.statement(self.class.query_for_delete)
       attributes = internal_attributes
       column_values = (self.class.partition_key + self.class.clustering_columns).map { |column| attributes[column] }
-      Record.connection.execute_async(statement, *column_values, {})
+      future = Record.connection.execute_async(statement, *column_values, {})
+      ThomasUtils::FutureWrapper.new(future) { self }
     end
 
     def internal_save_async
