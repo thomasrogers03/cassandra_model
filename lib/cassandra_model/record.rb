@@ -22,6 +22,7 @@ module CassandraModel
 
     def delete_async
       statement = Record.statement(self.class.query_for_delete)
+      attributes = internal_attributes
       column_values = (self.class.partition_key + self.class.clustering_columns).map { |column| attributes[column] }
       Record.connection.execute_async(statement, *column_values, {})
     end
