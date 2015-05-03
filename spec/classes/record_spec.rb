@@ -595,6 +595,14 @@ module CassandraModel
         expect(Record.new(attributes).save_async).to be_a_kind_of(ThomasUtils::Future)
       end
 
+      context 'when the record has been invalidated' do
+        before { allow_any_instance_of(Record).to receive(:valid).and_return(false) }
+
+        it 'should raise an error' do
+          expect{Record.new(attributes).save_async}.to raise_error('Cannot save invalidated record!')
+        end
+      end
+
       it 'should save the record to the database' do
         expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
         Record.new(attributes).save_async
@@ -706,10 +714,9 @@ module CassandraModel
         record.delete
       end
 
-      it 'should join the future of #delete_async' do
+      it 'should resolve the future of #delete_async' do
         allow(record).to receive(:delete_async).and_return(record_future)
-        expect(record_future).to receive(:join)
-        record.delete
+        expect(record.delete).to eq(record)
       end
     end
 

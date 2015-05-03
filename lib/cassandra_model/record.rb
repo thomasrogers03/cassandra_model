@@ -26,7 +26,7 @@ module CassandraModel
     end
 
     def delete
-      delete_async.join
+      delete_async.get
     end
 
     def save
@@ -56,6 +56,7 @@ module CassandraModel
     end
 
     def internal_save_async
+      raise 'Cannot save invalidated record!' unless valid
       ThomasUtils::Future.new do
         save_deferred_columns
         future = save_row_async
