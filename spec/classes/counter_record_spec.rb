@@ -62,7 +62,7 @@ module CassandraModel
       before do
         query = "SELECT #{counter_columns.join(', ')} FROM counter_records#{where_clause}"
         allow(CounterRecord).to receive(:statement).with(query).and_return(statement)
-        allow(connection).to receive(:execute_async).with(statement, *restriction).and_return(results)
+        allow(connection).to receive(:execute_async).with(statement, *restriction, {}).and_return(results)
       end
 
       it 'should select only the counter columns' do
@@ -126,7 +126,7 @@ module CassandraModel
       end
 
       it 'should increment the specified counter by the specified amount' do
-        expect(connection).to receive(:execute_async).with(statement, 1, 'Partition Key')
+        expect(connection).to receive(:execute_async).with(statement, 1, 'Partition Key', {})
         CounterRecord.new(partition: 'Partition Key').increment_async!(counter: 1)
       end
 
@@ -139,14 +139,14 @@ module CassandraModel
         let(:table_name) { :image_counters }
 
         it 'should query the proper table' do
-          expect(connection).to receive(:execute_async).with(statement, 1, 'Partition Key')
+          expect(connection).to receive(:execute_async).with(statement, 1, 'Partition Key', {})
           ImageCounter.new(partition: 'Partition Key').increment_async!(counter: 1)
         end
       end
 
       context 'with different counter column increments' do
         it 'should increment the specified counter by the specified amount' do
-          expect(connection).to receive(:execute_async).with(statement, 2, 'Partition Key')
+          expect(connection).to receive(:execute_async).with(statement, 2, 'Partition Key', {})
           CounterRecord.new(partition: 'Partition Key').increment_async!(counter: 2)
         end
       end
@@ -155,7 +155,7 @@ module CassandraModel
         let(:updated_counters) { [:counter, :additional_counter] }
 
         it 'should increment the specified counter by the specified amount' do
-          expect(connection).to receive(:execute_async).with(statement, 2, 3, 'Partition Key')
+          expect(connection).to receive(:execute_async).with(statement, 2, 3, 'Partition Key', {})
           CounterRecord.new(partition: 'Partition Key').increment_async!(counter: 2, additional_counter: 3)
         end
       end
@@ -164,7 +164,7 @@ module CassandraModel
         let(:clustering_columns) { [:cluster] }
 
         it 'should increment the specified counter by the specified amount' do
-          expect(connection).to receive(:execute_async).with(statement, 1, 'Other Partition Key', 'Cluster Key')
+          expect(connection).to receive(:execute_async).with(statement, 1, 'Other Partition Key', 'Cluster Key', {})
           CounterRecord.new(partition: 'Other Partition Key', cluster: 'Cluster Key').increment_async!(counter: 1)
         end
       end

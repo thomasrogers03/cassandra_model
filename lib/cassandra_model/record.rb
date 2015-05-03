@@ -23,7 +23,7 @@ module CassandraModel
     def delete_async
       statement = Record.statement(self.class.query_for_delete)
       column_values = (self.class.partition_key + self.class.clustering_columns).map { |column| attributes[column] }
-      Record.connection.execute_async(statement, *column_values)
+      Record.connection.execute_async(statement, *column_values, {})
     end
 
     def delete
@@ -64,7 +64,7 @@ module CassandraModel
     end
 
     def save_row_async
-      Record.connection.execute_async(Record.statement(query_for_save), *column_values)
+      Record.connection.execute_async(Record.statement(query_for_save), *column_values, {})
     end
 
     def save_deferred_columns
@@ -143,10 +143,10 @@ module CassandraModel
         statement = statement(request_query)
 
         if page_size
-          future = connection.execute_async(statement, *where_values, page_size: page_size)
+          future = connection.execute_async(statement, *where_values, {page_size: page_size})
           ResultPaginator.new(future) { |row| record_from_result(row, use_query_result) }
         else
-          future = connection.execute_async(statement, *where_values)
+          future = connection.execute_async(statement, *where_values, {})
           ThomasUtils::FutureWrapper.new(future) { |results| result_records(results, use_query_result) }
         end
       end

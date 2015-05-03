@@ -319,7 +319,7 @@ module CassandraModel
         let(:where_clause) { ' WHERE partition > ?' }
 
         it 'should query using the specified comparer' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key').and_return(results)
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
           Record.request_async(clause)
         end
       end
@@ -330,7 +330,7 @@ module CassandraModel
         let(:results) { MockFuture.new([{'partition' => 'Partition Key'}, {'partition' => 'Other Partition Key'}]) }
 
         it 'should query using an IN' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Other Partition Key').and_return(results)
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Other Partition Key', {}).and_return(results)
           Record.request_async(clause)
         end
       end
@@ -401,7 +401,7 @@ module CassandraModel
         let(:results) { MockFuture.new([{'partition' => 'Partition Key 1'}, {'partition' => 'Partition Key 2'}]) }
 
         it 'should support limits' do
-          expect(connection).to receive(:execute_async).with(statement).and_return(results)
+          expect(connection).to receive(:execute_async).with(statement, {}).and_return(results)
           Record.request_async({}, clause)
         end
 
@@ -416,7 +416,7 @@ module CassandraModel
 
       context 'with no clause' do
         it 'should query for everything' do
-          expect(connection).to receive(:execute_async).with(statement).and_return(results)
+          expect(connection).to receive(:execute_async).with(statement, {}).and_return(results)
           Record.request_async(clause)
         end
       end
@@ -430,7 +430,7 @@ module CassandraModel
         let(:where_clause) { ' WHERE partition = ?' }
 
         it 'should return the result of a select query given a restriction' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key').and_return(results)
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
           Record.request_async(clause)
         end
       end
@@ -445,7 +445,7 @@ module CassandraModel
         let(:where_clause) { ' WHERE partition = ? AND cluster = ?' }
 
         it 'should return the result of a select query given a restriction' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key').and_return(results)
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {}).and_return(results)
           Record.request_async(clause)
         end
       end
@@ -477,7 +477,7 @@ module CassandraModel
         let(:select_clause) { 'partition, cluster' }
 
         it 'should order options and restrictions in the query properly' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key').and_return(results)
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {}).and_return(results)
           Record.request_async(clause, options)
         end
       end
@@ -591,7 +591,7 @@ module CassandraModel
       end
 
       it 'should save the record to the database' do
-        expect(connection).to receive(:execute_async).with(statement, 'Partition Key').and_return(results)
+        expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
         Record.new(attributes).save_async
       end
 
@@ -605,7 +605,7 @@ module CassandraModel
         let(:attributes) { {partition: 'Partition Key', cluster: 'Cluster Key'} }
 
         it 'should save the record to the database using the specified attributes' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key').and_return(results)
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {}).and_return(results)
           Record.new(attributes).save_async
         end
       end
@@ -646,7 +646,7 @@ module CassandraModel
       end
 
       it 'should delete the record from the database' do
-        expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key')
+        expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {})
         Record.new(attributes).delete_async
       end
 
@@ -654,7 +654,7 @@ module CassandraModel
         let(:attributes) { {partition: 'Different Partition Key', cluster: 'Different Cluster Key'} }
 
         it 'should delete the record from the database' do
-          expect(connection).to receive(:execute_async).with(statement, 'Different Partition Key', 'Different Cluster Key')
+          expect(connection).to receive(:execute_async).with(statement, 'Different Partition Key', 'Different Cluster Key', {})
           Record.new(attributes).delete_async
         end
       end
@@ -663,7 +663,7 @@ module CassandraModel
         let(:table_name) { :image_data }
 
         it 'should delete the record from the database' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key')
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {})
           Record.new(attributes).delete_async
         end
       end
@@ -674,7 +674,7 @@ module CassandraModel
         let(:attributes) { {different_partition: 'Partition Key', different_cluster: 'Cluster Key'} }
 
         it 'should delete the record from the database' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key')
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {})
           Record.new(attributes).delete_async
         end
       end
