@@ -763,7 +763,7 @@ module CassandraModel
 
       context 'when updating a single key of a map' do
         let(:new_attributes) { { :meta_data.index('Location') => 'North America' } }
-        let(:query) { "UPDATE #{table_name} SET meta_data[Location] = ? WHERE #{where_clause}" }
+        let(:query) { "UPDATE #{table_name} SET meta_data['Location'] = ? WHERE #{where_clause}" }
 
         it 'should update only the value of that key for the map' do
           expect(connection).to receive(:execute_async).with(statement, 'North America', 'Partition Key', 'Cluster Key', {})
