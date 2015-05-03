@@ -10,14 +10,14 @@ module CassandraModel
 
     attr_reader :attributes
 
-    def initialize(attributes)
-      attributes.keys.each { |column| raise "Invalid column '#{column}' specified" unless columns.include?(column) }
+    def initialize(attributes, options = { validate: true })
+      validate_attributes!(attributes) if options[:validate]
       @attributes = attributes
       self.class.after_initialize(self)
     end
 
     def save_async
-      internal_save_async
+      internal_save_async(internal_attributes)
     end
 
     def delete_async
@@ -40,24 +40,30 @@ module CassandraModel
 
     private
 
-    def internal_save_async
+    def validate_attributes!(attributes)
+      attributes.keys.each do |column|
+        raise "Invalid column '#{column}' specified" unless columns.include?(column)
+      end
+    end
+
+    def internal_save_async(attributes)
       ThomasUtils::Future.new do
         save_deferred_columns
-        future = save_row_async(column_values)
+        future = save_row_async(attributes)
         ThomasUtils::FutureWrapper.new(future) { self }
       end
     end
 
-    def column_values
-      internal_columns.map { |column| internal_attributes[column] }
+    def column_values(attributes)
+      internal_columns.map { |column| attributes[column] }
     end
 
     def internal_attributes
       attributes
     end
 
-    def save_row_async(column_values)
-      Record.connection.execute_async(Record.statement(query_for_save), *column_values)
+    def save_row_async(attributes)
+      Record.connection.execute_async(Record.statement(query_for_save), *column_values(attributes))
     end
 
     def save_deferred_columns

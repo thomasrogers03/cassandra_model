@@ -564,6 +564,12 @@ module CassandraModel
         it 'should raise an error' do
           expect { Record.new(fake_column: 'Partition Key') }.to raise_error("Invalid column 'fake_column' specified")
         end
+
+        context 'when validation is disabled' do
+          it 'should not raise an error' do
+            expect { Record.new({fake_column: 'Partition Key'}, validate: false) }.not_to raise_error
+          end
+        end
       end
     end
 
