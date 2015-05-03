@@ -169,7 +169,7 @@ module CassandraModel
       def query_for_update(new_attributes)
         where_clause = (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ')
         set_clause = new_attributes.keys.map { |column| "#{column} = ?" }.join(' AND ')
-        @delete_qeury ||= "UPDATE #{table_name} SET #{set_clause} WHERE #{where_clause}"
+        "UPDATE #{table_name} SET #{set_clause} WHERE #{where_clause}"
       end
 
       def create_async(attributes)
