@@ -741,7 +741,7 @@ module CassandraModel
 
       before do
         Record.table_name = table_name
-        Record.columns = partition_key + clustering_columns
+        Record.columns = partition_key + clustering_columns + extra_columns
         allow(Record).to receive(:partition_key).and_return(partition_key)
         allow(Record).to receive(:clustering_columns).and_return(clustering_columns)
         allow(Record).to receive(:statement).with(query).and_return(statement)
@@ -751,6 +751,24 @@ module CassandraModel
       it 'should update the record in the database' do
         expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', {})
         Record.new(attributes).update_async(new_attributes)
+      end
+
+      context 'with an invalid column' do
+        let(:new_attributes) { { fake_column: 'Some Fake Data' } }
+
+        it 'should raise an error' do
+          expect{Record.new(attributes).update_async(new_attributes)}.to raise_error("Invalid column 'fake_column' specified")
+        end
+      end
+
+      context 'when updating a single key of a map' do
+        let(:new_attributes) { { :meta_data.index('Location') => 'North America' } }
+        let(:query) { "UPDATE #{table_name} SET meta_data[Location] = ? WHERE #{where_clause}" }
+
+        it 'should update only the value of that key for the map' do
+          expect(connection).to receive(:execute_async).with(statement, 'North America', 'Partition Key', 'Cluster Key', {})
+          Record.new(attributes).update_async(new_attributes)
+        end
       end
 
       context 'with multiple new attributes' do

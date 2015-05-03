@@ -53,6 +53,7 @@ module CassandraModel
 
     def validate_attributes!(attributes)
       attributes.keys.each do |column|
+        column = column.key if column.is_a?(ThomasUtils::KeyIndexer)
         raise "Invalid column '#{column}' specified" unless columns.include?(column)
       end
     end
@@ -77,6 +78,8 @@ module CassandraModel
     end
 
     def internal_update_async(new_attributes)
+      validate_attributes!(new_attributes)
+
       query = self.class.query_for_update(new_attributes)
       statement = Record.statement(query)
       attributes = internal_attributes
