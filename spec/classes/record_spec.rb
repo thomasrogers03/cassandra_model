@@ -717,7 +717,7 @@ module CassandraModel
       let(:record) { Record.new(attributes) }
       let(:record_future) { MockFuture.new(record) }
 
-      it 'should save the record' do
+      it 'should delete the record' do
         expect(record).to receive(:delete_async).and_return(record_future)
         record.delete
       end
@@ -725,6 +725,98 @@ module CassandraModel
       it 'should resolve the future of #delete_async' do
         allow(record).to receive(:delete_async).and_return(record_future)
         expect(record.delete).to eq(record)
+      end
+    end
+
+    describe '#update_async' do
+      let(:partition_key) { [:partition] }
+      let(:clustering_columns) { [:cluster] }
+      let(:extra_columns) { [:meta_data, :misc_data] }
+      let(:attributes) { {partition: 'Partition Key', cluster: 'Cluster Key'} }
+      let(:table_name) { :table }
+      let(:where_clause) { (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ') }
+      let(:new_attributes) { { meta_data: 'Some Data' } }
+      let(:query) { "UPDATE #{table_name} SET meta_data = ? WHERE #{where_clause}" }
+      let(:results) { MockFuture.new([]) }
+
+      before do
+        Record.table_name = table_name
+        Record.columns = partition_key + clustering_columns
+        allow(Record).to receive(:partition_key).and_return(partition_key)
+        allow(Record).to receive(:clustering_columns).and_return(clustering_columns)
+        allow(Record).to receive(:statement).with(query).and_return(statement)
+        allow(connection).to receive(:execute_async).and_return(results)
+      end
+
+      it 'should update the record in the database' do
+        expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', {})
+        Record.new(attributes).update_async(new_attributes)
+      end
+
+      context 'with multiple new attributes' do
+        let(:new_attributes) { { meta_data: 'meta-data', misc_data: 'Some additional information' } }
+        let(:query) { "UPDATE #{table_name} SET meta_data = ? AND misc_data = ? WHERE #{where_clause}" }
+
+        it 'should update the record in the database with those attributes' do
+          expect(connection).to receive(:execute_async).with(statement, 'meta-data', 'Some additional information', 'Partition Key', 'Cluster Key', {})
+          Record.new(attributes).update_async(new_attributes)
+        end
+      end
+
+      it 'should return a future resolving to the record instance' do
+        record = Record.new(partition: 'Partition Key')
+        expect(record.update_async(new_attributes).get).to eq(record)
+      end
+
+      it 'should include the new attributes in the updated Record' do
+        record = Record.new(partition: 'Partition Key')
+        expect(record.update_async(new_attributes).get.attributes).to include(new_attributes)
+      end
+
+      context 'with different attributes' do
+        let(:attributes) { {partition: 'Different Partition Key', cluster: 'Different Cluster Key'} }
+
+        it 'should update the record in the database' do
+          expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Different Partition Key', 'Different Cluster Key', {})
+          Record.new(attributes).update_async(new_attributes)
+        end
+      end
+
+      context 'with a different table name' do
+        let(:table_name) { :image_data }
+
+        it 'should update the record in the database' do
+          expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', {})
+          Record.new(attributes).update_async(new_attributes)
+        end
+      end
+
+      context 'with different partition and clustering keys' do
+        let(:partition_key) { [:different_partition] }
+        let(:clustering_columns) { [:different_cluster] }
+        let(:attributes) { {different_partition: 'Partition Key', different_cluster: 'Cluster Key'} }
+
+        it 'should update the record in the database' do
+          expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', {})
+          Record.new(attributes).update_async(new_attributes)
+        end
+      end
+    end
+
+    describe '#update' do
+      let(:attributes) { {partition: 'Partition Key'} }
+      let(:new_attributes) { { meta_data: 'meta-data', misc_data: 'Some additional information' } }
+      let(:record) { Record.new(attributes) }
+      let(:record_future) { MockFuture.new(record) }
+
+      it 'should update the record' do
+        expect(record).to receive(:update_async).with(new_attributes).and_return(record_future)
+        record.update(new_attributes)
+      end
+
+      it 'should resolve the future of #update_async' do
+        allow(record).to receive(:update_async).with(new_attributes).and_return(record_future)
+        expect(record.update(new_attributes)).to eq(record)
       end
     end
 

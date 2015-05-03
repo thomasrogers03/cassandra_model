@@ -21,20 +21,28 @@ module CassandraModel
       internal_save_async
     end
 
+    def delete_async
+      internal_delete_async
+    end
+
+    def update_async(new_attributes)
+      internal_update_async(new_attributes)
+    end
+
     def invalidate!
       @valid = false
     end
 
-    def delete_async
-      internal_delete_async
+    def save
+      save_async.get
     end
 
     def delete
       delete_async.get
     end
 
-    def save
-      save_async.get
+    def update(new_attributes)
+      update_async(new_attributes).get
     end
 
     def ==(rhs)
@@ -65,6 +73,18 @@ module CassandraModel
         save_deferred_columns
         future = save_row_async
         ThomasUtils::FutureWrapper.new(future) { self }
+      end
+    end
+
+    def internal_update_async(new_attributes)
+      query = self.class.query_for_update(new_attributes)
+      statement = Record.statement(query)
+      attributes = internal_attributes
+      column_values = (self.class.partition_key + self.class.clustering_columns).map { |column| attributes[column] }
+      future = Record.connection.execute_async(statement, *new_attributes.values, *column_values, {})
+      ThomasUtils::FutureWrapper.new(future) do
+        self.attributes.merge!(new_attributes)
+        self
       end
     end
 
@@ -141,6 +161,12 @@ module CassandraModel
       def query_for_delete
         where_clause = (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ')
         @delete_qeury ||= "DELETE FROM #{table_name} WHERE #{where_clause}"
+      end
+
+      def query_for_update(new_attributes)
+        where_clause = (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ')
+        set_clause = new_attributes.keys.map { |column| "#{column} = ?" }.join(' AND ')
+        @delete_qeury ||= "UPDATE #{table_name} SET #{set_clause} WHERE #{where_clause}"
       end
 
       def create_async(attributes)
