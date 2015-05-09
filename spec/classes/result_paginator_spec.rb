@@ -57,5 +57,11 @@ module CassandraModel
         end
       end
     end
+
+    describe '#get' do
+      it 'should delegate to #to_a' do
+        expect(subject.get).to eq(subject.to_a)
+      end
+    end
   end
 end

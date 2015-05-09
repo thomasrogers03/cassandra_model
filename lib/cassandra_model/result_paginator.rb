@@ -29,5 +29,8 @@ module CassandraModel
         end
       end
     end
+
+    alias :get :to_a
+
   end
 end
