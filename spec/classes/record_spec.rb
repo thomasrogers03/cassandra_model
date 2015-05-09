@@ -585,7 +585,8 @@ module CassandraModel
     describe '#save_async' do
       let(:columns) { [:partition] }
       let(:attributes) { {partition: 'Partition Key'} }
-      let(:query) { "INSERT INTO table (#{columns.join(', ')}) VALUES (#{(%w(?) * columns.size).join(', ')})" }
+      let(:existence_check) { nil }
+      let(:query) { "INSERT INTO table (#{columns.join(', ')}) VALUES (#{(%w(?) * columns.size).join(', ')})#{existence_check}" }
       let(:results) { MockFuture.new([]) }
 
       before do
@@ -629,6 +630,15 @@ module CassandraModel
       it 'should return a future resolving to the record instance' do
         record = Record.new(partition: 'Partition Key')
         expect(record.save_async.get).to eq(record)
+      end
+
+      context 'when checking if the record already exists' do
+        let(:existence_check) { ' IF NOT EXISTS' }
+
+        it 'should save the record to the database' do
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
+          Record.new(attributes).save_async(check_exists: true)
+        end
       end
 
       context 'with different columns' do

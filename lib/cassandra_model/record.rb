@@ -17,8 +17,8 @@ module CassandraModel
       self.class.after_initialize(self)
     end
 
-    def save_async
-      internal_save_async
+    def save_async(options = {})
+      internal_save_async(options)
     end
 
     def delete_async
@@ -68,17 +68,17 @@ module CassandraModel
       ThomasUtils::FutureWrapper.new(future) { self }
     end
 
-    def internal_save_async
+    def internal_save_async(options = {})
       raise 'Cannot save invalidated record!' unless valid
 
       if self.class.deferred_column_writers || self.class.async_deferred_column_writers
         ThomasUtils::Future.new do
           save_deferred_columns
-          future = save_row_async
+          future = save_row_async(options)
           ThomasUtils::FutureWrapper.new(future) { self }
         end
       else
-        future = save_row_async
+        future = save_row_async(options)
         ThomasUtils::FutureWrapper.new(future) { self }
       end
     end
@@ -106,8 +106,8 @@ module CassandraModel
       attributes
     end
 
-    def save_row_async
-      Record.connection.execute_async(Record.statement(query_for_save), *column_values, {})
+    def save_row_async(options)
+      Record.connection.execute_async(Record.statement(query_for_save(options)), *column_values, {})
     end
 
     def save_deferred_columns
@@ -116,8 +116,8 @@ module CassandraModel
       deferred_column_futures.map(&:get) if deferred_column_futures
     end
 
-    def query_for_save
-      self.class.query_for_save
+    def query_for_save(options)
+      self.class.query_for_save(options)
     end
 
     def columns
@@ -161,10 +161,13 @@ module CassandraModel
         @columns ||= keyspace.table(table_name.to_s).columns.map { |column| column.name.to_sym }
       end
 
-      def query_for_save
+      def query_for_save(options = {})
         column_names = internal_columns.join(', ')
         column_sanitizers = (%w(?) * internal_columns.size).join(', ')
-        @save_query ||= "INSERT INTO #{table_name} (#{column_names}) VALUES (#{column_sanitizers})"
+        existence_clause = if options[:check_exists]
+                             ' IF NOT EXISTS'
+                           end
+        @save_query ||= "INSERT INTO #{table_name} (#{column_names}) VALUES (#{column_sanitizers})#{existence_clause}"
       end
 
       def query_for_delete
