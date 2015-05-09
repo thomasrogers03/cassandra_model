@@ -191,13 +191,11 @@ module CassandraModel
         request_query, use_query_result, where_values = request_meta(clause, options)
         statement = statement(request_query)
 
-        if page_size
-          future = connection.execute_async(statement, *where_values, {page_size: page_size})
-          ResultPaginator.new(future) { |row| record_from_result(row, use_query_result) }
-        else
-          future = connection.execute_async(statement, *where_values, {})
-          ThomasUtils::FutureWrapper.new(future) { |results| result_records(results, use_query_result) }
-        end
+        query_options = {}
+        query_options[:page_size] = page_size if page_size
+
+        future = connection.execute_async(statement, *where_values, query_options)
+        ResultPaginator.new(future) { |row| record_from_result(row, use_query_result) }
       end
 
       def request_meta(clause, options)

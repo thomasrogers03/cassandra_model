@@ -302,7 +302,9 @@ module CassandraModel
       let(:select_clause) { '*' }
       let(:order_clause) { nil }
       let(:query) { "SELECT #{select_clause} FROM #{table_name}#{where_clause}#{order_clause}" }
-      let(:results) { MockFuture.new(['partition' => 'Partition Key']) }
+      let(:page_results) { ['partition' => 'Partition Key'] }
+      let(:result_page) { MockPage.new(true, MockFuture.new([]), page_results) }
+      let(:results) { MockFuture.new(result_page) }
       let(:record) { Record.new(partition: 'Partition Key') }
 
       before do
@@ -348,7 +350,7 @@ module CassandraModel
         context 'with multiple columns selected' do
           let(:clause) { {select: [:partition, :cluster]} }
           let(:select_clause) { %w(partition cluster).join(', ') }
-          let(:results) { MockFuture.new([{'partition' => 'Partition Key', cluster: 'Cluster Key'}]) }
+          let(:page_results) { [{'partition' => 'Partition Key', cluster: 'Cluster Key'}] }
           let(:record) { QueryResult.new(partition: 'Partition Key', cluster: 'Cluster Key') }
 
           it 'should select all the specified columns' do
@@ -360,12 +362,12 @@ module CassandraModel
       context 'when ordering by a subset of columns' do
         let(:clause) { {order_by: :cluster} }
         let(:order_clause) { ' ORDER BY cluster' }
-        let(:results) do
-          MockFuture.new([
-                             {'partition' => 'Partition Key', cluster: 'Cluster Key', other_cluster: 'Other Cluster Key'},
-                             {'partition' => 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key'},
-                             {'partition' => 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key 2'}
-                         ])
+        let(:page_results) do
+          [
+              {'partition' => 'Partition Key', cluster: 'Cluster Key', other_cluster: 'Other Cluster Key'},
+              {'partition' => 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key'},
+              {'partition' => 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key 2'}
+          ]
         end
         let(:record_one) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key', other_cluster: 'Other Cluster Key') }
         let(:record_two) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key') }

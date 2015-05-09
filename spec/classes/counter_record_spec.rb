@@ -53,7 +53,9 @@ module CassandraModel
 
     describe '.request_async' do
       let(:attributes) { {cluster: 6} }
-      let(:results) { MockFuture.new([attributes]) }
+      let(:page_results) { ['partition' => 'Partition Key'] }
+      let(:result_page) { MockPage.new(true, MockFuture.new([]), [attributes]) }
+      let(:results) { MockFuture.new(result_page) }
       let(:query_result) { [QueryResult.new(attributes)] }
       let(:statement) { double(:statement) }
       let(:where_clause) { nil }
