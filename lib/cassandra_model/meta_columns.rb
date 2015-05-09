@@ -1,5 +1,6 @@
 module CassandraModel
   module MetaColumns
+    attr_reader :deferred_column_writers, :async_deferred_column_writers
 
     def deferred_column(name, options)
       name = name.to_sym

@@ -53,6 +53,8 @@ module CassandraModel
       subject { Record }
 
       before do
+        Record.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
+        Record.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) { MockFuture.new(nil) }
         allow(Record).to receive(:statement).and_return(statement)
         allow(connection).to receive(:execute_async).and_return(MockFuture.new('OK'))
       end
@@ -591,15 +593,29 @@ module CassandraModel
         allow(connection).to receive(:execute_async).and_return(results)
       end
 
-      it 'should wrap everything in a future' do
-        expect(Record.new(attributes).save_async).to be_a_kind_of(ThomasUtils::Future)
+      context 'when the Record class has deferred columns' do
+        before do
+          allow(Record).to receive(:statement).and_return(statement)
+          Record.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
+          Record.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
+        end
+
+        it 'should wrap everything in a future' do
+          expect(Record.new(attributes).save_async).to be_a_kind_of(ThomasUtils::Future)
+        end
+      end
+
+      context 'when the Record class does not have deferred columns' do
+        it 'should return the wrapped cassandra future' do
+          expect(Record.new(attributes).save_async).to be_a_kind_of(ThomasUtils::FutureWrapper)
+        end
       end
 
       context 'when the record has been invalidated' do
         before { allow_any_instance_of(Record).to receive(:valid).and_return(false) }
 
         it 'should raise an error' do
-          expect{Record.new(attributes).save_async}.to raise_error('Cannot save invalidated record!')
+          expect { Record.new(attributes).save_async }.to raise_error('Cannot save invalidated record!')
         end
       end
 
@@ -735,7 +751,7 @@ module CassandraModel
       let(:attributes) { {partition: 'Partition Key', cluster: 'Cluster Key'} }
       let(:table_name) { :table }
       let(:where_clause) { (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ') }
-      let(:new_attributes) { { meta_data: 'Some Data' } }
+      let(:new_attributes) { {meta_data: 'Some Data'} }
       let(:query) { "UPDATE #{table_name} SET meta_data = ? WHERE #{where_clause}" }
       let(:results) { MockFuture.new([]) }
 
@@ -754,15 +770,15 @@ module CassandraModel
       end
 
       context 'with an invalid column' do
-        let(:new_attributes) { { fake_column: 'Some Fake Data' } }
+        let(:new_attributes) { {fake_column: 'Some Fake Data'} }
 
         it 'should raise an error' do
-          expect{Record.new(attributes).update_async(new_attributes)}.to raise_error("Invalid column 'fake_column' specified")
+          expect { Record.new(attributes).update_async(new_attributes) }.to raise_error("Invalid column 'fake_column' specified")
         end
       end
 
       context 'when updating a single key of a map' do
-        let(:new_attributes) { { :meta_data.index('Location') => 'North America' } }
+        let(:new_attributes) { {:meta_data.index('Location') => 'North America'} }
         let(:query) { "UPDATE #{table_name} SET meta_data['Location'] = ? WHERE #{where_clause}" }
 
         it 'should update only the value of that key for the map' do
@@ -772,7 +788,7 @@ module CassandraModel
       end
 
       context 'with multiple new attributes' do
-        let(:new_attributes) { { meta_data: 'meta-data', misc_data: 'Some additional information' } }
+        let(:new_attributes) { {meta_data: 'meta-data', misc_data: 'Some additional information'} }
         let(:query) { "UPDATE #{table_name} SET meta_data = ? AND misc_data = ? WHERE #{where_clause}" }
 
         it 'should update the record in the database with those attributes' do
@@ -823,7 +839,7 @@ module CassandraModel
 
     describe '#update' do
       let(:attributes) { {partition: 'Partition Key'} }
-      let(:new_attributes) { { meta_data: 'meta-data', misc_data: 'Some additional information' } }
+      let(:new_attributes) { {meta_data: 'meta-data', misc_data: 'Some additional information'} }
       let(:record) { Record.new(attributes) }
       let(:record_future) { MockFuture.new(record) }
 

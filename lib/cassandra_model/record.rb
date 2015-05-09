@@ -10,7 +10,7 @@ module CassandraModel
 
     attr_reader :attributes, :valid
 
-    def initialize(attributes, options = { validate: true })
+    def initialize(attributes, options = {validate: true})
       validate_attributes!(attributes) if options[:validate]
       @valid = true
       @attributes = attributes
@@ -70,8 +70,14 @@ module CassandraModel
 
     def internal_save_async
       raise 'Cannot save invalidated record!' unless valid
-      ThomasUtils::Future.new do
-        save_deferred_columns
+
+      if self.class.deferred_column_writers || self.class.async_deferred_column_writers
+        ThomasUtils::Future.new do
+          save_deferred_columns
+          future = save_row_async
+          ThomasUtils::FutureWrapper.new(future) { self }
+        end
+      else
         future = save_row_async
         ThomasUtils::FutureWrapper.new(future) { self }
       end
