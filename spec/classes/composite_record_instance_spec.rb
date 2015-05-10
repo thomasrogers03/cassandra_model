@@ -2,7 +2,7 @@ require 'rspec'
 
 module CassandraModel
   describe CompositeRecordInstance do
-    class MockRecord < Record
+    class MockRecordInstance < Record
       extend CompositeRecordStatic
       include CompositeRecordInstance
     end
@@ -17,24 +17,26 @@ module CassandraModel
     let(:defaults) { [{model: ''}, {model: '', series: ''}] }
 
     before do
-      MockRecord.reset!
-      MockRecord.partition_key = partition_key
-      MockRecord.clustering_columns = clustering_columns
-      MockRecord.columns = columns
-      MockRecord.composite_defaults = defaults
+      MockRecordInstance.reset!
+      MockRecordInstance.table_name = :mock_records
+      MockRecordInstance.partition_key = partition_key
+      MockRecordInstance.clustering_columns = clustering_columns
+      MockRecordInstance.columns = columns
+      MockRecordInstance.columns
+      MockRecordInstance.composite_defaults = defaults
       allow(Record).to receive(:statement).with(query).and_return(statement)
       allow(Record).to receive(:connection).and_return(connection)
     end
 
     shared_examples_for 'an instance query method' do |method, params|
 
-      subject { MockRecord.new(model: 'AABBCCDD', series: '91A', meta_data: {}) }
+      subject { MockRecordInstance.new(model: 'AABBCCDD', series: '91A', meta_data: {}) }
 
       describe 'resulting future' do
         let(:future) { double(:future, get: nil) }
 
         before do
-          allow_any_instance_of(MockRecord).to receive("internal_#{method}".to_sym).and_return(future)
+          allow_any_instance_of(MockRecordInstance).to receive("internal_#{method}".to_sym).and_return(future)
         end
 
         it 'should return a future resolving all related futures dealing with this record' do
@@ -51,7 +53,7 @@ module CassandraModel
     describe '#save_async' do
       let(:query) { 'INSERT INTO mock_records (rk_model, rk_series, ck_model, meta_data) VALUES (?, ?, ?, ?)' }
 
-      subject { MockRecord.new(model: 'AABBCCDD', series: '91A', meta_data: {}) }
+      subject { MockRecordInstance.new(model: 'AABBCCDD', series: '91A', meta_data: {}) }
 
       it_behaves_like 'an instance query method', :save_async, []
 
@@ -70,7 +72,7 @@ module CassandraModel
     describe '#delete_async' do
       let(:query) { 'DELETE FROM mock_records WHERE rk_model = ? AND rk_series = ? AND ck_model = ?' }
 
-      subject { MockRecord.new(model: 'AABBCCDD', series: '91A', meta_data: {}) }
+      subject { MockRecordInstance.new(model: 'AABBCCDD', series: '91A', meta_data: {}) }
 
       it_behaves_like 'an instance query method', :delete_async, []
 

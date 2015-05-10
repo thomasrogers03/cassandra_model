@@ -16,6 +16,9 @@ module CassandraModel
 
       # composite columns
       @composite_columns = nil
+      @composite_pk_map = nil
+      @composite_ck_map = nil
+      @composite_defaults = nil
 
       Connection.reset!
     end

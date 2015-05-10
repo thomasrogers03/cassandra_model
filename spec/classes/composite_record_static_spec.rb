@@ -2,26 +2,26 @@ require 'rspec'
 
 module CassandraModel
   describe CompositeRecordStatic do
-    class MockRecord < CassandraModel::Record
+    class MockRecordStatic < CassandraModel::Record
       extend CompositeRecordStatic
     end
 
     let(:columns) { [] }
 
     before do
-      MockRecord.reset!
-      MockRecord.columns = columns
+      MockRecordStatic.reset!
+      MockRecordStatic.columns = columns
     end
 
     describe '.columns' do
       let(:columns) { [:rk_model, :series, :ck_model, :meta_data] }
 
       it 'should reduce the columns starting with rk_ or ck_ to base columns' do
-        expect(MockRecord.columns).to eq([:model, :series, :meta_data])
+        expect(MockRecordStatic.columns).to eq([:model, :series, :meta_data])
       end
 
       it 'should create methods for the reduced columns, rather than the internal ones' do
-        record = MockRecord.new({})
+        record = MockRecordStatic.new({})
         record.model = 'KKBBCD'
         expect(record.model).to eq('KKBBCD')
       end
@@ -30,7 +30,7 @@ module CassandraModel
         let(:columns) { [:rk_model, :rk_series, :rk_colour, :ck_price, :ck_model, :ck_colour, :meta_data] }
 
         it 'should reduce the columns starting with rk_ or ck_ to base columns' do
-          expect(MockRecord.columns).to eq([:model, :series, :colour, :price, :meta_data])
+          expect(MockRecordStatic.columns).to eq([:model, :series, :colour, :price, :meta_data])
         end
       end
     end
@@ -39,15 +39,15 @@ module CassandraModel
       describe ".#{method}" do
         let(:columns) { [:rk_model, :rk_series, :rk_colour, :ck_price, :ck_model, :ck_colour, :meta_data] }
 
-        before { MockRecord.columns }
+        before { MockRecordStatic.columns }
 
         {"#{prefix}_model".to_sym => :model, "#{prefix}_colour".to_sym => :colour}.each do |actual, composite|
           it 'should map a reduced row key to its original name' do
-            expect(MockRecord.public_send(method)[composite]).to eq(actual)
+            expect(MockRecordStatic.public_send(method)[composite]).to eq(actual)
           end
 
           it 'should map a the original row key to its reduced name' do
-            expect(MockRecord.public_send(method)[actual]).to eq(composite)
+            expect(MockRecordStatic.public_send(method)[actual]).to eq(composite)
           end
         end
       end
@@ -60,9 +60,12 @@ module CassandraModel
       let(:columns) { [:rk_model, :rk_series, :rk_colour, :ck_price, :ck_model, :ck_colour, :meta_data] }
       let(:defaults) { nil }
 
-      before { MockRecord.composite_defaults = defaults }
+      before do
+        MockRecordStatic.columns
+        MockRecordStatic.composite_defaults = defaults
+      end
 
-      subject { MockRecord.composite_defaults }
+      subject { MockRecordStatic.composite_defaults }
 
       it { is_expected.to be_nil }
 
