@@ -119,11 +119,37 @@ module CassandraModel
         end
 
         context 'with different missing information' do
+          let(:page_results) do
+            [
+                {
+                    'rk_model' => '',
+                    'rk_series' => '',
+                    'ck_price' => 9.99,
+                    'ck_model' => 'AABBCCDD',
+                    'ck_series' => '91A',
+                },
+                {
+                    'rk_model' => '',
+                    'rk_series' => '',
+                    'ck_price' => 9.99,
+                    'ck_model' => 'DDEEFFGG',
+                    'ck_series' => '10C',
+                },
+            ]
+          end
+          let(:result) { MockPage.new(true, nil, page_results) }
+          let(:result_future) { MockFuture.new(result) }
           let(:query) { 'SELECT * FROM mock_records WHERE ck_price = ? AND rk_model = ? AND rk_series = ?' }
+
+          before { allow(connection).to receive(:execute_async).with(statement, 9.99, '', '', {}).and_return(result_future) }
 
           it 'should add the default values to the query for all default variations' do
             expect(connection).to receive(:execute_async).with(statement, 9.99, '', '', {})
             MockRecordStatic.request_async(price: 9.99)
+          end
+
+          it 'should map the real columns to composite ones' do
+            results = MockRecordStatic.request_async(price: 9.99).get
           end
         end
       end

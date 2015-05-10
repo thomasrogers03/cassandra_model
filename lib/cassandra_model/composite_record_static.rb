@@ -44,7 +44,7 @@ module CassandraModel
 
     def where_params(clause)
       updated_clause = clause.inject({}) do |memo, (key, value)|
-        memo.merge((composite_pk_map[key] || composite_ck_map[key] || key) => value)
+        memo.merge!((composite_pk_map[key] || composite_ck_map[key] || key) => value)
       end
 
       missing_keys = partition_key - updated_clause.keys
@@ -56,7 +56,19 @@ module CassandraModel
 
     def row_composite_default(row)
       row.inject({}) do |memo, (key, value)|
-        memo.merge((composite_pk_map[key] || key) => value)
+        memo.merge!((composite_pk_map[key] || key) => value)
+      end
+    end
+
+    def row_attributes(row)
+      row = super(row)
+      columns.inject({}) do |memo, column|
+        mapped_column = composite_ck_map[column]
+        if mapped_column
+          memo.merge!(column => row[mapped_column])
+        else
+          memo.merge!(column => row[column])
+        end
       end
     end
 

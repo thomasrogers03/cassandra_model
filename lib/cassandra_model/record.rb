@@ -292,8 +292,12 @@ module CassandraModel
       end
 
       def record_from_result(row, use_query_result)
-        attributes = row.symbolize_keys
+        attributes = row_attributes(row)
         use_query_result ? QueryResult.create(attributes) : self.new(attributes)
+      end
+
+      def row_attributes(row)
+        row.symbolize_keys
       end
 
     end
