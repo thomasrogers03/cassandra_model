@@ -578,7 +578,8 @@ module CassandraModel
       let(:attributes) { {partition: 'Partition Key'} }
       let(:existence_check) { nil }
       let(:query) { "INSERT INTO table (#{columns.join(', ')}) VALUES (#{(%w(?) * columns.size).join(', ')})#{existence_check}" }
-      let(:results) { MockFuture.new([]) }
+      let(:page_results) { [] }
+      let(:results) { MockFuture.new(page_results) }
 
       before do
         Record.table_name = :table
@@ -629,6 +630,18 @@ module CassandraModel
         it 'should save the record to the database' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
           Record.new(attributes).save_async(check_exists: true)
+        end
+
+        it 'should NOT invalidate the record if it does not yet exist' do
+          expect(Record.new(attributes).save_async(check_exists: true).get.valid).to eq(true)
+        end
+
+        context 'when the record already exists' do
+          let(:page_results) { [{'[applied]' => false}] }
+
+          it 'should invalidate the record if it already exists' do
+            expect(Record.new(attributes).save_async(check_exists: true).get.valid).to eq(false)
+          end
         end
       end
 

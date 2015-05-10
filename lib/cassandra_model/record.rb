@@ -79,8 +79,15 @@ module CassandraModel
         end
       else
         future = save_row_async(options)
-        ThomasUtils::FutureWrapper.new(future) { self }
+        ThomasUtils::FutureWrapper.new(future) do |result|
+          invalidate! if save_rejected?(result)
+          self
+        end
       end
+    end
+
+    def save_rejected?(result)
+      result.first && result.first['[applied]'] == false
     end
 
     def internal_update_async(new_attributes)
