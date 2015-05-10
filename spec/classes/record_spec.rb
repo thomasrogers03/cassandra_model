@@ -496,13 +496,22 @@ module CassandraModel
       let(:attributes) { {partition: 'Partition Key'} }
       let(:record) { Record.new(attributes) }
       let(:future_record) { MockFuture.new(record) }
+      let(:options) { {} }
 
       before do
-        allow(Record).to receive(:create_async).with(attributes).and_return(future_record)
+        allow(Record).to receive(:create_async).with(attributes, options).and_return(future_record)
       end
 
       it 'should resolve the future returned by .create_async' do
         expect(Record.create(attributes)).to eq(record)
+      end
+
+      context 'when options are provided' do
+        let(:options) { {check_exists: true} }
+
+        it 'should resolve the future returned by .create_async' do
+          expect(Record.create(attributes, options)).to eq(record)
+        end
       end
     end
 

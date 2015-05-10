@@ -193,8 +193,8 @@ module CassandraModel
         self.new(attributes).save_async(options)
       end
 
-      def create(attributes)
-        create_async(attributes).get
+      def create(attributes, options = {})
+        create_async(attributes, options).get
       end
 
       def request_async(clause, options = {})
