@@ -20,6 +20,14 @@ module CassandraModel
       Connection.reset!
     end
 
+    def self.partition_key=(columns)
+      @partition_key = columns
+    end
+
+    def self.clustering_columns=(columns)
+      @clustering_columns = columns
+    end
+
     def self.columns=(columns)
       @columns = columns
     end

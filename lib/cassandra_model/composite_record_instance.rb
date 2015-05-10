@@ -8,6 +8,22 @@ module CassandraModel
       ThomasUtils::FutureWrapper.new(futures) { self }
     end
 
+    def delete_async
+      futures = composite_rows.map { |record| record.send(:internal_delete_async) }
+
+      futures << internal_delete_async
+      futures = ThomasUtils::MultiFutureWrapper.new(futures) { |result| result }
+      ThomasUtils::FutureWrapper.new(futures) { self }
+    end
+
+    def update_async(new_attributes)
+      futures = composite_rows.map { |record| record.send(:internal_update_async, new_attributes) }
+
+      futures << internal_update_async(new_attributes)
+      futures = ThomasUtils::MultiFutureWrapper.new(futures) { |result| result }
+      ThomasUtils::FutureWrapper.new(futures) { self }
+    end
+
     private
 
     def composite_rows
