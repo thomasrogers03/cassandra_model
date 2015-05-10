@@ -6,11 +6,21 @@ module CassandraModel
       extend CompositeRecordStatic
     end
 
-    let(:columns) { [] }
+    let(:partition_key) { [:rk_model, :rk_series] }
+    let(:clustering_columns) { [:ck_price, :ck_model] }
+    let(:columns) { partition_key + clustering_columns + [:meta_data] }
+    let(:connection) { double(:connection, request_async: MockFuture.new([])) }
+    let(:statement) { double(:statement) }
+    let(:query) { '' }
 
     before do
       MockRecordStatic.reset!
+      MockRecordStatic.partition_key = partition_key
+      MockRecordStatic.clustering_columns = clustering_columns
       MockRecordStatic.columns = columns
+      MockRecordStatic.table_name = :mock_records
+      allow(Record).to receive(:connection).and_return(connection)
+      allow(Record).to receive(:statement).with(query).and_return(statement)
     end
 
     describe '.columns' do
@@ -85,5 +95,39 @@ module CassandraModel
         end
       end
     end
+
+    describe '.request_async' do
+      let(:query) { 'SELECT * FROM mock_records WHERE rk_model = ? AND rk_series = ? AND ck_price = ?' }
+      let(:defaults) { [{model: ''}, {model: '', series: ''}] }
+
+      before do
+        MockRecordStatic.columns
+        MockRecordStatic.composite_defaults = defaults
+      end
+
+      it 'should query by mapping composite columns to the real ones' do
+        expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 9.99, {})
+        MockRecordStatic.request_async(model: 'AABBCCDD', series: '91A', price: 9.99)
+      end
+
+      context 'when missing information from the query' do
+        let(:query) { 'SELECT * FROM mock_records WHERE rk_series = ? AND ck_price = ? AND rk_model = ?' }
+
+        it 'should add the default values to the query' do
+          expect(connection).to receive(:execute_async).with(statement, '91A', 9.99, '', {})
+          MockRecordStatic.request_async(series: '91A', price: 9.99)
+        end
+
+        context 'with different missing information' do
+          let(:query) { 'SELECT * FROM mock_records WHERE ck_price = ? AND rk_model = ? AND rk_series = ?' }
+
+          it 'should add the default values to the query for all default variations' do
+            expect(connection).to receive(:execute_async).with(statement, 9.99, '', '', {})
+            MockRecordStatic.request_async(price: 9.99)
+          end
+        end
+      end
+    end
+
   end
 end
