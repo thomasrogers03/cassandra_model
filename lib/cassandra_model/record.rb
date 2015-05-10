@@ -170,12 +170,15 @@ module CassandraModel
       end
 
       def query_for_save(options = {})
-        column_names = internal_columns.join(', ')
-        column_sanitizers = (%w(?) * internal_columns.size).join(', ')
         existence_clause = if options[:check_exists]
-                             ' IF NOT EXISTS'
-                           end
-        @save_query ||= "INSERT INTO #{table_name} (#{column_names}) VALUES (#{column_sanitizers})#{existence_clause}"
+          ' IF NOT EXISTS'
+        end
+        @save_query ||= begin
+          column_names = internal_columns.join(', ')
+          column_sanitizers = (%w(?) * internal_columns.size).join(', ')
+          "INSERT INTO #{table_name} (#{column_names}) VALUES (#{column_sanitizers})"
+        end
+        "#{@save_query}#{existence_clause}"
       end
 
       def query_for_delete
