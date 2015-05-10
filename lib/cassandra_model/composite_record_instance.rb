@@ -1,9 +1,9 @@
 module CassandraModel
   module CompositeRecordInstance
-    def save_async
-      futures = composite_rows.map { |record| record.send(:internal_save_async) }
+    def save_async(options = {})
+      futures = composite_rows.map { |record| record.send(:internal_save_async, options) }
 
-      futures << internal_save_async
+      futures << internal_save_async(options)
       futures = ThomasUtils::MultiFutureWrapper.new(futures) { }
       ThomasUtils::FutureWrapper.new(futures) { self }
     end

@@ -54,7 +54,7 @@ module CassandraModel
     describe '#save_async' do
       let(:query) { 'INSERT INTO mock_records (rk_model, rk_series, ck_model, meta_data) VALUES (?, ?, ?, ?)' }
 
-      it_behaves_like 'an instance query method', :save_async, []
+      it_behaves_like 'an instance query method', :save_async, [check_exists: true]
 
       it 'should save the record with the composite columns properly resolved' do
         expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 'AABBCCDD', {}, {})
