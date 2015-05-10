@@ -16,6 +16,8 @@
 
 require 'cassandra_model/connection'
 require 'cassandra_model/record'
+require 'cassandra_model/composite_record_static'
+require 'cassandra_model/composite_record_instance'
 require 'cassandra_model/result_paginator'
 require 'cassandra_model/query_result'
 require 'cassandra_model/counter_record'
