@@ -189,8 +189,8 @@ module CassandraModel
         "UPDATE #{table_name} SET #{set_clause} WHERE #{where_clause}"
       end
 
-      def create_async(attributes)
-        self.new(attributes).save_async
+      def create_async(attributes, options = {})
+        self.new(attributes).save_async(options)
       end
 
       def create(attributes)

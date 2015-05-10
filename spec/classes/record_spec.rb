@@ -255,13 +255,22 @@ module CassandraModel
       let(:klass) { Record }
       let(:record) { klass.new(attributes) }
       let(:future_record) { MockFuture.new(record) }
+      let(:options) { {} }
 
       before do
-        allow_any_instance_of(Record).to receive(:save_async).and_return(future_record)
+        allow_any_instance_of(Record).to receive(:save_async).with(options).and_return(future_record)
       end
 
       it 'should return a new record instance with the specified attributes' do
         expect(Record.create_async(attributes).get).to eq(record)
+      end
+
+      context 'when options are provided' do
+        let(:options) { {check_exists: true} }
+
+        it 'should return a new record instance with the specified attributes' do
+          expect(Record.create_async(attributes, options).get).to eq(record)
+        end
       end
 
       context 'with a different record type' do
