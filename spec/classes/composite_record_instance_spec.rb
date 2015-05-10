@@ -16,6 +16,8 @@ module CassandraModel
     let(:connection) { double(:connection, execute_async: result_future) }
     let(:defaults) { [{model: ''}, {model: '', series: ''}] }
 
+    subject { MockRecordInstance.new(model: 'AABBCCDD', series: '91A', meta_data: {}) }
+
     before do
       MockRecordInstance.reset!
       MockRecordInstance.table_name = :mock_records
@@ -29,8 +31,6 @@ module CassandraModel
     end
 
     shared_examples_for 'an instance query method' do |method, params|
-
-      subject { MockRecordInstance.new(model: 'AABBCCDD', series: '91A', meta_data: {}) }
 
       describe 'resulting future' do
         let(:future) { double(:future, get: nil) }
@@ -53,8 +53,6 @@ module CassandraModel
     describe '#save_async' do
       let(:query) { 'INSERT INTO mock_records (rk_model, rk_series, ck_model, meta_data) VALUES (?, ?, ?, ?)' }
 
-      subject { MockRecordInstance.new(model: 'AABBCCDD', series: '91A', meta_data: {}) }
-
       it_behaves_like 'an instance query method', :save_async, []
 
       it 'should save the record with the composite columns properly resolved' do
@@ -72,8 +70,6 @@ module CassandraModel
     describe '#delete_async' do
       let(:query) { 'DELETE FROM mock_records WHERE rk_model = ? AND rk_series = ? AND ck_model = ?' }
 
-      subject { MockRecordInstance.new(model: 'AABBCCDD', series: '91A', meta_data: {}) }
-
       it_behaves_like 'an instance query method', :delete_async, []
 
       it 'should save the record with the composite columns properly resolved' do
@@ -85,6 +81,24 @@ module CassandraModel
         expect(connection).to receive(:execute_async).with(statement, '', '91A', 'AABBCCDD', {})
         expect(connection).to receive(:execute_async).with(statement, '', '', 'AABBCCDD', {})
         subject.delete_async
+      end
+    end
+
+    describe '#update_async' do
+      let(:query) { 'UPDATE mock_records SET meta_data = ? WHERE rk_model = ? AND rk_series = ? AND ck_model = ?' }
+      attributes = {meta_data: {'Description' => 'A powerful drill'}}
+
+      it_behaves_like 'an instance query method', :update_async, [attributes]
+
+      it 'should save the record with the composite columns properly resolved' do
+        expect(connection).to receive(:execute_async).with(statement, {'Description' => 'A powerful drill'}, 'AABBCCDD', '91A', 'AABBCCDD', {})
+        subject.update_async(attributes)
+      end
+
+      it 'should save variations for each default column' do
+        expect(connection).to receive(:execute_async).with(statement, {'Description' => 'A powerful drill'}, '', '91A', 'AABBCCDD', {})
+        expect(connection).to receive(:execute_async).with(statement, {'Description' => 'A powerful drill'}, '', '', 'AABBCCDD', {})
+        subject.update_async(attributes)
       end
     end
 
