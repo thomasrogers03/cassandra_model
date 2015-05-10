@@ -1,5 +1,7 @@
 module CassandraModel
   module CompositeRecordStatic
+    attr_writer :composite_defaults
+
     def columns
       @composite_columns ||= composite_columns.each { |column| define_attribute(column) }
     end
@@ -10,6 +12,16 @@ module CassandraModel
 
     def composite_ck_map
       @composite_ck_map ||= {}
+    end
+
+    def composite_defaults
+      if @composite_defaults
+        @composite_defaults.map do |row|
+          row.inject({}) do |memo, (key, value)|
+            memo.merge((composite_pk_map[key] || key) => value)
+          end
+        end
+      end
     end
 
     private

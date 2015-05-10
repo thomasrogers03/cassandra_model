@@ -56,5 +56,31 @@ module CassandraModel
     it_behaves_like 'a composite column map', :composite_pk_map, :rk
     it_behaves_like 'a composite column map', :composite_ck_map, :ck
 
+    describe '.composite_defaults' do
+      let(:columns) { [:rk_model, :rk_series, :rk_colour, :ck_price, :ck_model, :ck_colour, :meta_data] }
+      let(:defaults) { nil }
+
+      before { MockRecord.composite_defaults = defaults }
+
+      subject { MockRecord.composite_defaults }
+
+      it { is_expected.to be_nil }
+
+      context 'with default values for composite row keys' do
+        let(:defaults) { [{model: ''}] }
+
+        it 'should map the internal columns to their default values' do
+          is_expected.to eq([{rk_model: ''}])
+        end
+
+        context 'with multiple variations' do
+          let(:defaults) { [{model: ''}, {model: '', series: ''}, {series: '', colour: ''}] }
+
+          it 'should map all the internal columns for each variation' do
+            is_expected.to eq([{rk_model: ''}, {rk_model: '', rk_series: ''}, {rk_series: '', rk_colour: ''}])
+          end
+        end
+      end
+    end
   end
 end
