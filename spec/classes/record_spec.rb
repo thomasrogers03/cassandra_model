@@ -528,15 +528,6 @@ module CassandraModel
         allow(Record).to receive(:request_async).with(clause, options).and_return(future_record)
         expect(Record.request(clause, options)).to eq([record])
       end
-
-      context 'when paginating' do
-        let(:options) { {page_size: 3} }
-
-        it 'should just forward the result' do
-          allow(Record).to receive(:request_async).with(clause, options).and_return(future_record)
-          expect(Record.request(clause, options)).to eq(future_record)
-        end
-      end
     end
 
     describe '.first' do

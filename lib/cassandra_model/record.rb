@@ -218,9 +218,7 @@ module CassandraModel
       end
 
       def request(clause, options = {})
-        page_size = options[:page_size]
-        future = request_async(clause, options)
-        page_size ? future : future.get
+        request_async(clause, options).get
       end
 
       def first(clause = {}, options = {})
