@@ -657,15 +657,25 @@ module CassandraModel
       let(:attributes) { {partition: 'Partition Key'} }
       let(:record) { Record.new(attributes) }
       let(:record_future) { MockFuture.new(record) }
+      let(:options) { {} }
+
+      before { allow(record).to receive(:save_async).with(options).and_return(record_future) }
 
       it 'should save the record' do
-        expect(record).to receive(:save_async).and_return(record_future)
+        expect(record).to receive(:save_async).with(options).and_return(record_future)
         record.save
       end
 
       it 'should resolve the future of #save_async' do
-        allow(record).to receive(:save_async).and_return(record_future)
         expect(record.save).to eq(record)
+      end
+
+      context 'when options are provided' do
+        let(:options) { {check_exists: true} }
+
+        it 'should resolve the future of #save_async' do
+          expect(record.save(options)).to eq(record)
+        end
       end
     end
 

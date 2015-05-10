@@ -33,8 +33,8 @@ module CassandraModel
       @valid = false
     end
 
-    def save
-      save_async.get
+    def save(options = {})
+      save_async(options).get
     end
 
     def delete
