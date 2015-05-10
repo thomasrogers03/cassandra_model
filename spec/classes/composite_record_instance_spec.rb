@@ -36,7 +36,8 @@ module CassandraModel
         let(:future) { double(:future, get: nil) }
 
         before do
-          allow_any_instance_of(MockRecordInstance).to receive("internal_#{method}".to_sym).and_return(future)
+          args = params.empty? ? [no_args] : params
+          allow_any_instance_of(MockRecordInstance).to receive("internal_#{method}".to_sym).with(*args).and_return(future)
         end
 
         it 'should return a future resolving all related futures dealing with this record' do
