@@ -87,7 +87,8 @@ module CassandraModel
     end
 
     def save_rejected?(result)
-      result.first && result.first['[applied]'] == false
+      save_result = result.first
+      save_result && save_result['[applied]'] == false
     end
 
     def internal_update_async(new_attributes)
