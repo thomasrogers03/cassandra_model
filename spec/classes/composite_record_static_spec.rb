@@ -140,17 +140,15 @@ module CassandraModel
             [
                 {
                     'rk_model' => '',
-                    'rk_series' => '',
+                    'rk_series' => '91C',
                     'ck_price' => 9.99,
-                    'ck_model' => 'AABBCCDD',
-                    'ck_series' => '91A',
+                    'ck_model' => 'AABBCCDD'
                 },
                 {
                     'rk_model' => '',
-                    'rk_series' => '',
+                    'rk_series' => '91C',
                     'ck_price' => 9.99,
-                    'ck_model' => 'DDEEFFGG',
-                    'ck_series' => '10C',
+                    'ck_model' => 'DDEEFFGG'
                 },
             ]
           end
@@ -167,6 +165,10 @@ module CassandraModel
 
           it 'should map the real columns to composite ones' do
             results = MockRecordStatic.request_async(price: 9.99).get
+            expect(results).to eq([
+                                      MockRecordStatic.new(model: 'AABBCCDD', series: '91C', price: 9.99, meta_data: nil),
+                                      MockRecordStatic.new(model: 'DDEEFFGG', series: '91C', price: 9.99, meta_data: nil)
+                                  ])
           end
         end
       end

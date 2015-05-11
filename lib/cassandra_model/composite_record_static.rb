@@ -70,7 +70,7 @@ module CassandraModel
     def row_attributes(row)
       row = super(row)
       columns.inject({}) do |memo, column|
-        mapped_column = composite_ck_map[column]
+        mapped_column = composite_ck_map[column] || composite_pk_map[column]
         if mapped_column
           memo.merge!(column => row[mapped_column])
         else
