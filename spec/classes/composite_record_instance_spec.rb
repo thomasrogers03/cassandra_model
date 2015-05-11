@@ -48,6 +48,11 @@ module CassandraModel
         it 'should return only the original instance' do
           expect(subject.public_send(method, *params).get).to eq(subject)
         end
+
+        it 'should set a leader when wrapping multiple futures' do
+          expect(future).to receive(:on_success).once
+          subject.public_send(method, *params).on_success {  }
+        end
       end
     end
 
