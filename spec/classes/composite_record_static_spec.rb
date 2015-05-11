@@ -101,7 +101,6 @@ module CassandraModel
       let(:defaults) { [{model: ''}, {model: '', series: ''}] }
 
       before do
-        MockRecordStatic.columns
         MockRecordStatic.composite_defaults = defaults
       end
 

@@ -43,6 +43,8 @@ module CassandraModel
     end
 
     def where_params(clause)
+      columns
+
       updated_clause = clause.inject({}) do |memo, (key, value)|
         memo.merge!((composite_pk_map[key] || composite_ck_map[key] || key) => value)
       end
