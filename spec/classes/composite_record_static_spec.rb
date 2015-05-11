@@ -109,6 +109,24 @@ module CassandraModel
         MockRecordStatic.request_async(model: 'AABBCCDD', series: '91A', price: 9.99)
       end
 
+      context 'when selecting composite columns' do
+        let(:query) { 'SELECT ck_model FROM mock_records WHERE rk_model = ? AND rk_series = ? AND ck_price = ?' }
+
+        it 'should map the composite column to the clustering column' do
+          expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 9.99, {})
+          MockRecordStatic.request_async({model: 'AABBCCDD', series: '91A', price: 9.99}, select: [:model])
+        end
+
+        context 'with a different columns selected' do
+          let(:query) { 'SELECT ck_model, rk_series, meta_data FROM mock_records WHERE rk_model = ? AND rk_series = ? AND ck_price = ?' }
+
+          it 'should map the composite column to the clustering column' do
+            expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 9.99, {})
+            MockRecordStatic.request_async({model: 'AABBCCDD', series: '91A', price: 9.99}, select: [:model, :series, :meta_data])
+          end
+        end
+      end
+
       context 'when missing information from the query' do
         let(:query) { 'SELECT * FROM mock_records WHERE rk_series = ? AND ck_price = ? AND rk_model = ?' }
 

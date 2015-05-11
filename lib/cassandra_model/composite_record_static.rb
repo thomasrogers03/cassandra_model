@@ -42,6 +42,11 @@ module CassandraModel
       end
     end
 
+    def select_clause(select)
+      select.map! { |column| composite_ck_map[column] || composite_pk_map[column] || column } if select
+      super(select)
+    end
+
     def where_params(clause)
       columns
 

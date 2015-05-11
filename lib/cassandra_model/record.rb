@@ -213,13 +213,13 @@ module CassandraModel
       end
 
       def request_meta(clause, options)
+        where_clause, where_values = where_params(clause)
         select_clause, use_query_result = select_params(options)
         order_by = options[:order_by]
         order_by_clause = if order_by
                             " ORDER BY #{multi_csv_clause(order_by)}"
                           end
         limit_clause = limit_clause(options)
-        where_clause, where_values = where_params(clause)
         request_query = "SELECT #{select_clause} FROM #{table_name}#{where_clause}#{order_by_clause}#{limit_clause}"
         [request_query, use_query_result, where_values]
       end
