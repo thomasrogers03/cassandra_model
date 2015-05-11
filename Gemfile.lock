@@ -1,8 +1,8 @@
 GIT
   remote: https://github.com/thomasrogers03/thomas_utils.git
-  revision: 7ef8cec556cfd631bfc98ab77da747ed247f1c6b
+  revision: 3f086207025ea20bb3962ae8e9ebb3b95a45eaa3
   specs:
-    thomas_utils (0.1.11)
+    thomas_utils (0.1.12)
 
 PATH
   remote: .
