@@ -43,7 +43,7 @@ module CassandraModel
     end
 
     def select_clause(select)
-      select.map! { |column| composite_ck_map[column] || composite_pk_map[column] || column } if select
+      select.map! { |column| mapped_column(column) } if select
       super(select)
     end
 
@@ -69,14 +69,14 @@ module CassandraModel
 
     def row_attributes(row)
       row = super(row)
-      columns.inject({}) do |memo, column|
-        mapped_column = composite_ck_map[column] || composite_pk_map[column]
-        if mapped_column
-          memo.merge!(column => row[mapped_column])
-        else
-          memo.merge!(column => row[column])
-        end
+
+      row.inject({}) do |memo, (column, value)|
+        memo.merge!(mapped_column(column) => value)
       end
+    end
+
+    def mapped_column(column)
+      (composite_ck_map[column] || composite_pk_map[column] || column)
     end
 
   end

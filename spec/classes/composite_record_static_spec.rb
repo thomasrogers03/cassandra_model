@@ -142,13 +142,15 @@ module CassandraModel
                     'rk_model' => '',
                     'rk_series' => '91C',
                     'ck_price' => 9.99,
-                    'ck_model' => 'AABBCCDD'
+                    'ck_model' => 'AABBCCDD',
+                    'meta_data' => nil
                 },
                 {
                     'rk_model' => '',
                     'rk_series' => '91C',
                     'ck_price' => 9.99,
-                    'ck_model' => 'DDEEFFGG'
+                    'ck_model' => 'DDEEFFGG',
+                    'meta_data' => nil
                 },
             ]
           end
@@ -169,6 +171,16 @@ module CassandraModel
                                       MockRecordStatic.new(model: 'AABBCCDD', series: '91C', price: 9.99, meta_data: nil),
                                       MockRecordStatic.new(model: 'DDEEFFGG', series: '91C', price: 9.99, meta_data: nil)
                                   ])
+          end
+
+          context 'when selecting specific columns' do
+            let(:page_results) { [{'ck_model' => 'DDEEFFGG'}] }
+            let(:query) { 'SELECT ck_model FROM mock_records WHERE ck_price = ? AND rk_model = ? AND rk_series = ?' }
+
+            it 'should map only the selected composite columns' do
+              results = MockRecordStatic.request_async({price: 9.99}, select: [:model]).get
+              expect(results).to eq([QueryResult.create(model: 'DDEEFFGG')])
+            end
           end
         end
       end
