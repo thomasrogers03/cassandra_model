@@ -7,11 +7,19 @@ module CassandraModel
     end
 
     def composite_pk_map
-      @composite_pk_map ||= {}
+      unless @composite_pk_map
+        @composite_pk_map = {}
+        columns
+      end
+      @composite_pk_map
     end
 
     def composite_ck_map
-      @composite_ck_map ||= {}
+      unless @composite_ck_map
+        @composite_ck_map = {}
+        columns
+      end
+      @composite_ck_map
     end
 
     def composite_defaults
@@ -23,7 +31,6 @@ module CassandraModel
     end
 
     def generate_composite_defaults(column_defaults, truth_table)
-      columns
       @composite_defaults = truth_table.map { |row| column_defaults.except(*row) }
     end
 
@@ -53,8 +60,6 @@ module CassandraModel
     end
 
     def where_params(clause)
-      columns
-
       updated_clause = clause.inject({}) do |memo, (key, value)|
         memo.merge!((composite_pk_map[key] || composite_ck_map[key] || key) => value)
       end
