@@ -96,6 +96,22 @@ module CassandraModel
       end
     end
 
+    describe '.generate_composite_defaults' do
+      subject { MockRecordStatic.composite_defaults }
+      let(:column_defaults){ {model: '', series: ''} }
+      let(:truth_table) { [[:model]] }
+
+      before { MockRecordStatic.generate_composite_defaults(column_defaults, truth_table) }
+      it 'should should generate a table of composite defaults given default column mapping and a truth table' do
+        is_expected.to eq([{rk_series: ''}])
+      end
+
+      context 'with a different truth table' do
+        let(:truth_table) { [[:model], []] }
+          it { is_expected.to eq [{rk_series: ''}, {rk_model: '', rk_series: ''} ] }
+      end
+    end
+
     describe '.request_async' do
       let(:query) { 'SELECT * FROM mock_records WHERE rk_model = ? AND rk_series = ? AND ck_price = ?' }
       let(:defaults) { [{model: ''}, {model: '', series: ''}] }

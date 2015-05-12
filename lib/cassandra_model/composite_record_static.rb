@@ -22,6 +22,11 @@ module CassandraModel
       end
     end
 
+    def generate_composite_defaults(column_defaults, truth_table)
+      columns
+      @composite_defaults = truth_table.map { |row| column_defaults.except(*row) }
+    end
+
     private
 
     def composite_columns
