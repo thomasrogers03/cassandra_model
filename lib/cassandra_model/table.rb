@@ -33,11 +33,10 @@ module CassandraModel
     private
 
     def keyspace
-      unless @keyspace
+      @keyspace ||= begin
         connection
-        @keyspace = cluster.keyspace(config[:keyspace])
+        cluster.keyspace(config[:keyspace])
       end
-      @keyspace
     end
 
     def config

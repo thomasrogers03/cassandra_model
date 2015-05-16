@@ -2,12 +2,9 @@ module CassandraModel
   class Record
     def self.reset!
       # base class
-      @table_name = nil
+      @table = nil
       @save_query = nil
       @delete_qeury = nil
-      @partition_key = nil
-      @clustering_columns = nil
-      @columns = nil
 
       # meta columns
       @deferred_column_writers = nil
@@ -24,15 +21,15 @@ module CassandraModel
     end
 
     def self.partition_key=(columns)
-      @partition_key = columns
+      table.partition_key = columns
     end
 
     def self.clustering_columns=(columns)
-      @clustering_columns = columns
+      table.clustering_columns = columns
     end
 
     def self.columns=(columns)
-      @columns = columns
+      table.columns = columns
     end
   end
 end

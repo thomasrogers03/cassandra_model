@@ -137,26 +137,20 @@ module CassandraModel
     end
 
     class << self
+      extend Forwardable
+
+      def_delegators :table, :reset_local_schema!, :partition_key, :clustering_columns
+
       def table_name=(value)
-        @table_name = value
+        @table = Table.new(value)
       end
 
       def table_name
-        @table_name ||= self.name.demodulize.underscore.pluralize
+        table.name
       end
 
-      def reset_local_schema!
-        @partition_key = nil
-        @clustering_columns = nil
-        @columns = nil
-      end
-
-      def partition_key
-        @partition_key ||= keyspace.table(table_name.to_s).send(:partition_key).map { |column| column.name.to_sym }
-      end
-
-      def clustering_columns
-        @clustering_columns ||= keyspace.table(table_name.to_s).send(:clustering_columns).map { |column| column.name.to_sym }
+      def table
+        @table ||= Table.new(generate_table_name)
       end
 
       def columns
@@ -166,13 +160,13 @@ module CassandraModel
       end
 
       def internal_columns
-        @columns ||= keyspace.table(table_name.to_s).columns.map { |column| column.name.to_sym }
+        @columns || table.columns
       end
 
       def query_for_save(options = {})
         existence_clause = if options[:check_exists]
-          ' IF NOT EXISTS'
-        end
+                             ' IF NOT EXISTS'
+                           end
         @save_query ||= begin
           column_names = internal_columns.join(', ')
           column_sanitizers = (%w(?) * internal_columns.size).join(', ')
@@ -237,6 +231,10 @@ module CassandraModel
       end
 
       private
+
+      def generate_table_name
+        self.name.demodulize.underscore.pluralize
+      end
 
       def define_attribute(column)
         define_method(:"#{column}=") { |value| self.attributes[column] = value }

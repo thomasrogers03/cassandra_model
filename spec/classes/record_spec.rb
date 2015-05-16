@@ -51,7 +51,7 @@ module CassandraModel
       let(:updated_columns) { [updated_partition_key, updated_clustering_column] }
       let(:table_object) do
         table = double(:table)
-        allow(table).to receive(:partition_key).and_return([partition_key], [updated_partition_key])
+        allow(table).to(receive(:partition_key)).and_return([partition_key], [updated_partition_key])
         allow(table).to receive(:clustering_columns).and_return([clustering_column], [updated_clustering_column])
         allow(table).to receive(:columns).and_return(columns, updated_columns)
         table
@@ -62,6 +62,7 @@ module CassandraModel
       before do
         Record.partition_key
         Record.clustering_columns
+        Record.columns = nil
         Record.columns
         Record.reset_local_schema!
       end
@@ -181,7 +182,6 @@ module CassandraModel
       let(:klass) { Record }
 
       before do
-        klass.table_name = nil
         klass.instance_variable_set(:@save_query, nil)
         klass.columns = columns
       end
@@ -218,7 +218,6 @@ module CassandraModel
       let(:klass) { Record }
 
       before do
-        klass.table_name = nil
         klass.columns = partition_key + clustering_columns
         allow(klass).to receive(:partition_key).and_return(partition_key)
         allow(klass).to receive(:clustering_columns).and_return(clustering_columns)

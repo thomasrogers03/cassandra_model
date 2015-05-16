@@ -9,17 +9,18 @@ module CassandraModel
     let(:partition_key) { [:rk_model, :rk_series] }
     let(:clustering_columns) { [:ck_price, :ck_model] }
     let(:columns) { partition_key + clustering_columns + [:meta_data] }
+    let(:cluster) { double(:cluster, connect: connection) }
     let(:connection) { double(:connection, request_async: MockFuture.new([])) }
     let(:statement) { double(:statement) }
     let(:query) { '' }
 
     before do
       MockRecordStatic.reset!
+      MockRecordStatic.table_name = :mock_records
       MockRecordStatic.partition_key = partition_key
       MockRecordStatic.clustering_columns = clustering_columns
       MockRecordStatic.columns = columns
-      MockRecordStatic.table_name = :mock_records
-      allow(Record).to receive(:connection).and_return(connection)
+      allow(Cassandra).to receive(:cluster).and_return(cluster)
       allow(Record).to receive(:statement).with(query).and_return(statement)
     end
 
