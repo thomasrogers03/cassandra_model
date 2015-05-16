@@ -4,6 +4,7 @@ Bundler.require(:default, :development, :test)
 require_relative 'helpers/mock_page'
 require_relative 'helpers/mock_future'
 require_relative 'helpers/connection_helper'
+require_relative 'helpers/table_cleaner'
 require_relative 'helpers/record_cleaner'
 require_relative 'shared_examples/connection'
 require_relative 'shared_examples/query_helper'

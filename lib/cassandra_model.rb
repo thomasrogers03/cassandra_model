@@ -15,6 +15,7 @@
 #++
 
 require 'cassandra_model/connection'
+require 'cassandra_model/table'
 require 'cassandra_model/record'
 require 'cassandra_model/composite_record_static'
 require 'cassandra_model/composite_record_instance'
