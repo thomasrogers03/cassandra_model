@@ -17,14 +17,14 @@ module CassandraModel
       allow(cluster).to receive(:keyspace).with(Record.config[:keyspace]).and_return(keyspace)
     end
 
-    it_behaves_like 'a model with a connection', Record
-
-    describe '#name' do
-      its(:name) { is_expected.to eq('records') }
-    end
+    it_behaves_like 'a model with a connection', Table
 
     describe '#connection' do
       its(:connection) { is_expected.to eq(Table.connection) }
+    end
+
+    describe '#name' do
+      its(:name) { is_expected.to eq('records') }
     end
 
     describe '.reset_local_schema!' do
