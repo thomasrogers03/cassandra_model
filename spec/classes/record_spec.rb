@@ -161,6 +161,13 @@ module CassandraModel
       end
     end
 
+    describe '.table=' do
+      it 'should allow the user to overwrite the default table behaviour' do
+        Record.table = Table.new('week 1 table')
+        expect(Record.table_name).to eq('week 1 table')
+      end
+    end
+
     describe '.statement' do
       let(:query) { 'SELECT * FROM everything' }
 

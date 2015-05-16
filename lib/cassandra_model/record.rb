@@ -149,6 +149,10 @@ module CassandraModel
         table.name
       end
 
+      def table=(value)
+        @table = value
+      end
+
       def table
         @table ||= Table.new(generate_table_name)
       end
