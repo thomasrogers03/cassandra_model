@@ -6,6 +6,10 @@ module CassandraModel
         super(table_descriptor(table_definition), check_exists: true)
       end
 
+      def create(table_definition)
+        create_async(table_definition).get
+      end
+
       def create_descriptor_table
         connection.execute(table_desc.to_cql)
       end

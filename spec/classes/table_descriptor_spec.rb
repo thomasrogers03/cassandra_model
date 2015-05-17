@@ -6,6 +6,19 @@ module CassandraModel
     let(:connection) { double(:connection, execute_async: result_future) }
     let(:cluster) { double(:cluster, connect: connection) }
     let(:statement) { double(:statement) }
+    let(:table_definition) do
+      {name: :records,
+       partition_key: {partition_key: :text},
+       clustering_columns: {cluster: :text},
+       remaining_columns: {meta_data: 'map<text, text>'}}
+    end
+    let(:definition) { TableDefinition.new(table_definition) }
+    let(:time) { Time.at(0) }
+    let(:attributes) do
+      {name: definition.name.to_s,
+       created_at: time,
+       id: definition.table_id}
+    end
 
     subject { TableDescriptor.new({}) }
 
@@ -19,20 +32,7 @@ module CassandraModel
     it { is_expected.to be_a_kind_of(Record) }
 
     describe '.create_async' do
-      let(:time) { Time.at(0) }
       let(:now) { time }
-      let(:table_definition) do
-        {name: :records,
-         partition_key: {partition_key: :text},
-         clustering_columns: {cluster: :text},
-         remaining_columns: {meta_data: 'map<text, text>'}}
-      end
-      let(:definition) { TableDefinition.new(table_definition) }
-      let(:attributes) do
-        {name: definition.name.to_s,
-         created_at: time,
-         id: definition.table_id}
-      end
 
       around do |example|
         Timecop.freeze(now) { example.run }
@@ -72,6 +72,19 @@ module CassandraModel
         it 'should invalidate the entry' do
           expect(TableDescriptor.create_async(definition).get.valid).to eq(false)
         end
+      end
+    end
+
+    describe '.create' do
+      let(:record) { TableDescriptor.new(attributes) }
+      let(:future_record) { MockFuture.new(record) }
+
+      before do
+        allow(TableDescriptor).to receive(:create_async).with(definition).and_return(future_record)
+      end
+
+      it 'should resolve the future returned by .create_async' do
+        expect(TableDescriptor.create(definition)).to eq(record)
       end
     end
 
