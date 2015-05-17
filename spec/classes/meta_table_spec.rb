@@ -3,6 +3,13 @@ require 'rspec'
 module CassandraModel
   describe MetaTable do
     let(:table_name) { :records }
+    let(:table_definition) do
+      {name: table_name,
+       partition_key: {partition_key: :text},
+       clustering_columns: {cluster: :text},
+       remaining_columns: {meta_data: 'map<text, text>'}}
+    end
+    let(:definition) { TableDefinition.new(table_definition) }
     let(:cluster) { double(:cluster, connect: connection) }
     let(:connection) { double(:connection) }
     let(:column_object) { double(:column, name: 'partition') }
@@ -10,7 +17,7 @@ module CassandraModel
     let(:keyspace) { double(:keyspace, table: table_object) }
     let(:klass) { MetaTable }
 
-    subject { klass.new(table_name) }
+    subject { klass.new(definition) }
 
     before do
       klass.reset!
