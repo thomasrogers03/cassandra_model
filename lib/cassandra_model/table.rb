@@ -19,18 +19,22 @@ module CassandraModel
     end
 
     def partition_key
-      @partition_key ||= keyspace.table(name).send(:partition_key).map { |column| column.name.to_sym }
+      @partition_key ||= table.send(:partition_key).map { |column| column.name.to_sym }
     end
 
     def clustering_columns
-      @clustering_columns ||= keyspace.table(name).send(:clustering_columns).map { |column| column.name.to_sym }
+      @clustering_columns ||= table.send(:clustering_columns).map { |column| column.name.to_sym }
     end
 
     def columns
-      @columns ||= keyspace.table(name).columns.map { |column| column.name.to_sym }
+      @columns ||= table.columns.map { |column| column.name.to_sym }
     end
 
     private
+
+    def table
+      @table ||= keyspace.table(name)
+    end
 
     def keyspace
       @keyspace ||= begin
