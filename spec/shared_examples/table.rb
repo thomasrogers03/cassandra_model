@@ -1,5 +1,5 @@
 module CassandraModel
-  shared_examples_for 'a table' do
+  shared_examples_for 'a table' do |table_suffix|
 
     describe '#connection' do
       its(:connection) { is_expected.to eq(klass.connection) }
@@ -34,13 +34,13 @@ module CassandraModel
       end
     end
 
-    shared_examples_for 'a set of columns' do |method|
+    shared_examples_for 'a set of columns' do |method, table_suffix|
       let(:column) { double(:column, name: 'partition') }
       let(:table) { double(:table, method => [column]) }
-      let(:table_name) { 'records' }
+      let(:resolved_table_name) { "#{table_name}#{table_suffix}" }
       let(:keyspace) do
         keyspace = double(:keyspace)
-        allow(keyspace).to receive(:table).with(table_name).and_return(table)
+        allow(keyspace).to receive(:table).with(resolved_table_name).and_return(table)
         keyspace
       end
 
@@ -72,15 +72,15 @@ module CassandraModel
       end
     end
 
-    it_behaves_like 'a set of columns', :partition_key
-    it_behaves_like 'a set of columns', :clustering_columns
+    it_behaves_like 'a set of columns', :partition_key, table_suffix
+    it_behaves_like 'a set of columns', :clustering_columns, table_suffix
 
     describe '.columns' do
       before do
         subject.columns = nil
       end
 
-      it_behaves_like 'a set of columns', :columns
+      it_behaves_like 'a set of columns', :columns, table_suffix
     end
   end
 end

@@ -5,7 +5,7 @@ module CassandraModel
     end
 
     def name
-      @table_definition.name.to_s
+      @name ||= @table_definition.name_in_cassandra
     end
 
     private

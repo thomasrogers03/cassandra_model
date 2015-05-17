@@ -37,8 +37,16 @@ module CassandraModel
       allow(TableDescriptor).to receive(:create).with(definition).and_return(descriptor)
     end
 
+    describe '#name' do
+      subject { klass.new(definition).name }
+
+      it 'should be the generated name from the table definition' do
+        is_expected.to eq(definition.name_in_cassandra)
+      end
+    end
+
     it_behaves_like 'a model with a connection', MetaTable
-    it_behaves_like 'a table'
+    it_behaves_like 'a table', '_50306970412fc32e13cfe807ba6426de' # from TableDefinition.table_id
 
     [:partition_key, :clustering_columns, :columns].each do |method|
       describe "#{method}" do
