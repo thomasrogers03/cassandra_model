@@ -1,5 +1,5 @@
 module CassandraModel
-  class MetaTable < Record
+  class TableDescriptor < Record
 
     class << self
       def create_descriptor_table
