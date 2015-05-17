@@ -7,6 +7,7 @@ require_relative 'helpers/connection_helper'
 require_relative 'helpers/table_cleaner'
 require_relative 'helpers/record_cleaner'
 require_relative 'shared_examples/connection'
+require_relative 'shared_examples/table'
 require_relative 'shared_examples/query_helper'
 require_relative 'shared_examples/meta_columns'
 
