@@ -2,6 +2,12 @@ module CassandraModel
   class TableDescriptor < Record
 
     class << self
+      def create_async(table_definition)
+        super({name: table_definition.name.to_s,
+              created_at: Time.at((Time.now.to_i / 1.day) * 1.day),
+              id: table_definition.table_id}, check_exists: true)
+      end
+
       def create_descriptor_table
         connection.execute(table_desc.to_cql)
       end
