@@ -10,7 +10,7 @@ module CassandraModel
 
     subject { rotating_table }
 
-    describe '#table_name' do
+    describe '#name' do
       let(:base_time) { Time.at(0) }
       let(:time) { base_time }
 
@@ -18,7 +18,7 @@ module CassandraModel
         Timecop.freeze(time) { example.run }
       end
 
-      subject { rotating_table.table_name }
+      subject { rotating_table.name }
 
       it 'should use the initial table' do
         is_expected.to eq('table 1')

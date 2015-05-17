@@ -20,5 +20,10 @@ module CassandraModel
 
     it_behaves_like 'a model with a connection', Table
     it_behaves_like 'a table'
+
+    describe '#name' do
+      its(:name) { is_expected.to eq('records') }
+    end
+
   end
 end

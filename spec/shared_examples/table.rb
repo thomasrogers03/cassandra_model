@@ -5,10 +5,6 @@ module CassandraModel
       its(:connection) { is_expected.to eq(klass.connection) }
     end
 
-    describe '#name' do
-      its(:name) { is_expected.to eq('records') }
-    end
-
     describe '.reset_local_schema!' do
       let(:partition_key) { double(:column, name: 'partition') }
       let(:clustering_column) { double(:column, name: 'clustering') }

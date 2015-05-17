@@ -7,7 +7,7 @@ module CassandraModel
       @schedule = schedule
     end
 
-    def table_name
+    def name
       index = (Time.now.to_f / @schedule).to_i % @tables.count
       @tables[index].name
     end
