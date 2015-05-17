@@ -1,7 +1,7 @@
 module CassandraModel
   module CompositeRecordInstance
     def save_async(options = {})
-      futures = composite_rows.map { |record| record.send(:internal_save_async, options) }
+      futures = composite_rows.map { |record| record.internal_save_async(options) }
 
       leader = internal_save_async(options)
       futures << leader
@@ -10,7 +10,7 @@ module CassandraModel
     end
 
     def delete_async
-      futures = composite_rows.map { |record| record.send(:internal_delete_async) }
+      futures = composite_rows.map { |record| record.internal_delete_async }
 
       leader = internal_delete_async
       futures << leader
@@ -19,7 +19,7 @@ module CassandraModel
     end
 
     def update_async(new_attributes)
-      futures = composite_rows.map { |record| record.send(:internal_update_async, new_attributes) }
+      futures = composite_rows.map { |record| record.internal_update_async(new_attributes) }
 
       leader = internal_update_async(new_attributes)
       futures << leader

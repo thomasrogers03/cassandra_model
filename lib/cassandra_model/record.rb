@@ -49,7 +49,7 @@ module CassandraModel
       @attributes == rhs.attributes
     end
 
-    private
+    protected
 
     def validate_attributes!(attributes)
       attributes.keys.each do |column|
