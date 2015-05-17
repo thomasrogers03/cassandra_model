@@ -35,6 +35,7 @@ module CassandraModel
       TableDescriptor.reset!
       TableDescriptor.columns = [:name, :created_at, :id]
       allow(TableDescriptor).to receive(:create).with(definition).and_return(descriptor)
+      allow_any_instance_of(MetaTable).to receive(:sleep)
     end
 
     describe '#name' do
@@ -64,6 +65,18 @@ module CassandraModel
           it 'should create the table' do
             expect(connection).not_to receive(:execute).with(definition.to_cql)
             subject.public_send(method)
+          end
+        end
+
+        describe 'consistency' do
+          let(:keyspace) { double(:keyspace, table: nil) }
+          let(:updated_keyspace) { double(:keyspace, table: table_object) }
+
+          before { TableDescriptor.columns = nil }
+
+          it 'should wait until the schema says the table exists' do
+            allow(cluster).to receive(:keyspace).with(klass.config[:keyspace]).and_return(keyspace, keyspace, updated_keyspace)
+            expect(subject.columns).to eq([:partition])
           end
         end
       end
