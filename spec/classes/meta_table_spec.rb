@@ -75,9 +75,17 @@ module CassandraModel
           before { TableDescriptor.columns = nil }
 
           it 'should wait until the schema says the table exists' do
-            allow(cluster).to receive(:keyspace).with(klass.config[:keyspace]).and_return(keyspace, keyspace, updated_keyspace)
+            allow(cluster).to receive(:keyspace).and_return(keyspace, keyspace, updated_keyspace)
             expect(subject.columns).to eq([:partition])
           end
+
+          context 'when the table takes to long to create' do
+            it 'should raise an error' do
+              allow(cluster).to receive(:keyspace).and_return(keyspace)
+              expect { subject.columns }.to raise_error("Could not verify the creation of table #{subject.name}")
+            end
+          end
+
         end
       end
     end

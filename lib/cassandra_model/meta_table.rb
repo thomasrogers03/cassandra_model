@@ -14,11 +14,12 @@ module CassandraModel
       @table ||= begin
         descriptor = TableDescriptor.create(@table_definition)
         connection.execute(@table_definition.to_cql) if descriptor.valid
-        until keyspace.table(name)
+        100.times do
           @keyspace = nil
           sleep 0.100
+          break if keyspace.table(name)
         end
-        keyspace.table(name)
+        keyspace.table(name) or raise "Could not verify the creation of table #{name}"
       end
     end
   end
