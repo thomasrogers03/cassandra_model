@@ -90,7 +90,7 @@ module CassandraModel
 
     describe '.create_descriptor_table' do
       it 'should create the table in cassandra' do
-        expected_query = 'CREATE TABLE table_descriptors (name ascii, created_at timestamp, id ascii, PRIMARY KEY ((name), created_at, id))'
+        expected_query = 'CREATE TABLE table_descriptors (name ascii, id ascii, created_at timestamp, PRIMARY KEY ((name), id))'
         expect(connection).to receive(:execute).with(expected_query)
         TableDescriptor.create_descriptor_table
       end
