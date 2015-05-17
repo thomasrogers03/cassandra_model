@@ -3,9 +3,7 @@ module CassandraModel
 
     class << self
       def create_async(table_definition)
-        super({name: table_definition.name.to_s,
-              created_at: rounded_time,
-              id: table_definition.table_id}, check_exists: true)
+        super(table_descriptor(table_definition), check_exists: true)
       end
 
       def create_descriptor_table
@@ -17,6 +15,12 @@ module CassandraModel
       end
 
       private
+
+      def table_descriptor(table_definition)
+        {name: table_definition.name.to_s,
+         created_at: rounded_time,
+         id: table_definition.table_id}
+      end
 
       def rounded_time
         Time.at((Time.now.to_i / 1.day) * 1.day)
