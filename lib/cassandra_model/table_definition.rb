@@ -9,8 +9,9 @@ module CassandraModel
       @columns = options[:partition_key].merge(options[:clustering_columns].merge(options[:remaining_columns]))
     end
 
-    def to_cql
-      "CREATE TABLE #{@name} (#{columns}, PRIMARY KEY (#{primary_key})"
+    def to_cql(options = {})
+      table_name = options[:no_id] ? name : name_in_cassandra
+      "CREATE TABLE #{table_name} (#{columns}, PRIMARY KEY (#{primary_key})"
     end
 
     def table_id

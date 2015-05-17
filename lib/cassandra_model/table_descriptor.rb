@@ -11,7 +11,7 @@ module CassandraModel
       end
 
       def create_descriptor_table
-        connection.execute(table_desc.to_cql)
+        connection.execute(table_desc.to_cql(no_id: true))
       end
 
       def drop_descriptor_table
