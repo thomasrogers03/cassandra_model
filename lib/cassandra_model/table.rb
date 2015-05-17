@@ -37,10 +37,8 @@ module CassandraModel
     end
 
     def keyspace
-      @keyspace ||= begin
-        connection
-        cluster.keyspace(config[:keyspace])
-      end
+      connection
+      cluster.keyspace(config[:keyspace])
     end
 
     def config

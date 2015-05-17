@@ -15,7 +15,6 @@ module CassandraModel
         descriptor = TableDescriptor.create(@table_definition)
         connection.execute(@table_definition.to_cql) if descriptor.valid
         100.times do
-          @keyspace = nil
           sleep 0.100
           break if keyspace.table(name)
         end
