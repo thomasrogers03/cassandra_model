@@ -2,11 +2,18 @@ require 'rspec'
 
 module CassandraModel
   describe TableDefinition do
-    let(:partition_key) { [:title] }
-    let(:clustering_columns) { [:series] }
-    let(:columns) { {title: :text, series: :int, body: :text} }
+    let(:partition_key) { {title: :text} }
+    let(:clustering_columns) { {series: :int} }
+    let(:remaining_columns) { {body: :text} }
     let(:table_name) { :books }
-    let(:options) { {name: table_name, columns: columns, partition_key: partition_key, clustering_columns: clustering_columns} }
+    let(:options) do
+      {
+          name: table_name,
+          partition_key: partition_key,
+          clustering_columns: clustering_columns,
+          remaining_columns: remaining_columns
+      }
+    end
 
     subject { TableDefinition.new(options) }
 
@@ -26,21 +33,21 @@ module CassandraModel
       end
 
       context 'with different columns' do
-        let(:columns) { {title: :text, series: :int, isbn: :text, location: :int} }
+        let(:remaining_columns) { {isbn: :text, location: :int} }
 
         it { is_expected.to eq('CREATE TABLE books (title text, series int, isbn text, location int, PRIMARY KEY ((title), series))') }
       end
 
       context 'with a different partition key' do
-        let(:partition_key) { [:name, :subtitle] }
-        let(:columns) { {name: :text, subtitle: :text, series: :int, body: :text} }
+        let(:partition_key) { {name: :text, subtitle: :text} }
+        let(:remaining_columns) { {series: :int, body: :text} }
 
         it { is_expected.to eq('CREATE TABLE books (name text, subtitle text, series int, body text, PRIMARY KEY ((name, subtitle), series))') }
       end
 
       context 'with different clustering columns' do
-        let(:clustering_columns) { [:series, :episode] }
-        let(:columns) { {title: :text, series: :int, episode: :int, body: :text} }
+        let(:clustering_columns) { {series: :int, episode: :int} }
+        let(:remaining_columns) { {body: :text} }
 
         it { is_expected.to eq('CREATE TABLE books (title text, series int, episode int, body text, PRIMARY KEY ((title), series, episode))') }
       end
@@ -54,7 +61,7 @@ module CassandraModel
       end
 
       context 'with different columns' do
-        let(:columns) { {title: :text, series: :int, episode: :int, body: :text} }
+        let(:remaining_columns) { {episode: :int, body: :text} }
 
         it { is_expected.to eq(Digest::MD5.hexdigest('title text, series int, episode int, body text')) }
       end

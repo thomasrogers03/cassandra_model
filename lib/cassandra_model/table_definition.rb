@@ -3,10 +3,10 @@ module CassandraModel
     attr_reader :name
 
     def initialize(options)
-      @partition_key = options[:partition_key]
-      @clustering_columns = options[:clustering_columns]
+      @partition_key = options[:partition_key].keys
+      @clustering_columns = options[:clustering_columns].keys
       @name = options[:name]
-      @columns = options[:columns]
+      @columns = options[:partition_key].merge(options[:clustering_columns].merge(options[:remaining_columns]))
     end
 
     def to_cql

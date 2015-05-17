@@ -14,8 +14,10 @@ module CassandraModel
 
       def table_desc
         @table_desc ||= begin
-          columns = {name: :ascii, created_at: :timestamp, id: :ascii}
-          options = {name: table_name, columns: columns, partition_key: [:name], clustering_columns: [:created_at, :id]}
+          options = {name: table_name,
+                     partition_key: {name: :ascii},
+                     clustering_columns: {created_at: :timestamp, id: :ascii},
+                     remaining_columns: {}}
           TableDefinition.new(options)
         end
       end
