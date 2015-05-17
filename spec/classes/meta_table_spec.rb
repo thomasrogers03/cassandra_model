@@ -49,7 +49,7 @@ module CassandraModel
     it_behaves_like 'a model with a connection', MetaTable
     it_behaves_like 'a table', '_50306970412fc32e13cfe807ba6426de' # from TableDefinition.table_id
 
-    [:partition_key, :clustering_columns, :columns].each do |method|
+    [:name, :partition_key, :clustering_columns, :columns].each do |method|
       describe "#{method}" do
 
         context 'when the table does not yet exist' do
@@ -82,7 +82,7 @@ module CassandraModel
           context 'when the table takes to long to create' do
             it 'should raise an error' do
               allow(cluster).to receive(:keyspace).and_return(keyspace)
-              expect { subject.columns }.to raise_error("Could not verify the creation of table #{subject.name}")
+              expect { subject.columns }.to raise_error("Could not verify the creation of table #{definition.name_in_cassandra}")
             end
           end
 
