@@ -79,7 +79,7 @@ module CassandraModel
             expect(subject.columns).to eq([:partition])
           end
 
-          context 'when the table takes to long to create' do
+          context 'when the table takes too long to create' do
             it 'should raise an error' do
               allow(cluster).to receive(:keyspace).and_return(keyspace)
               expect { subject.columns }.to raise_error("Could not verify the creation of table #{definition.name_in_cassandra}")
