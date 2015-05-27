@@ -27,6 +27,10 @@ module ConnectionHelper
   end
 
   def mock_table(name, partition_key, clustering_columns, remaining_columns)
+    mock_table_for_keyspace(keyspace, name, partition_key, clustering_columns, remaining_columns)
+  end
+
+  def mock_table_for_keyspace(keyspace, name, partition_key, clustering_columns, remaining_columns)
     table_pk = partition_key.map { |name, type| MockColumn.new(name, type) }
     table_ck = clustering_columns.map { |name, type| MockColumn.new(name, type) }
     table_columns = (partition_key.merge(clustering_columns.merge(remaining_columns))).map do |name, type|
@@ -37,9 +41,13 @@ module ConnectionHelper
   end
 
   def mock_simple_table(name, column_names)
+    mock_simple_table_for_keyspace(keyspace, name, column_names)
+  end
+
+  def mock_simple_table_for_keyspace(keyspace, name, column_names)
     partition_key = {column_names.shift => :text}
     clustering_columns = {column_names.shift => :text}
     remaining_columns = column_names.inject({}) { |memo, column| memo.merge!(column => :text) }
-    mock_table(name, partition_key, clustering_columns, remaining_columns)
+    mock_table_for_keyspace(keyspace, name, partition_key, clustering_columns, remaining_columns)
   end
 end
