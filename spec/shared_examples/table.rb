@@ -43,10 +43,14 @@ module CassandraModel
       let(:column) { double(:column, name: 'partition') }
       let(:table) { double(:table, method => [column]) }
       let(:resolved_table_name) { "#{table_name}#{table_suffix}" }
-      let(:keyspace) do
+      let(:other_keyspace) do
         keyspace = double(:keyspace)
         allow(keyspace).to receive(:table).with(resolved_table_name).and_return(table)
         keyspace
+      end
+
+      before do
+        allow(cluster).to receive(:keyspace).and_return(other_keyspace)
       end
 
       it 'should be the partition key for this table' do
