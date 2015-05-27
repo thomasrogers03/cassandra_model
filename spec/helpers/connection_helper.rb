@@ -8,4 +8,10 @@ module CassandraModel
       @@keyspace = nil
     end
   end
+
+  class ConnectionCache
+    def self.reset!
+      @@cache.clear
+    end
+  end
 end

@@ -11,6 +11,10 @@ class MockPage
     @last_page
   end
 
+  def get
+    @results
+  end
+
   def map(&block)
     @results.map(&block)
   end
