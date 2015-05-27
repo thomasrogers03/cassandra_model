@@ -36,7 +36,7 @@ module ConnectionHelper
     allow(keyspace).to receive(:table).with(name).and_return(table)
   end
 
-  def simple_mock_table(name, column_names)
+  def mock_simple_table(name, column_names)
     partition_key = {column_names.shift => :text}
     clustering_columns = {column_names.shift => :text}
     remaining_columns = column_names.inject({}) { |memo, column| memo.merge!(column => :text) }
