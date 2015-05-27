@@ -16,6 +16,7 @@ module CassandraModel
       @partition_key = nil
       @clustering_columns = nil
       @columns = nil
+      @table = nil
     end
 
     def partition_key
