@@ -31,10 +31,10 @@ module ConnectionHelper
   end
 
   def mock_table_for_keyspace(keyspace, name, partition_key, clustering_columns, remaining_columns)
-    table_pk = partition_key.map { |name, type| MockColumn.new(name, type) }
-    table_ck = clustering_columns.map { |name, type| MockColumn.new(name, type) }
+    table_pk = partition_key.map { |name, type| MockColumn.new(name.to_s, type) }
+    table_ck = clustering_columns.map { |name, type| MockColumn.new(name.to_s, type) }
     table_columns = (partition_key.merge(clustering_columns.merge(remaining_columns))).map do |name, type|
-      MockColumn.new(name, type)
+      MockColumn.new(name.to_s, type)
     end
     table = double(:table, partition_key: table_pk, clustering_columns: table_ck, columns: table_columns)
     allow(keyspace).to receive(:table).with(name).and_return(table)
