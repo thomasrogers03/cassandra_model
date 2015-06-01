@@ -2,9 +2,6 @@ require 'rspec'
 
 module CassandraModel
   describe RawConnection do
-    let(:column_object) { double(:column, name: 'partition') }
-    let(:table_object) { double(:table, columns: [column_object]) }
-    let(:keyspace) { double(:keyspace, table: table_object) }
     let(:raw_connection) { RawConnection.new }
 
     describe '#config' do
@@ -19,7 +16,7 @@ module CassandraModel
       end
 
       it 'should use a default configuration' do
-        expect(subject).to eq(config)
+        is_expected.to eq(config)
       end
 
       context 'when config/cassandra.yml exists' do
@@ -36,13 +33,13 @@ module CassandraModel
         end
 
         it 'should load configuration from that file' do
-          expect(subject).to eq(default_config)
+          is_expected.to eq(default_config)
         end
 
         context 'when providing a configuration with missing keys' do
           let(:default_config) { {hosts: %w(behemoth)} }
 
-          it { expect(subject).to eq(RawConnection::DEFAULT_CONFIGURATION.merge(default_config)) }
+          it { is_expected.to eq(RawConnection::DEFAULT_CONFIGURATION.merge(default_config)) }
         end
 
         context 'when rails is present' do
@@ -54,12 +51,12 @@ module CassandraModel
           before { stub_const('Rails', rails) }
 
           it 'should load the configuration from that file with the rails environment' do
-            expect(subject).to eq(default_config)
+            is_expected.to eq(default_config)
           end
 
           context 'when no configuration exists for the current environment' do
             let(:environment) { 'test' }
-            it { expect(subject).to eq(RawConnection::DEFAULT_CONFIGURATION) }
+            it { is_expected.to eq(RawConnection::DEFAULT_CONFIGURATION) }
           end
         end
 
@@ -69,7 +66,7 @@ module CassandraModel
           let(:path) { 'cassandra/counter.yml' }
           let(:config) { counter_config }
 
-          it { expect(subject).to eq(RawConnection::DEFAULT_CONFIGURATION.merge(counter_config)) }
+          it { is_expected.to eq(RawConnection::DEFAULT_CONFIGURATION.merge(counter_config)) }
         end
       end
 
@@ -84,12 +81,12 @@ module CassandraModel
 
         before { raw_connection.config = config }
 
-        it { expect(subject).to eq(config) }
+        it { is_expected.to eq(config) }
       end
 
       context 'when providing a configuration with missing keys' do
         before { raw_connection.config = {} }
-        it { expect(subject).to eq(config) }
+        it { is_expected.to eq(config) }
       end
     end
 
@@ -103,13 +100,13 @@ module CassandraModel
       end
 
       it 'should create a cassandra connection with the specified configuration' do
-        expect(subject).to eq(cluster)
+        is_expected.to eq(cluster)
       end
 
       context 'when a connection has already been created' do
         it 'should not create more than one connection' do
           raw_connection.cluster
-          expect(subject).to eq(cluster)
+          is_expected.to eq(cluster)
         end
       end
 
