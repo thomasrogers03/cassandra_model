@@ -11,11 +11,12 @@ group :development do
 end
 
 group :test do
-  gem 'rspec', '~> 3.1.0'
+  gem 'rspec', '~> 3.1.0', require: false
   gem 'rspec-its'
   gem 'guard-rspec'
   gem 'guard-bundler'
   gem 'guard'
   gem 'pry'
   gem 'timecop'
+  gem 'simplecov', require: false
 end

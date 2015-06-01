@@ -1,4 +1,5 @@
 db/*.sqlite3
+coverage/**
 app/assets/images
 public/images
 public/assets
