@@ -10,6 +10,7 @@ module ConnectionHelper
   let(:cluster) { double(:cassandra_cluster, connect: connection, keyspace: keyspace) }
 
   before do
+    CassandraModel::ConnectionCache.reset!
     allow(Cassandra).to receive(:cluster).with(hash_including(hosts: %w(localhost))).and_return(cluster)
   end
 
