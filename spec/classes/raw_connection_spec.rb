@@ -133,7 +133,7 @@ module CassandraModel
 
       it 'should cache the connection' do
         raw_connection.connection
-        expect(cluster).not_to receive(:connect).with('keyspace')
+        expect(cluster).not_to receive(:connect)
         raw_connection.connection
       end
     end
