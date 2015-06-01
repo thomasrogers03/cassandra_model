@@ -14,6 +14,19 @@ module ConnectionHelper
     allow(Cassandra).to receive(:cluster).with(hash_including(hosts: %w(localhost))).and_return(cluster)
   end
 
+  def mock_cluster(hosts)
+    cluster = double(:cluster)
+    allow(Cassandra).to receive(:cluster).with(hash_including(hosts: hosts)).and_return(cluster)
+    cluster
+  end
+
+  def mock_connection(hosts, keyspace)
+    cluster = mock_cluster(hosts)
+    connection = double(:connection)
+    allow(cluster).to receive(:connect).with(keyspace).and_return(connection)
+    connection
+  end
+
   def mock_prepare(query)
     statement = double(:statement)
     allow(connection).to receive(:prepare).with(query).and_return(statement)
