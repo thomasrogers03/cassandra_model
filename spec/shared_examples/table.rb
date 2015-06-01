@@ -16,14 +16,14 @@ module CassandraModel
 
       before do
         mock_simple_table(subject.name,
-                          [partition_key,
-                           clustering_column,
-                           *columns])
+                          [partition_key],
+                           [clustering_column],
+                           columns)
         mock_simple_table_for_keyspace(other_keyspace,
                                        subject.name,
-                                       [updated_partition_key,
-                                        updated_clustering_column,
-                                        *updated_columns])
+                                       [updated_partition_key],
+                                        [updated_clustering_column],
+                                        updated_columns)
         allow(cluster).to receive(:keyspace).and_return(keyspace, other_keyspace)
 
         subject.partition_key

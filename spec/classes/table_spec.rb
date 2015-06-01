@@ -8,7 +8,7 @@ module CassandraModel
     subject { klass.new(table_name) }
 
     before do
-      mock_simple_table(table_name, [:partition, :cluster, :misc])
+      mock_simple_table(table_name, [:partition], [:cluster], [:misc])
       klass.reset!
     end
 

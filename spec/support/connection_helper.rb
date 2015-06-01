@@ -60,13 +60,13 @@ module ConnectionHelper
     allow(keyspace).to receive(:table).with(name).and_return(table)
   end
 
-  def mock_simple_table(name, column_names)
-    mock_simple_table_for_keyspace(keyspace, name, column_names)
+  def mock_simple_table(name, partition_columns, clustering_columns, column_names)
+    mock_simple_table_for_keyspace(keyspace, name, partition_columns, clustering_columns, column_names)
   end
 
-  def mock_simple_table_for_keyspace(keyspace, name, column_names)
-    partition_key = {column_names.shift => :text}
-    clustering_columns = {column_names.shift => :text}
+  def mock_simple_table_for_keyspace(keyspace, name, partition_columns, clustering_columns, column_names)
+    partition_key = partition_columns.inject({}) { |memo, column| memo.merge!(column => :text) }
+    clustering_columns = clustering_columns.inject({}) { |memo, column| memo.merge!(column => :text) }
     remaining_columns = column_names.inject({}) { |memo, column| memo.merge!(column => :text) }
     mock_table_for_keyspace(keyspace, name, partition_key, clustering_columns, remaining_columns)
   end
