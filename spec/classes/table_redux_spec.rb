@@ -33,5 +33,35 @@ module CassandraModel
         end
       end
     end
+
+    describe 'table column names' do
+      let(:partition_key) { [:partition_key] }
+      let(:clustering_columns) { [:clustering_columns] }
+      let(:remaining_columns) { [:misc] }
+      let(:expected_columns) { partition_key + clustering_columns + remaining_columns }
+
+      before { mock_simple_table(table_name, partition_key, clustering_columns, remaining_columns) }
+
+      describe '#columns' do
+        its(:columns) { is_expected.to eq(expected_columns) }
+
+        it 'should cache the columns names' do
+          subject.columns
+          expect(keyspace.table(table_name)).not_to receive(:columns)
+          subject.columns
+        end
+
+        context 'with different columns and table name' do
+          let(:table_name) { :books }
+          let(:partition_key) { [:author] }
+          let(:clustering_columns) { [:name, :series] }
+          let(:remaining_columns) { [:summary, :rating] }
+
+          its(:columns) { is_expected.to eq(expected_columns) }
+        end
+      end
+
+    end
+
   end
 end

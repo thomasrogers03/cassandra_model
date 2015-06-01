@@ -9,5 +9,15 @@ module CassandraModel
       @name = table_name
       @connection = ConnectionCache[connection_name]
     end
+
+    def columns
+      @columns ||= table.columns.map { |column| column.name.to_sym }
+    end
+
+    private
+
+    def table
+      @connection.keyspace.table(name)
+    end
   end
 end
