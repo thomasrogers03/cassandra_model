@@ -24,14 +24,15 @@ module CassandraModel
 
       context 'when config/cassandra.yml exists' do
         let(:default_config) { {hosts: %w(behemoth), keyspace: 'keyspace', port: '7777'} }
-        let(:config) { {'default' => default_config} }
+        let(:config) { default_config }
+        let(:path) { 'cassandra.yml' }
 
         before do
           io = StringIO.new
           io << YAML.dump(config)
           io.rewind
-          allow(File).to receive(:exists?).with('./config/cassandra.yml').and_return(true)
-          allow(File).to receive(:open).with('./config/cassandra.yml').and_yield(io)
+          allow(File).to receive(:exists?).with("./config/#{path}").and_return(true)
+          allow(File).to receive(:open).with("./config/#{path}").and_yield(io)
         end
 
         it 'should load configuration from that file' do
@@ -46,15 +47,7 @@ module CassandraModel
 
         context 'when rails is present' do
           let(:default_config) { {hosts: %w(behemoth), keyspace: 'keyspace', port: '7777', } }
-          let(:counter_config) { {hosts: %w(athena), keyspace: 'counters', port: '8777'} }
-          let(:config) do
-            {
-                'production' => {
-                    'default' => default_config,
-                    'counter' => counter_config
-                }
-            }
-          end
+          let(:config) { {'production' => default_config} }
           let(:environment) { 'production' }
           let(:rails) { double(:rails, env: environment) }
 
@@ -68,12 +61,15 @@ module CassandraModel
             let(:environment) { 'test' }
             it { expect(subject).to eq(RawConnection::DEFAULT_CONFIGURATION) }
           end
+        end
 
-          context 'when using a named connection' do
-            let(:raw_connection) { RawConnection.new('counter') }
+        context 'when using a named connection' do
+          let(:raw_connection) { RawConnection.new('counter') }
+          let(:counter_config) { {hosts: %w(athena), keyspace: 'counters', port: '8777'} }
+          let(:path) { 'cassandra/counter.yml' }
+          let(:config) { counter_config }
 
-            it { expect(subject).to eq(RawConnection::DEFAULT_CONFIGURATION.merge(counter_config)) }
-          end
+          it { expect(subject).to eq(RawConnection::DEFAULT_CONFIGURATION.merge(counter_config)) }
         end
       end
 

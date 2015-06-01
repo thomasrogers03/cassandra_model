@@ -6,7 +6,7 @@ module CassandraModel
         port: '9042'
     }.freeze
 
-    def initialize(config_name = 'default')
+    def initialize(config_name = nil)
       @config_name = config_name
       @statement_cache = {}
     end
@@ -46,7 +46,7 @@ module CassandraModel
     end
 
     def load_config
-      if File.exists?('./config/cassandra.yml')
+      if File.exists?(config_path)
         config = yaml_config || {}
         DEFAULT_CONFIGURATION.merge(config)
       else
@@ -55,9 +55,13 @@ module CassandraModel
     end
 
     def yaml_config
-      yaml_config = File.open('./config/cassandra.yml') { |file| YAML.load(file.read) }
+      yaml_config = File.open(config_path) { |file| YAML.load(file.read) }
       yaml_config = yaml_config[Rails.env] if defined?(Rails)
-      yaml_config[@config_name] if yaml_config
+      yaml_config
+    end
+
+    def config_path
+      @config_name ? "./config/cassandra/#{@config_name}.yml" : './config/cassandra.yml'
     end
   end
 end
