@@ -3,7 +3,6 @@ require 'rspec'
 module CassandraModel
   describe RawConnection do
     let(:cluster) { double(:cluster, connect: connection) }
-    let(:connection) { double(:connection) }
     let(:column_object) { double(:column, name: 'partition') }
     let(:table_object) { double(:table, columns: [column_object]) }
     let(:keyspace) { double(:keyspace, table: table_object) }
@@ -14,7 +13,7 @@ module CassandraModel
       allow(cluster).to receive(:keyspace).and_return(keyspace)
     end
 
-    describe '.config' do
+    describe '#config' do
       subject { raw_connection.config }
 
       let(:config) do
@@ -104,7 +103,7 @@ module CassandraModel
       end
     end
 
-    describe '.cluster' do
+    describe '#cluster' do
       subject { raw_connection.cluster }
 
       let(:config) { {hosts: %w(localhost), connect_timeout: 120} }
@@ -132,7 +131,7 @@ module CassandraModel
       end
     end
 
-    describe '.connection' do
+    describe '#connection' do
       let(:config) { {keyspace: 'keyspace'} }
       let(:connection) { double(:connection) }
 
@@ -152,9 +151,24 @@ module CassandraModel
       end
     end
 
-    describe '.keyspace' do
+    describe '#keyspace' do
       it 'should be the keyspace object used to connect to the cluster' do
         expect(raw_connection.keyspace).to eq(keyspace)
+      end
+    end
+
+    describe '#statement' do
+      let(:query) { 'SELECT * FROM everything' }
+      let!(:statement) { mock_prepare(query) }
+
+      it 'should prepare a statement using the created connection' do
+        expect(raw_connection.statement(query)).to eq(statement)
+      end
+
+      it 'should cache the statement for later use' do
+        raw_connection.statement(query)
+        expect(connection).not_to receive(:prepare)
+        raw_connection.statement(query)
       end
     end
 

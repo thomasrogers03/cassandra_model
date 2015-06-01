@@ -13,6 +13,12 @@ module ConnectionHelper
     allow(Cassandra).to receive(:cluster).with(hash_including(hosts: %w(localhost))).and_return(cluster)
   end
 
+  def mock_prepare(query)
+    statement = double(:statement)
+    allow(connection).to receive(:prepare).with(query).and_return(statement)
+    statement
+  end
+
   def mock_query_pages(results)
     result_future = MockPage.new(true, nil, results.shift || [])
     while (current_result = results.shift)

@@ -8,6 +8,7 @@ module CassandraModel
 
     def initialize(config_name = 'default')
       @config_name = config_name
+      @statement_cache = {}
     end
 
     def config=(value)
