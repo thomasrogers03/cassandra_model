@@ -2,16 +2,10 @@ require 'rspec'
 
 module CassandraModel
   describe RawConnection do
-    let(:cluster) { double(:cluster, connect: connection) }
     let(:column_object) { double(:column, name: 'partition') }
     let(:table_object) { double(:table, columns: [column_object]) }
     let(:keyspace) { double(:keyspace, table: table_object) }
     let(:raw_connection) { RawConnection.new }
-
-    before do
-      allow(Cassandra).to receive(:cluster).and_return(cluster)
-      allow(cluster).to receive(:keyspace).and_return(keyspace)
-    end
 
     describe '#config' do
       subject { raw_connection.config }
