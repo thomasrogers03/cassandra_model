@@ -10,6 +10,14 @@ module CassandraModel
       @connection = ConnectionCache[connection_name]
     end
 
+    def partition_key
+      @partition_key ||= table.send(:partition_key).map { |column| column.name.to_sym }
+    end
+
+    def clustering_columns
+      @clustering_columns ||= table.send(:clustering_columns).map { |column| column.name.to_sym }
+    end
+
     def columns
       @columns ||= table.columns.map { |column| column.name.to_sym }
     end
