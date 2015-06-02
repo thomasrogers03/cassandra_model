@@ -22,6 +22,14 @@ module CassandraModel
         expect(subject.connection).to eq(ConnectionCache[nil].connection)
       end
 
+      context 'with the connection name parameter omitted' do
+        let(:table) { TableRedux.new(table_name) }
+
+        it 'should be the cached cassandra connection' do
+          expect(subject.connection).to eq(ConnectionCache[nil].connection)
+        end
+      end
+
       context 'with a different connection name' do
         let(:connection_name) { :counters }
         let(:hosts) { %w(cassandra.one cassandra.two) }

@@ -5,7 +5,7 @@ module CassandraModel
     def_delegator :@connection, :connection
     attr_reader :name
 
-    def initialize(connection_name, table_name)
+    def initialize(connection_name = nil, table_name)
       @name = table_name
       @connection = ConnectionCache[connection_name]
     end
