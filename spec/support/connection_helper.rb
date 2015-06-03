@@ -23,7 +23,7 @@ module ConnectionHelper
   def mock_connection(hosts, keyspace)
     cluster = mock_cluster(hosts)
     connection = double(:connection)
-    allow(cluster).to receive(:connect).with(keyspace).and_return(connection)
+    allow(cluster).to receive(:connect).with(keyspace.to_s).and_return(connection)
     connection
   end
 
@@ -57,7 +57,7 @@ module ConnectionHelper
       MockColumn.new(name.to_s, type)
     end
     table = double(:table, partition_key: table_pk, clustering_columns: table_ck, columns: table_columns)
-    allow(keyspace).to receive(:table).with(name).and_return(table)
+    allow(keyspace).to receive(:table).with(name.to_s).and_return(table)
   end
 
   def mock_simple_table(name, partition_columns, clustering_columns, column_names)
