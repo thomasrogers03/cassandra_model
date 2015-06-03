@@ -14,11 +14,11 @@ module CassandraModel
     before { mock_simple_table(table_name, partition_key, clustering_columns, remaining_columns) }
 
     describe '#name' do
-      its(:name) { is_expected.to eq(:records) }
+      its(:name) { is_expected.to eq('records') }
 
       context 'with a different name' do
         let(:table_name) { :images }
-        its(:name) { is_expected.to eq(:images) }
+        its(:name) { is_expected.to eq('images') }
       end
     end
 

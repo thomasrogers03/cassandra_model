@@ -6,7 +6,7 @@ module CassandraModel
     attr_reader :name
 
     def initialize(connection_name = nil, table_name)
-      @name = table_name
+      @name = table_name.to_s
       @connection = ConnectionCache[connection_name]
     end
 
