@@ -4,7 +4,6 @@ require_relative 'meta_columns'
 
 module CassandraModel
   class Record
-    extend CassandraModel::Connection
     extend CassandraModel::QueryHelper
     extend CassandraModel::MetaColumns
 
@@ -53,6 +52,18 @@ module CassandraModel
 
     protected
 
+    def table
+      self.class.table
+    end
+
+    def connection
+      table.connection.connection
+    end
+
+    def statement(query)
+      table.connection.statement(query)
+    end
+
     def validate_attributes!(attributes)
       attributes.keys.each do |column|
         column = column.key if column.is_a?(ThomasUtils::KeyIndexer)
@@ -63,10 +74,10 @@ module CassandraModel
     def internal_delete_async
       @valid = false
 
-      statement = Record.statement(self.class.query_for_delete)
+      statement = statement(self.class.query_for_delete)
       attributes = internal_attributes
       column_values = (self.class.partition_key + self.class.clustering_columns).map { |column| attributes[column] }
-      future = Record.connection.execute_async(statement, *column_values, {})
+      future = connection.execute_async(statement, *column_values, {})
       ThomasUtils::FutureWrapper.new(future) { self }
     end
 
@@ -97,10 +108,10 @@ module CassandraModel
       validate_attributes!(new_attributes)
 
       query = self.class.query_for_update(new_attributes)
-      statement = Record.statement(query)
+      statement = statement(query)
       attributes = internal_attributes
       column_values = (self.class.partition_key + self.class.clustering_columns).map { |column| attributes[column] }
-      future = Record.connection.execute_async(statement, *new_attributes.values, *column_values, {})
+      future = connection.execute_async(statement, *new_attributes.values, *column_values, {})
       ThomasUtils::FutureWrapper.new(future) do
         self.attributes.merge!(new_attributes)
         self
@@ -117,7 +128,7 @@ module CassandraModel
     end
 
     def save_row_async(options)
-      Record.connection.execute_async(Record.statement(query_for_save(options)), *column_values, {})
+      connection.execute_async(statement(query_for_save(options)), *column_values, {})
     end
 
     def save_deferred_columns
@@ -233,10 +244,18 @@ module CassandraModel
         first_async(clause, options).get
       end
 
-      private
+      protected
 
       def table_data
         @table_data ||= Attributes.new
+      end
+
+      def connection
+        table.connection.connection
+      end
+
+      def statement(query)
+        table.connection.statement(query)
       end
 
       def generate_table_name

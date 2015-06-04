@@ -3,10 +3,22 @@ module ConnectionHelper
 
   MockColumn = Struct.new(:name, :type)
 
+  class MockStatement
+    attr_reader :query
+
+    def initialize(query)
+      @query = query
+    end
+
+    def inspect
+      "<Prepared Statement::{#{query}}>"
+    end
+  end
+
   let(:keyspace) { double(:keyspaceA, table: nil) }
   let(:query_results) { [] }
   let(:paginated_result) { MockPage.new(true, nil, query_results) }
-  let(:default_statement) { double(:statement) }
+  let(:default_statement) { MockStatement.new('DUMMY STATEMENT') }
   let(:connection) do
     double(:connection, execute_async: paginated_result, execute: paginated_result.get, prepare: default_statement)
   end
@@ -31,7 +43,7 @@ module ConnectionHelper
   end
 
   def mock_prepare(query)
-    statement = double(:statement)
+    statement = MockStatement.new(query)
     allow(connection).to receive(:prepare).with(query).and_return(statement)
     statement
   end

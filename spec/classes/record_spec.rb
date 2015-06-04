@@ -25,15 +25,12 @@ module CassandraModel
       mock_simple_table(:image_data, partition_key, clustering_columns, remaining_columns)
     end
 
-    it_behaves_like 'a model with a connection', Record
-
     context 'when mixing in query methods' do
       subject { Record }
 
       before do
         Record.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
         Record.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) { MockFuture.new(nil) }
-        allow(Record).to receive(:statement).and_return(statement)
         allow(connection).to receive(:execute_async).and_return(MockFuture.new('OK'))
       end
 
@@ -104,22 +101,6 @@ module CassandraModel
       it 'should allow the user to overwrite the default table behaviour' do
         Record.table = TableRedux.new('week 1 table')
         expect(Record.table_name).to eq('week 1 table')
-      end
-    end
-
-    describe '.statement' do
-      let(:query) { 'SELECT * FROM everything' }
-
-      before { allow(connection).to receive(:prepare).with(query).and_return(statement) }
-
-      it 'should prepare a statement using the created connection' do
-        expect(Record.statement(query)).to eq(statement)
-      end
-
-      it 'should cache the statement for later use' do
-        Record.statement(query)
-        expect(connection).not_to receive(:prepare)
-        Record.statement(query)
       end
     end
 
@@ -511,13 +492,11 @@ module CassandraModel
 
       before do
         Record.table_name = table_name
-        allow(Record).to receive(:statement).with(query).and_return(statement)
         allow(connection).to receive(:execute_async).and_return(results)
       end
 
       context 'when the Record class has deferred columns' do
         before do
-          allow(Record).to receive(:statement).and_return(statement)
           Record.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
           Record.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
         end
@@ -630,7 +609,6 @@ module CassandraModel
         Record.table_name = table_name
         allow(Record).to receive(:partition_key).and_return(partition_key)
         allow(Record).to receive(:clustering_columns).and_return(clustering_columns)
-        allow(Record).to receive(:statement).with(query).and_return(statement)
         allow(connection).to receive(:execute_async).and_return(results)
       end
 

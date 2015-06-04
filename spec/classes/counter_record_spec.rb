@@ -5,7 +5,6 @@ module CassandraModel
     class ImageCounter < CounterRecord
     end
 
-    let(:connection) { double(:connection) }
     let(:partition_key) { [:partition] }
     let(:counter_columns) { [:counter] }
     let(:clustering_columns) { [:cluster] }
@@ -16,7 +15,6 @@ module CassandraModel
       allow(CounterRecord).to receive(:partition_key).and_return(partition_key)
       allow(CounterRecord).to receive(:clustering_columns).and_return(clustering_columns)
       allow(CounterRecord).to receive(:columns).and_return(columns)
-      allow(Record).to receive(:connection).and_return(connection)
       CounterRecord.reset!
       ImageCounter.reset!
     end
@@ -51,13 +49,12 @@ module CassandraModel
       let(:result_page) { MockPage.new(true, MockFuture.new([]), [attributes]) }
       let(:results) { MockFuture.new(result_page) }
       let(:query_result) { [QueryResult.new(attributes)] }
-      let(:statement) { double(:statement) }
+      let(:query) { "SELECT #{counter_columns.join(', ')} FROM counter_records#{where_clause}" }
+      let!(:statement) { mock_prepare(query) }
       let(:where_clause) { nil }
       let(:restriction) { [] }
 
       before do
-        query = "SELECT #{counter_columns.join(', ')} FROM counter_records#{where_clause}"
-        allow(CounterRecord).to receive(:statement).with(query).and_return(statement)
         allow(connection).to receive(:execute_async).with(statement, *restriction, {}).and_return(results)
       end
 
@@ -105,13 +102,13 @@ module CassandraModel
     end
 
     describe '#increment_async!' do
-      let(:statement) { double(:statement) }
       let(:row_key) { partition_key + clustering_columns }
       let(:where_clause) { row_key.map { |key| "#{key} = ?" }.join(' AND ') }
       let(:updated_counters) { [:counter] }
       let(:counter_clause) { updated_counters.map { |column| "#{column} = #{column} + ?" }.join(', ') }
       let(:table_name) { :counter_records }
       let(:query) { "UPDATE #{table_name} SET #{counter_clause} WHERE #{where_clause}" }
+      let!(:statement) { mock_prepare(query) }
       let(:clustering_columns) { [] }
       let(:counter_columns) { [:counter, :additional_counter] }
       let(:results) { MockFuture.new([]) }

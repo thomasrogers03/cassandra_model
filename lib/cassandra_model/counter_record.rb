@@ -25,17 +25,9 @@ module CassandraModel
       row_key.map { |key| attributes[key] }
     end
 
-    def connection
-      self.class.connection
-    end
-
     def increment_statement(counter_clause, where_clause)
       query = "UPDATE #{self.class.table_name} SET #{counter_clause} WHERE #{where_clause}"
       statement(query)
-    end
-
-    def statement(query)
-      self.class.statement(query)
     end
 
     def counter_clause(options)

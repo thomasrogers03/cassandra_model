@@ -131,18 +131,18 @@ module CassandraModel
 
     describe '.keyspace' do
       it 'should be the keyspace object used to connect to the cluster' do
-        expect(Record.keyspace).to eq(keyspace)
+        expect(klass.keyspace).to eq(keyspace)
       end
 
       it 'should cache the keyspace object' do
-        Record.keyspace
+        klass.keyspace
         expect(cluster).not_to receive(:keyspace)
-        Record.keyspace
+        klass.keyspace
       end
 
       it 'should connect to the cluster' do
-        expect(Record).to receive(:connection)
-        Record.keyspace
+        expect(klass).to receive(:connection)
+        klass.keyspace
       end
     end
 
