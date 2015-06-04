@@ -134,7 +134,7 @@ module CassandraModel
 
       it 'should cache the query' do
         klass.query_for_save
-        expect(klass.instance_variable_get(:@attributes).save_query).to eq('INSERT INTO records (partition) VALUES (?)')
+        expect(klass.instance_variable_get(:@table_data).save_query).to eq('INSERT INTO records (partition) VALUES (?)')
       end
 
       context 'with different columns defining the row key' do
@@ -165,7 +165,7 @@ module CassandraModel
 
       it 'should cache the query' do
         klass.query_for_delete
-        expect(klass.instance_variable_get(:@attributes).delete_query).to eq('DELETE FROM records WHERE partition = ?')
+        expect(klass.instance_variable_get(:@table_data).delete_query).to eq('DELETE FROM records WHERE partition = ?')
       end
 
       context 'with different columns' do

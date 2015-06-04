@@ -56,7 +56,7 @@ module CassandraModel
 
     class << self
       def counter_columns
-        @counter_columns ||= columns - (partition_key + clustering_columns)
+        table_data.counter_columns ||= columns - (partition_key + clustering_columns)
       end
 
       def request_async(clause, options = {})

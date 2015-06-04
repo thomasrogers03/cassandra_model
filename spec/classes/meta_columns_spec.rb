@@ -14,9 +14,11 @@ module CassandraModel
       end
 
       def self.reset!
-        @deferred_column_writers = nil
-        @async_deferred_column_readers = nil
-        @async_deferred_column_writers = nil
+        @table_data = nil
+      end
+
+      def self.table_data
+        @table_data ||= OpenStruct.new
       end
 
       def save_async

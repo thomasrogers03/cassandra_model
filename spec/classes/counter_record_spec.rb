@@ -2,12 +2,6 @@ require 'rspec'
 
 module CassandraModel
   describe CounterRecord do
-    class CounterRecord
-      def self.reset!
-        @counter_columns = nil
-      end
-    end
-
     class ImageCounter < CounterRecord
     end
 
