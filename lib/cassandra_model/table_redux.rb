@@ -2,7 +2,7 @@ module CassandraModel
   class TableRedux
     extend Forwardable
 
-    def_delegator :@connection, :connection
+    attr_reader :connection
     attr_reader :name
 
     def initialize(connection_name = nil, table_name)

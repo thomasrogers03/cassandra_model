@@ -24,14 +24,14 @@ module CassandraModel
 
     describe '#connection' do
       it 'should be the cached cassandra connection' do
-        expect(subject.connection).to eq(ConnectionCache[nil].connection)
+        expect(subject.connection).to eq(ConnectionCache[nil])
       end
 
       context 'with the connection name parameter omitted' do
         let(:table) { TableRedux.new(table_name) }
 
         it 'should be the cached cassandra connection' do
-          expect(subject.connection).to eq(ConnectionCache[nil].connection)
+          expect(subject.connection).to eq(ConnectionCache[nil])
         end
       end
 
@@ -43,7 +43,7 @@ module CassandraModel
         before { ConnectionCache[:counters].config = {hosts: hosts, keyspace: 'keyspace'} }
 
         it 'should use the specified connection' do
-          expect(subject.connection).to eq(ConnectionCache[:counters].connection)
+          expect(subject.connection).to eq(ConnectionCache[:counters])
         end
       end
     end
