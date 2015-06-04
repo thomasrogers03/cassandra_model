@@ -52,7 +52,7 @@ module CassandraModel
       shared_examples_for 'a method caching column names' do |method, table_method|
         it 'should cache the columns names' do
           subject.public_send(method)
-          expect(keyspace.table(table_name)).not_to receive(table_method)
+          expect(keyspace.table(table_name.to_s)).not_to receive(table_method)
           subject.public_send(method)
         end
       end
