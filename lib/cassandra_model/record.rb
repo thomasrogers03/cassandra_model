@@ -139,10 +139,10 @@ module CassandraModel
     class << self
       extend Forwardable
 
-      def_delegators :table, :reset_local_schema!, :partition_key, :clustering_columns
+      def_delegators :table, :partition_key, :clustering_columns
 
       def table_name=(value)
-        @table = Table.new(value)
+        @table = TableRedux.new(value)
       end
 
       def table_name
@@ -154,7 +154,7 @@ module CassandraModel
       end
 
       def table
-        @table ||= Table.new(generate_table_name)
+        @table ||= TableRedux.new(generate_table_name)
       end
 
       def columns

@@ -3,10 +3,13 @@ module ConnectionHelper
 
   MockColumn = Struct.new(:name, :type)
 
-  let(:keyspace) { double(:keyspace, table: nil) }
+  let(:keyspace) { double(:keyspaceA, table: nil) }
   let(:query_results) { [] }
   let(:paginated_result) { MockPage.new(true, nil, query_results) }
-  let(:connection) { double(:connection, execute_async: paginated_result, execute: paginated_result.get) }
+  let(:default_statement) { double(:statement) }
+  let(:connection) do
+    double(:connection, execute_async: paginated_result, execute: paginated_result.get, prepare: default_statement)
+  end
   let(:cluster) { double(:cassandra_cluster, connect: connection, keyspace: keyspace) }
 
   before do
@@ -42,7 +45,7 @@ module ConnectionHelper
   end
 
   def mock_query_result(args, results = [])
-    result_future = query_pages(results)
+    result_future = mock_query_pages(results)
     allow(connection).to receive(:execute_async).with(*args).and_return(result_future)
   end
 

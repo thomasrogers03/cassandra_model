@@ -8,24 +8,19 @@ module CassandraModel
 
     let(:partition_key) { [:rk_model, :rk_series] }
     let(:clustering_columns) { [:ck_price, :ck_model] }
-    let(:columns) { partition_key + clustering_columns + [:meta_data] }
-    let(:cluster) { double(:cluster, connect: connection) }
-    let(:connection) { double(:connection, request_async: MockFuture.new([])) }
-    let(:statement) { double(:statement) }
+    let(:remaining_columns) { [:meta_data] }
     let(:query) { '' }
+    let!(:statement) { mock_prepare(query) }
 
     before do
       MockRecordStatic.reset!
       MockRecordStatic.table_name = :mock_records
-      MockRecordStatic.partition_key = partition_key
-      MockRecordStatic.clustering_columns = clustering_columns
-      MockRecordStatic.columns = columns
-      allow(Cassandra).to receive(:cluster).and_return(cluster)
-      allow(Record).to receive(:statement).with(query).and_return(statement)
+      mock_simple_table(:mock_records, partition_key, clustering_columns, remaining_columns)
     end
 
     describe '.columns' do
-      let(:columns) { [:rk_model, :series, :ck_model, :meta_data] }
+      let(:partition_key) { [:rk_model, :series] }
+      let(:clustering_columns) { [:ck_model] }
 
       it 'should reduce the columns starting with rk_ or ck_ to base columns' do
         expect(MockRecordStatic.columns).to eq([:model, :series, :meta_data])
@@ -38,7 +33,8 @@ module CassandraModel
       end
 
       context 'with a different set of columns' do
-        let(:columns) { [:rk_model, :rk_series, :rk_colour, :ck_price, :ck_model, :ck_colour, :meta_data] }
+        let(:partition_key) { [:rk_model, :rk_series, :rk_colour] }
+        let(:clustering_columns) { [:ck_price, :ck_model] }
 
         it 'should reduce the columns starting with rk_ or ck_ to base columns' do
           expect(MockRecordStatic.columns).to eq([:model, :series, :colour, :price, :meta_data])
@@ -48,7 +44,8 @@ module CassandraModel
 
     shared_examples_for 'a composite column map' do |method, prefix|
       describe ".#{method}" do
-        let(:columns) { [:rk_model, :rk_series, :rk_colour, :ck_price, :ck_model, :ck_colour, :meta_data] }
+        let(:partition_key) { [:rk_model, :rk_series, :rk_colour] }
+        let(:clustering_columns) { [:ck_price, :ck_model, :ck_colour] }
 
         before { MockRecordStatic.columns }
 
@@ -68,7 +65,8 @@ module CassandraModel
     it_behaves_like 'a composite column map', :composite_ck_map, :ck
 
     describe '.composite_defaults' do
-      let(:columns) { [:rk_model, :rk_series, :rk_colour, :ck_price, :ck_model, :ck_colour, :meta_data] }
+      let(:partition_key) { [:rk_model, :rk_series, :rk_colour] }
+      let(:clustering_columns) { [:ck_price, :ck_model, :ck_colour] }
       let(:defaults) { nil }
 
       before do

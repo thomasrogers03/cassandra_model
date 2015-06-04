@@ -2,6 +2,8 @@ require 'rspec'
 
 module CassandraModel
   describe MetaTable do
+    TABLE_POSTFIX = '_50306970412fc32e13cfe807ba6426de'
+
     let(:table_name) { :records }
     let(:table_definition) do
       {name: table_name,
@@ -10,11 +12,6 @@ module CassandraModel
        remaining_columns: {meta_data: 'map<text, text>'}}
     end
     let(:definition) { TableDefinition.new(table_definition) }
-    let(:cluster) { double(:cluster, connect: connection) }
-    let(:connection) { double(:connection, execute: []) }
-    let(:column_object) { double(:column, name: 'partition') }
-    let(:table_object) { double(:table, columns: [column_object], partition_key: [], clustering_columns: []) }
-    let(:keyspace) { double(:keyspace, table: table_object) }
     let(:klass) { MetaTable }
     let(:attributes) do
       {name: definition.name.to_s,
@@ -25,15 +22,16 @@ module CassandraModel
     let(:descriptor) do
       TableDescriptor.new(attributes).tap { |desc| desc.invalidate! unless valid }
     end
+    let(:real_table_name) { "#{table_name}#{TABLE_POSTFIX}".to_sym }
 
     subject { klass.new(definition) }
 
     before do
       klass.reset!
-      allow(Cassandra).to receive(:cluster).and_return(cluster)
-      allow(cluster).to receive(:keyspace).with(klass.config[:keyspace]).and_return(keyspace)
       TableDescriptor.reset!
-      TableDescriptor.columns = [:name, :created_at, :id]
+      allow(cluster).to receive(:keyspace).and_return(keyspace)
+      mock_simple_table(:table_descriptors, [:name], [:created_at], [:id])
+      mock_simple_table(real_table_name, [:partition], [], [])
       allow(TableDescriptor).to receive(:create).with(definition).and_return(descriptor)
       allow_any_instance_of(MetaTable).to receive(:sleep)
     end
@@ -47,7 +45,7 @@ module CassandraModel
     end
 
     it_behaves_like 'a model with a connection', MetaTable
-    it_behaves_like 'a table', '_50306970412fc32e13cfe807ba6426de' # from TableDefinition.table_id
+    it_behaves_like 'a table', TABLE_POSTFIX # from TableDefinition.table_id
 
     [:name, :partition_key, :clustering_columns, :columns].each do |method|
       describe "#{method}" do
@@ -69,19 +67,18 @@ module CassandraModel
         end
 
         describe 'consistency' do
-          let(:keyspace) { double(:keyspace, table: nil) }
-          let(:updated_keyspace) { double(:keyspace, table: table_object) }
+          let(:bad_keyspace) { double(:keyspace, table: nil) }
 
-          before { TableDescriptor.columns = nil }
+          #before { TableDescriptor.columns = nil }
 
           it 'should wait until the schema says the table exists' do
-            allow(cluster).to receive(:keyspace).and_return(keyspace, keyspace, updated_keyspace)
+            allow(cluster).to receive(:keyspace).and_return(bad_keyspace, bad_keyspace, keyspace)
             expect(subject.columns).to eq([:partition])
           end
 
           context 'when the table takes too long to create' do
             it 'should raise an error' do
-              allow(cluster).to receive(:keyspace).and_return(keyspace)
+              allow(cluster).to receive(:keyspace).and_return(bad_keyspace)
               expect { subject.columns }.to raise_error("Could not verify the creation of table #{definition.name_in_cassandra}")
             end
           end

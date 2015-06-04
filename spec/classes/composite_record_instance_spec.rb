@@ -9,11 +9,10 @@ module CassandraModel
 
     let(:partition_key) { [:rk_model, :rk_series] }
     let(:clustering_columns) { [:ck_model] }
-    let(:columns) { partition_key + clustering_columns + [:meta_data] }
+    let(:remaining_columns) { [:meta_data] }
     let(:query) { '' }
-    let(:statement) { double(:statement) }
+    let!(:statement) { mock_prepare(query) }
     let(:result_future) { MockFuture.new([]) }
-    let(:connection) { double(:connection, execute_async: result_future) }
     let(:defaults) { [{model: ''}, {model: '', series: ''}] }
 
     subject { MockRecordInstance.new(model: 'AABBCCDD', series: '91A', meta_data: {}) }
@@ -21,13 +20,8 @@ module CassandraModel
     before do
       MockRecordInstance.reset!
       MockRecordInstance.table_name = :mock_records
-      MockRecordInstance.partition_key = partition_key
-      MockRecordInstance.clustering_columns = clustering_columns
-      MockRecordInstance.columns = columns
-      MockRecordInstance.columns
       MockRecordInstance.composite_defaults = defaults
-      allow(Record).to receive(:statement).with(query).and_return(statement)
-      allow(Record).to receive(:connection).and_return(connection)
+      mock_simple_table(:mock_records, partition_key, clustering_columns, remaining_columns)
     end
 
     shared_examples_for 'an instance query method' do |method, params|

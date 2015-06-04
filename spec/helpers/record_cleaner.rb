@@ -5,6 +5,7 @@ module CassandraModel
       @table = nil
       @save_query = nil
       @delete_qeury = nil
+      @columns = nil
 
       # meta columns
       @deferred_column_writers = nil
@@ -18,18 +19,6 @@ module CassandraModel
       @composite_defaults = nil
 
       Connection.reset!
-    end
-
-    def self.partition_key=(columns)
-      table.partition_key = columns
-    end
-
-    def self.clustering_columns=(columns)
-      table.clustering_columns = columns
-    end
-
-    def self.columns=(columns)
-      table.columns = columns
     end
   end
 end

@@ -2,10 +2,7 @@ require 'rspec'
 
 module CassandraModel
   describe TableDescriptor do
-    let(:result_future) { MockFuture.new([]) }
-    let(:connection) { double(:connection, execute_async: result_future) }
-    let(:cluster) { double(:cluster, connect: connection) }
-    let(:statement) { double(:statement) }
+    let(:query_results) { [] }
     let(:table_definition) do
       {name: :records,
        partition_key: {partition_key: :text},
@@ -24,9 +21,8 @@ module CassandraModel
 
     before do
       TableDescriptor.reset!
-      TableDescriptor.columns = [:name, :created_at, :id]
-      allow(Record).to receive(:statement).and_return(statement)
-      allow(Cassandra).to receive(:cluster).and_return(cluster)
+      mock_simple_table(:table_descriptors, [:name], [:created_at], [:id])
+      mock_query_result([anything], [query_results])
     end
 
     it { is_expected.to be_a_kind_of(Record) }
@@ -67,7 +63,7 @@ module CassandraModel
       end
 
       context 'when the entry already exists' do
-        let(:result_future) { MockFuture.new([{'[applied]' => false}]) }
+        let(:query_results) { [{'[applied]' => false}] }
 
         it 'should invalidate the entry' do
           expect(TableDescriptor.create_async(definition).get.valid).to eq(false)

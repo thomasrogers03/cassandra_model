@@ -3,27 +3,26 @@ require 'spec_helper'
 module CassandraModel
   describe Record do
     class ImageData < Record
-      ImageData.columns = [:partition]
     end
 
-    let(:cluster) { double(:cluster, connect: connection) }
-    let(:connection) { double(:connection) }
-    let(:column_object) { double(:column, name: 'partition') }
-    let(:table_object) { double(:table, columns: [column_object]) }
-    let(:keyspace) { double(:keyspace, table: table_object) }
-    let(:statement) { double(:statement) }
+    let(:table_name) { :records }
+    let(:query) { nil }
+    let(:partition_key) { [:partition] }
+    let(:clustering_columns) { [:cluster] }
+    let(:primary_key) { partition_key + clustering_columns }
+    let(:remaining_columns) { [] }
+    let(:columns) { primary_key + remaining_columns }
+    let!(:statement) { mock_prepare(query) }
 
     before do
-      allow(Cassandra).to receive(:cluster).and_return(cluster)
       allow(Concurrent::Future).to receive(:execute) do |&block|
         result = block.call
         double(:future, value: result)
       end
-      Record.columns = [:partition, :cluster]
       Record.reset!
       ImageData.reset!
-      ImageData.columns = [:partition, :cluster]
-      allow(cluster).to receive(:keyspace).with(Record.config[:keyspace]).and_return(keyspace)
+      mock_simple_table(table_name, partition_key, clustering_columns, remaining_columns)
+      mock_simple_table(:image_data, partition_key, clustering_columns, remaining_columns)
     end
 
     it_behaves_like 'a model with a connection', Record
@@ -42,90 +41,31 @@ module CassandraModel
       it_behaves_like 'a record defining meta columns'
     end
 
-    describe '.reset_local_schema!' do
-      let(:partition_key) { double(:column, name: 'partition') }
-      let(:clustering_column) { double(:column, name: 'clustering') }
-      let(:columns) { [partition_key, clustering_column] }
-      let(:updated_partition_key) { double(:column, name: 'updated_partition') }
-      let(:updated_clustering_column) { double(:column, name: 'updated_clustering') }
-      let(:updated_columns) { [updated_partition_key, updated_clustering_column] }
-      let(:table_object) do
-        table = double(:table)
-        allow(table).to(receive(:partition_key)).and_return([partition_key], [updated_partition_key])
-        allow(table).to receive(:clustering_columns).and_return([clustering_column], [updated_clustering_column])
-        allow(table).to receive(:columns).and_return(columns, updated_columns)
-        table
-      end
+    shared_examples_for 'a set of columns' do |method|
+      let(:columns) { [:column1] }
 
       subject { Record }
 
-      before do
-        Record.partition_key
-        Record.clustering_columns
-        Record.columns = nil
-        Record.columns
-        Record.reset_local_schema!
+      before { allow_any_instance_of(TableRedux).to receive(method).and_return(columns) }
+
+      it 'should delegate the method to the underlying table' do
+        expect(subject.public_send(method)).to eq(columns)
       end
 
-      describe 'updating the schema with the new table structure' do
-        its(:partition_key) { is_expected.to eq([:updated_partition]) }
-        its(:clustering_columns) { is_expected.to eq([:updated_clustering]) }
-        its(:columns) { is_expected.to eq([:updated_partition, :updated_clustering]) }
+      context 'with a different result' do
+        let(:columns) { [:column1, :column2, :column3] }
+
+        its(method) { is_expected.to eq(columns) }
       end
     end
 
-    shared_examples_for 'a set of columns' do |method|
-      let(:column) { double(:column, name: 'partition') }
-      let(:table) { double(:table, method => [column]) }
-      let(:table_name) { 'records' }
-      let(:keyspace) do
-        keyspace = double(:keyspace)
-        allow(keyspace).to receive(:table).with(table_name).and_return(table)
-        keyspace
-      end
-
-      it 'should be the partition key for this table' do
-        expect(Record.send(method)).to eq([:partition])
-      end
-
-      it 'should cache the partition key' do
-        Record.send(method)
-        expect(keyspace).not_to receive(:table)
-        Record.send(method)
-      end
-
-      context 'with a different table name' do
-        let(:table_name) { 'image_data' }
-
-        it 'should be the partition key for that table' do
-          expect(ImageData.send(method)).to eq([:partition])
-        end
-      end
-
-      context 'with multiple partition key parts' do
-        let(:other_column) { double(:column, name: 'partition_part_two') }
-        let(:table) { double(:table, method => [column, other_column]) }
-
-        it 'should be the partition key for this table' do
-          expect(Record.send(method)).to eq([:partition, :partition_part_two])
-        end
-      end
-    end
-
-    it_behaves_like 'a set of columns', :partition_key
-    it_behaves_like 'a set of columns', :clustering_columns
+    describe('.partition_key') { it_behaves_like 'a set of columns', :partition_key }
+    describe('.clustering_columns') { it_behaves_like 'a set of columns', :clustering_columns }
 
     describe '.columns' do
-      before do
-        Record.columns = nil
-        ImageData.columns = nil
-      end
-
       it_behaves_like 'a set of columns', :columns
 
       describe 'defining methods for record columns' do
-        let(:column_object) { double(:column, name: 'partition') }
-        let(:table_object) { double(:table, columns: [column_object]) }
 
         it 'should define a method to assign and retrieve the column' do
           record = Record.new(partition: 'Partition Key')
@@ -134,8 +74,7 @@ module CassandraModel
         end
 
         context 'with multiple columns' do
-          let(:other_column_object) { double(:column, name: 'clustering') }
-          let(:table_object) { double(:table, columns: [column_object, other_column_object]) }
+          let(:clustering_columns) { [:clustering] }
 
           it 'should define a method to assign and retrieve the additional column' do
             record = Record.new(clustering: 'Clustering Key')
@@ -163,7 +102,7 @@ module CassandraModel
 
     describe '.table=' do
       it 'should allow the user to overwrite the default table behaviour' do
-        Record.table = Table.new('week 1 table')
+        Record.table = TableRedux.new('week 1 table')
         expect(Record.table_name).to eq('week 1 table')
       end
     end
@@ -186,12 +125,8 @@ module CassandraModel
 
     describe '.query_for_save' do
       let(:columns) { [:partition] }
+      let(:clustering_columns) { [] }
       let(:klass) { Record }
-
-      before do
-        klass.instance_variable_set(:@save_query, nil)
-        klass.columns = columns
-      end
 
       it 'should represent the query for saving all the column values' do
         expect(klass.query_for_save).to eq('INSERT INTO records (partition) VALUES (?)')
@@ -202,8 +137,8 @@ module CassandraModel
         expect(klass.instance_variable_get(:@save_query)).to eq('INSERT INTO records (partition) VALUES (?)')
       end
 
-      context 'with different columns' do
-        let(:columns) { [:partition, :cluster] }
+      context 'with different columns defining the row key' do
+        let(:clustering_columns) { [:cluster] }
 
         it 'should represent the query for saving all the column values' do
           expect(klass.query_for_save).to eq('INSERT INTO records (partition, cluster) VALUES (?, ?)')
@@ -223,12 +158,6 @@ module CassandraModel
       let(:partition_key) { [:partition] }
       let(:clustering_columns) { [] }
       let(:klass) { Record }
-
-      before do
-        klass.columns = partition_key + clustering_columns
-        allow(klass).to receive(:partition_key).and_return(partition_key)
-        allow(klass).to receive(:clustering_columns).and_return(clustering_columns)
-      end
 
       it 'should represent the query for saving all the column values' do
         expect(klass.query_for_delete).to eq('DELETE FROM records WHERE partition = ?')
@@ -300,11 +229,10 @@ module CassandraModel
       let(:result_page) { MockPage.new(true, MockFuture.new([]), page_results) }
       let(:results) { MockFuture.new(result_page) }
       let(:record) { Record.new(partition: 'Partition Key') }
+      let(:remaining_columns) { [:time_stamp] }
 
       before do
         Record.table_name = table_name
-        Record.columns = [:partition, :cluster, :time_stamp]
-        allow(Record).to receive(:statement).with(query).and_return(statement)
         allow(connection).to receive(:execute_async).and_return(results)
       end
 
@@ -366,10 +294,8 @@ module CassandraModel
         let(:record_one) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key', other_cluster: 'Other Cluster Key') }
         let(:record_two) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key') }
         let(:record_three) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key 2') }
-
-        before do
-          Record.columns = [:partition, :cluster, :other_cluster]
-        end
+        let(:clustering_columns) { [:cluster, :other_cluster] }
+        let(:remaining_columns) { [] }
 
         it 'should order the results by the specified column' do
           expect(Record.request_async({}, clause).get).to eq([record_one, record_two, record_three])
@@ -551,8 +477,6 @@ module CassandraModel
     end
 
     describe '#attributes' do
-      before { Record.columns = [:partition] }
-
       it 'should be a valid record initially' do
         record = Record.new(partition: 'Partition Key')
         expect(record.valid).to eq(true)
@@ -577,7 +501,8 @@ module CassandraModel
     end
 
     describe '#save_async' do
-      let(:columns) { [:partition] }
+      let(:table_name) { :table }
+      let(:clustering_columns) { [] }
       let(:attributes) { {partition: 'Partition Key'} }
       let(:existence_check) { nil }
       let(:query) { "INSERT INTO table (#{columns.join(', ')}) VALUES (#{(%w(?) * columns.size).join(', ')})#{existence_check}" }
@@ -585,8 +510,7 @@ module CassandraModel
       let(:results) { MockFuture.new(page_results) }
 
       before do
-        Record.table_name = :table
-        Record.columns = columns
+        Record.table_name = table_name
         allow(Record).to receive(:statement).with(query).and_return(statement)
         allow(connection).to receive(:execute_async).and_return(results)
       end
@@ -649,7 +573,7 @@ module CassandraModel
       end
 
       context 'with different columns' do
-        let(:columns) { [:partition, :cluster] }
+        let(:clustering_columns) { [:cluster] }
         let(:attributes) { {partition: 'Partition Key', cluster: 'Cluster Key'} }
 
         it 'should save the record to the database using the specified attributes' do
@@ -704,7 +628,6 @@ module CassandraModel
 
       before do
         Record.table_name = table_name
-        Record.columns = partition_key + clustering_columns
         allow(Record).to receive(:partition_key).and_return(partition_key)
         allow(Record).to receive(:clustering_columns).and_return(clustering_columns)
         allow(Record).to receive(:statement).with(query).and_return(statement)
@@ -776,7 +699,7 @@ module CassandraModel
     describe '#update_async' do
       let(:partition_key) { [:partition] }
       let(:clustering_columns) { [:cluster] }
-      let(:extra_columns) { [:meta_data, :misc_data] }
+      let(:remaining_columns) { [:meta_data, :misc_data] }
       let(:attributes) { {partition: 'Partition Key', cluster: 'Cluster Key'} }
       let(:table_name) { :table }
       let(:where_clause) { (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ') }
@@ -786,10 +709,6 @@ module CassandraModel
 
       before do
         Record.table_name = table_name
-        Record.columns = partition_key + clustering_columns + extra_columns
-        allow(Record).to receive(:partition_key).and_return(partition_key)
-        allow(Record).to receive(:clustering_columns).and_return(clustering_columns)
-        allow(Record).to receive(:statement).with(query).and_return(statement)
         allow(connection).to receive(:execute_async).and_return(results)
       end
 
