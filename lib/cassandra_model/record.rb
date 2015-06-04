@@ -140,13 +140,10 @@ module CassandraModel
       extend Forwardable
 
       def_delegators :table, :partition_key, :clustering_columns
+      def_delegator :table, :name, :table_name
 
       def table_name=(value)
         @table = TableRedux.new(value)
-      end
-
-      def table_name
-        table.name
       end
 
       def table=(value)
