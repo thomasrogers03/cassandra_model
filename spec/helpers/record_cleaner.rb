@@ -2,6 +2,7 @@ module CassandraModel
   class Record
     def self.reset!
       # base class
+      @attributes = nil
       @table = nil
       @save_query = nil
       @delete_qeury = nil

@@ -10,6 +10,8 @@ module CassandraModel
 
     attr_reader :attributes, :valid
 
+    Attributes = Struct.new(:default_table_name, :table, :save_query, :delete_query, :columns)
+
     def initialize(attributes, options = {validate: true})
       validate_attributes!(attributes) if options[:validate]
       @valid = true
@@ -143,42 +145,42 @@ module CassandraModel
       def_delegator :table, :name, :table_name
 
       def table_name=(value)
-        @table = TableRedux.new(value)
+        attributes.table = TableRedux.new(value)
       end
 
       def table=(value)
-        @table = value
+        attributes.table = value
       end
 
       def table
-        @table ||= TableRedux.new(generate_table_name)
+        attributes.table ||= TableRedux.new(generate_table_name)
       end
 
       def columns
-        @columns || internal_columns.tap do |columns|
+        attributes.columns || internal_columns.tap do |columns|
           columns.each { |column| define_attribute(column) }
         end
       end
 
       def internal_columns
-        @columns || table.columns
+        attributes.columns || table.columns
       end
 
       def query_for_save(options = {})
         existence_clause = if options[:check_exists]
                              ' IF NOT EXISTS'
                            end
-        @save_query ||= begin
+        attributes.save_query ||= begin
           column_names = internal_columns.join(', ')
           column_sanitizers = (%w(?) * internal_columns.size).join(', ')
           "INSERT INTO #{table_name} (#{column_names}) VALUES (#{column_sanitizers})"
         end
-        "#{@save_query}#{existence_clause}"
+        "#{attributes.save_query}#{existence_clause}"
       end
 
       def query_for_delete
         where_clause = (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ')
-        @delete_qeury ||= "DELETE FROM #{table_name} WHERE #{where_clause}"
+        attributes.delete_query ||= "DELETE FROM #{table_name} WHERE #{where_clause}"
       end
 
       def query_for_update(new_attributes)
@@ -232,6 +234,10 @@ module CassandraModel
       end
 
       private
+
+      def attributes
+        @attributes ||= Attributes.new
+      end
 
       def generate_table_name
         self.name.demodulize.underscore.pluralize
