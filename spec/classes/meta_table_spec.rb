@@ -4,7 +4,9 @@ module CassandraModel
   describe MetaTable do
     TABLE_POSTFIX = '_50306970412fc32e13cfe807ba6426de'
 
+    let(:connection_name) { nil }
     let(:table_name) { :records }
+    let(:real_table_name) { "#{table_name}#{TABLE_POSTFIX}".to_sym }
     let(:table_definition) do
       {name: table_name,
        partition_key: {partition_key: :text},
@@ -22,32 +24,60 @@ module CassandraModel
     let(:descriptor) do
       TableDescriptor.new(attributes).tap { |desc| desc.invalidate! unless valid }
     end
-    let(:real_table_name) { "#{table_name}#{TABLE_POSTFIX}".to_sym }
+    let(:table) { klass.new(connection_name, definition) }
 
-    subject { klass.new(definition) }
+    subject { table }
 
     before do
-      klass.reset!
-      TableDescriptor.reset!
-      allow(cluster).to receive(:keyspace).and_return(keyspace)
       mock_simple_table(:table_descriptors, [:name], [:created_at], [:id])
       mock_simple_table(real_table_name, [:partition], [], [])
       allow(TableDescriptor).to receive(:create).with(definition).and_return(descriptor)
       allow_any_instance_of(MetaTable).to receive(:sleep)
     end
 
+    it { is_expected.to be_a_kind_of(TableRedux) }
+
+    describe '#connection' do
+      it 'should be the cached cassandra connection' do
+        expect(subject.connection).to eq(ConnectionCache[nil])
+      end
+
+      context 'with the connection name parameter omitted' do
+        let(:table) { MetaTable.new(table_name) }
+
+        it 'should be the cached cassandra connection' do
+          expect(subject.connection).to eq(ConnectionCache[nil])
+        end
+      end
+
+      context 'with a different connection name' do
+        let(:connection_name) { :counters }
+        let(:hosts) { %w(cassandra.one cassandra.two) }
+        let!(:connection) { mock_connection(hosts, 'keyspace') }
+
+        before { ConnectionCache[:counters].config = {hosts: hosts, keyspace: 'keyspace'} }
+
+        it 'should use the specified connection' do
+          expect(subject.connection).to eq(ConnectionCache[:counters])
+        end
+      end
+    end
+
+    describe '#reset_local_schema!' do
+      it 'should indicate that this functionality is not implemented' do
+        expect{subject.reset_local_schema!}.to raise_error(Cassandra::Errors::ClientError, 'Schema changes are not supported for meta tables')
+      end
+    end
+
     describe '#name' do
-      subject { klass.new(definition).name }
+      subject { klass.new(connection_name, definition).name }
 
       it 'should be the generated name from the table definition' do
         is_expected.to eq(definition.name_in_cassandra)
       end
     end
 
-    it_behaves_like 'a model with a connection', MetaTable
-    it_behaves_like 'a table', TABLE_POSTFIX # from TableDefinition.table_id
-
-    [:name, :partition_key, :clustering_columns, :columns].each do |method|
+    shared_examples_for 'a method requiring the table to exist' do |method|
       describe "#{method}" do
 
         context 'when the table does not yet exist' do
@@ -86,6 +116,11 @@ module CassandraModel
         end
       end
     end
+
+    it_behaves_like 'a method requiring the table to exist', :name
+    it_behaves_like 'a method requiring the table to exist', :partition_key
+    it_behaves_like 'a method requiring the table to exist', :clustering_columns
+    it_behaves_like 'a method requiring the table to exist', :columns
 
   end
 end

@@ -1,7 +1,12 @@
 module CassandraModel
-  class MetaTable < Table
-    def initialize(table_definition)
+  class MetaTable < TableRedux
+    def initialize(connection_name = nil, table_definition)
       @table_definition = table_definition
+      @connection = ConnectionCache[connection_name]
+    end
+
+    def reset_local_schema!
+      raise Cassandra::Errors::ClientError, 'Schema changes are not supported for meta tables'
     end
 
     def name
@@ -17,9 +22,13 @@ module CassandraModel
       @table ||= create_table
     end
 
+    def keyspace
+      connection.keyspace
+    end
+
     def create_table
       descriptor = TableDescriptor.create(@table_definition)
-      connection.execute(@table_definition.to_cql) if descriptor.valid
+      connection.connection.execute(@table_definition.to_cql) if descriptor.valid
       100.times do
         sleep 0.100
         break if keyspace.table(name_in_cassandra)
