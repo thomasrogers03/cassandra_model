@@ -124,6 +124,23 @@ module CassandraModel
         MockRecordStatic.request_async(model: 'AABBCCDD', series: '91A', price: 9.99)
       end
 
+      context 'when a composite column is part of the remaining columns' do
+        let(:partition_key) { [:rk_model, :rk_series] }
+        let(:clustering_columns) { [:ck_series] }
+        let(:remaining_columns) { [:model] }
+        let(:defaults) { [{model: ''}] }
+        let(:results) { [['rk_model' => '', 'rk_series' => '91A', 'ck_series' => '91A', 'model' => 'EEFFGG']] }
+        let(:query) { 'SELECT * FROM mock_records WHERE rk_series = ? AND rk_model = ?' }
+        let(:execute_params) { [statement, '91A', '', {}] }
+
+        before { mock_query_result(execute_params, results) }
+
+        it 'should not re-map the composite column to the real one' do
+          record = MockRecordStatic.request_async(series: '91A').get.first
+          expect(record.attributes).not_to include(:rk_model)
+        end
+      end
+
       context 'when selecting composite columns' do
         let(:query) { 'SELECT ck_model FROM mock_records WHERE rk_model = ? AND rk_series = ? AND ck_price = ?' }
 

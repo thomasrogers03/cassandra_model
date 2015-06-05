@@ -83,7 +83,11 @@ module CassandraModel
       row = super(row)
 
       row.inject({}) do |memo, (column, value)|
-        memo.merge!(mapped_column(column) => value)
+        if column =~ /^rk_/ || column =~ /^ck_/
+          memo.merge!(mapped_column(column) => value)
+        else
+          memo.merge!(column => value)
+        end
       end
     end
 
