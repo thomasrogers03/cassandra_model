@@ -1,5 +1,9 @@
 module CassandraModel
   module CompositeRecordInstance
+    def self.included(klass)
+      klass.extend CompositeRecordStatic
+    end
+
     def save_async(options = {})
       futures = composite_rows.map { |record| record.internal_save_async(options) }
 

@@ -3,7 +3,6 @@ require 'rspec'
 module CassandraModel
   describe CompositeRecordInstance do
     class MockRecordInstance < Record
-      extend CompositeRecordStatic
       include CompositeRecordInstance
     end
 
