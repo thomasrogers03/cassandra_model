@@ -156,7 +156,7 @@ module CassandraModel
       def_delegator :table, :name, :table_name
 
       def table_name=(value)
-        table_data.table = TableRedux.new(value)
+        table_data.table_name = value
       end
 
       def table=(value)
@@ -164,7 +164,7 @@ module CassandraModel
       end
 
       def table
-        table_data.table ||= TableRedux.new(generate_table_name)
+        table_data.table ||= TableRedux.new(table_data.table_name || generate_table_name)
       end
 
       def columns
