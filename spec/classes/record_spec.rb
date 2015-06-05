@@ -97,6 +97,22 @@ module CassandraModel
       end
     end
 
+    describe '.connection_name' do
+      it 'should use the default connection' do
+        expect(Record.table.connection).to eq(ConnectionCache[nil])
+      end
+
+      context 'when overridden' do
+        let(:connection_name) { :counters }
+
+        before { Record.connection_name = :counters }
+
+        it 'should use the specified connection' do
+          expect(Record.table.connection).to eq(ConnectionCache[:counters])
+        end
+      end
+    end
+
     describe '.table=' do
       it 'should allow the user to overwrite the default table behaviour' do
         Record.table = TableRedux.new('week 1 table')

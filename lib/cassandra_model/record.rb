@@ -159,12 +159,19 @@ module CassandraModel
         table_data.table_name = value
       end
 
+      def connection_name=(value)
+        table_data.connection_name = value
+      end
+
       def table=(value)
         table_data.table = value
       end
 
       def table
-        table_data.table ||= TableRedux.new(table_data.table_name || generate_table_name)
+        table_data.table ||= begin
+          table_name = table_data.table_name || generate_table_name
+          TableRedux.new(table_data.connection_name, table_name)
+        end
       end
 
       def columns
