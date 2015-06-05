@@ -18,9 +18,10 @@ module ConnectionHelper
   let(:keyspace) { double(:keyspaceA, table: nil) }
   let(:query_results) { [] }
   let(:paginated_result) { MockPage.new(true, nil, query_results) }
+  let(:paginated_result_future) { MockFuture.new(paginated_result) }
   let(:default_statement) { MockStatement.new('DUMMY STATEMENT') }
   let(:connection) do
-    double(:connection, execute_async: paginated_result, execute: paginated_result.get, prepare: default_statement)
+    double(:connection, execute_async: paginated_result_future, execute: paginated_result, prepare: default_statement)
   end
   let(:cluster) { double(:cassandra_cluster, connect: connection, keyspace: keyspace) }
 
@@ -49,9 +50,11 @@ module ConnectionHelper
   end
 
   def mock_query_pages(results)
-    result_future = MockPage.new(true, nil, results.shift || [])
+    page = MockPage.new(true, nil, results.shift || [])
+    result_future = MockFuture.new(page)
     while (current_result = results.shift)
-      result_future = MockPage.new(false, result_future, current_result)
+      page = MockPage.new(false, result_future, current_result)
+      result_future = MockFuture.new(page)
     end
     result_future
   end
@@ -59,6 +62,7 @@ module ConnectionHelper
   def mock_query_result(args, results = [])
     result_future = mock_query_pages(results)
     allow(connection).to receive(:execute_async).with(*args).and_return(result_future)
+    allow(connection).to receive(:execute).with(*args).and_return(result_future.get)
   end
 
   def mock_table(name, partition_key, clustering_columns, remaining_columns)
