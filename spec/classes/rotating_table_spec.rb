@@ -111,5 +111,16 @@ module CassandraModel
     describe('#connection') { it_behaves_like 'a rotating table method', :connection }
     describe('#name') { it_behaves_like 'a rotating table method', :name }
 
+    describe '#reset_local_schema!' do
+      subject { rotating_table.reset_local_schema! }
+
+      it 'should delegate to each of the tables' do
+        expect(first_table).to receive(:reset_local_schema!)
+        expect(second_table).to receive(:reset_local_schema!)
+        expect(third_table).to receive(:reset_local_schema!)
+        subject
+      end
+    end
+
   end
 end

@@ -13,6 +13,10 @@ module CassandraModel
       @schedule = schedule
     end
 
+    def reset_local_schema!
+      @tables.each(&:reset_local_schema!)
+    end
+
     private
 
     def first_table
