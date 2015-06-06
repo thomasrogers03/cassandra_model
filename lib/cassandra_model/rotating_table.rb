@@ -1,7 +1,5 @@
 module CassandraModel
   class RotatingTable
-    extend CassandraModel::Connection
-
     def initialize(tables, schedule)
       @tables = tables
       @schedule = schedule
