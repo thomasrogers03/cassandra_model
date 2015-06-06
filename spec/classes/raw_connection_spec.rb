@@ -93,20 +93,21 @@ module CassandraModel
     describe '#cluster' do
       subject { raw_connection.cluster }
 
-      let(:config) { {hosts: %w(localhost), connect_timeout: 120} }
+      let(:connection_cluster) { double(:cluster) }
+      let(:config) { {hosts: %w(localhost), connect_timeout: 120, logger: Logging.logger} }
 
       before do
-        allow(Cassandra).to receive(:cluster).with(hash_including(config)).and_return(cluster, double(:second_connection))
+        allow(Cassandra).to receive(:cluster).with(hash_including(config)).and_return(connection_cluster, double(:second_connection))
       end
 
       it 'should create a cassandra connection with the specified configuration' do
-        is_expected.to eq(cluster)
+        is_expected.to eq(connection_cluster)
       end
 
       context 'when a connection has already been created' do
         it 'should not create more than one connection' do
           raw_connection.cluster
-          is_expected.to eq(cluster)
+          is_expected.to eq(connection_cluster)
         end
       end
 
@@ -114,7 +115,7 @@ module CassandraModel
         let(:config) { {hosts: %w(localhost), connect_timeout: 120, compression: :snappy} }
         before { raw_connection.config = {compression: 'snappy'} }
 
-        it { should == cluster }
+        it { is_expected.to eq(connection_cluster) }
       end
     end
 

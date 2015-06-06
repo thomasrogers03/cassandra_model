@@ -21,7 +21,7 @@ module CassandraModel
 
     def cluster
       @cluster ||= begin
-        connection_configuration = {hosts: config[:hosts], connect_timeout: 120}
+        connection_configuration = {hosts: config[:hosts], connect_timeout: 120, logger: Logging.logger}
         connection_configuration[:compression] = config[:compression].to_sym if config[:compression]
         Cassandra.cluster(connection_configuration)
       end
