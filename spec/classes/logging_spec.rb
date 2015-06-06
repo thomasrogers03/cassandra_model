@@ -6,6 +6,12 @@ module CassandraModel
     describe '.logger' do
       subject { Logging.logger }
 
+      around do |example|
+        logger = Logging.logger
+        example.run
+        Logging.logger = logger
+      end
+
       it 'should create an instance of logger by default' do
         expect(subject).to be_a_kind_of(Logger)
       end
