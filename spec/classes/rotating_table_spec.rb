@@ -114,11 +114,23 @@ module CassandraModel
     describe '#reset_local_schema!' do
       subject { rotating_table.reset_local_schema! }
 
+      before do
+        allow(first_table).to receive(:reset_local_schema!)
+        allow(second_table).to receive(:reset_local_schema!)
+        allow(third_table).to receive(:reset_local_schema!)
+      end
+
       it 'should delegate to each of the tables' do
-        expect(first_table).to receive(:reset_local_schema!)
-        expect(second_table).to receive(:reset_local_schema!)
-        expect(third_table).to receive(:reset_local_schema!)
         subject
+      end
+
+      context 'when one of the tables is a MetaTable' do
+        before { allow(second_table).to receive(:is_a?).with(MetaTable).and_return(true) }
+
+        it 'should not call #reset_local_schema! on that table' do
+          expect(second_table).not_to receive(:reset_local_schema!)
+          subject
+        end
       end
     end
 

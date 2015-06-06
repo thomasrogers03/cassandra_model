@@ -14,7 +14,7 @@ module CassandraModel
     end
 
     def reset_local_schema!
-      @tables.each(&:reset_local_schema!)
+      @tables.reject { |table| table.is_a?(MetaTable) }.each(&:reset_local_schema!)
     end
 
     private
