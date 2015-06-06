@@ -14,6 +14,7 @@
 # limitations under the License.
 #++
 
+require 'cassandra_model/logging'
 require 'cassandra_model/raw_connection'
 require 'cassandra_model/connection_cache'
 require 'cassandra_model/table_definition'
