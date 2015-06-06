@@ -187,17 +187,15 @@ module CassandraModel
         existence_clause = if options[:check_exists]
                              ' IF NOT EXISTS'
                            end
-        table_data.save_query ||= begin
-          column_names = internal_columns.join(', ')
-          column_sanitizers = (%w(?) * internal_columns.size).join(', ')
-          "INSERT INTO #{table_name} (#{column_names}) VALUES (#{column_sanitizers})"
-        end
-        "#{table_data.save_query}#{existence_clause}"
+        column_names = internal_columns.join(', ')
+        column_sanitizers = (%w(?) * internal_columns.size).join(', ')
+        save_query = "INSERT INTO #{table_name} (#{column_names}) VALUES (#{column_sanitizers})"
+        "#{save_query}#{existence_clause}"
       end
 
       def query_for_delete
         where_clause = (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ')
-        table_data.delete_query ||= "DELETE FROM #{table_name} WHERE #{where_clause}"
+        "DELETE FROM #{table_name} WHERE #{where_clause}"
       end
 
       def query_for_update(new_attributes)
