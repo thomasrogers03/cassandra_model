@@ -2,13 +2,36 @@ require 'rspec'
 
 module CassandraModel
   describe RotatingTable do
-    let(:first_table) { double(:table, name: 'table 1') }
-    let(:second_table) { double(:table, name: 'table 2') }
-    let(:third_table) { double(:table, name: 'table 3') }
+    let(:partition_key) { [:partition_key] }
+    let(:clustering_columns) { [:clustering_key] }
+    let(:remaining_columns) { [:meta_data] }
+    let(:columns) { partition_key + clustering_columns + remaining_columns }
+    let(:table_methods) do
+      {partition_key: partition_key,
+       clustering_columns: clustering_columns,
+       columns: columns}
+    end
+    let(:first_table) { double(:table, table_methods.merge(name: 'table 1')) }
+    let(:second_table) { double(:table, table_methods.merge(name: 'table 2')) }
+    let(:third_table) { double(:table, table_methods.merge(name: 'table 3')) }
     let(:rotating_schedule) { 1.week }
     let(:rotating_table) { RotatingTable.new([first_table, second_table, third_table], rotating_schedule) }
 
     subject { rotating_table }
+
+    describe 'validation' do
+      describe 'column validation' do
+        let(:second_table_columns) { [:different_partition, :description] }
+
+        before do
+          allow(second_table).to receive(:columns).and_return(second_table_columns)
+        end
+
+        it 'should raise an error when the columns of each table do not match' do
+          expect { subject }.to raise_error('RotatingTable, Table columns do not match')
+        end
+      end
+    end
 
     describe '#name' do
       let(:base_time) { Time.at(0) }
