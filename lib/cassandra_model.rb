@@ -14,7 +14,6 @@
 # limitations under the License.
 #++
 
-require 'cassandra_model/connection'
 require 'cassandra_model/raw_connection'
 require 'cassandra_model/connection_cache'
 require 'cassandra_model/table_redux'

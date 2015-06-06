@@ -1,4 +1,3 @@
-require_relative 'connection'
 require_relative 'query_helper'
 require_relative 'meta_columns'
 
