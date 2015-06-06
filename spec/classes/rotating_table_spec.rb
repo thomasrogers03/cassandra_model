@@ -49,57 +49,67 @@ module CassandraModel
     describe('#clustering_columns') { it_behaves_like 'a table column method', :clustering_columns }
     describe('#columns') { it_behaves_like 'a table column method', :columns }
 
-    describe '#name' do
+    shared_examples_for 'a rotating table method' do |method|
       let(:base_time) { Time.at(0) }
       let(:time) { base_time }
+
+      before do
+        allow(first_table).to receive(method).and_return('table 1 attribute')
+        allow(second_table).to receive(method).and_return('table 2 attribute')
+        allow(third_table).to receive(method).and_return('table 3 attribute')
+      end
 
       around do |example|
         Timecop.freeze(time) { example.run }
       end
 
-      subject { rotating_table.name }
+      subject { rotating_table.public_send(method) }
 
       it 'should use the initial table' do
-        is_expected.to eq('table 1')
+        is_expected.to eq('table 1 attribute')
       end
 
       context 'when rotating to the second week' do
         let(:time) { base_time + 1.week }
 
-        it { is_expected.to eq('table 2') }
+        it { is_expected.to eq('table 2 attribute') }
       end
 
       context 'when rotating to the third week' do
         let(:time) { base_time + 2.weeks }
 
-        it { is_expected.to eq('table 3') }
+        it { is_expected.to eq('table 3 attribute') }
       end
 
       context 'when rotating in between weeks' do
         let(:time) { base_time + 1.week + 3.days }
 
-        it { is_expected.to eq('table 2') }
+        it { is_expected.to eq('table 2 attribute') }
       end
 
       context 'when specifying an alternate rotating schedule' do
         let(:rotating_schedule) { 3.days }
 
         it 'should use the initial table' do
-          is_expected.to eq('table 1')
+          is_expected.to eq('table 1 attribute')
         end
 
         context 'when rotating to the second week' do
           let(:time) { base_time + 3.days }
 
-          it { is_expected.to eq('table 2') }
+          it { is_expected.to eq('table 2 attribute') }
         end
 
         context 'when rotating to the third week' do
           let(:time) { base_time + 6.days }
 
-          it { is_expected.to eq('table 3') }
+          it { is_expected.to eq('table 3 attribute') }
         end
       end
     end
+
+    describe('#connection') { it_behaves_like 'a rotating table method', :connection }
+    describe('#name') { it_behaves_like 'a rotating table method', :name }
+
   end
 end
