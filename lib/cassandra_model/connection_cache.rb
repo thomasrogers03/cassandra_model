@@ -12,6 +12,11 @@ module CassandraModel
       def [](key)
         @@cache[key]
       end
+
+      def clear
+        @@cache.values.map(&:cluster).map(&:close)
+        @@cache.clear
+      end
     end
 
     @@cache = build_cache

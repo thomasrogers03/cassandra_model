@@ -23,7 +23,7 @@ module ConnectionHelper
   let(:connection) do
     double(:connection, execute_async: paginated_result_future, execute: paginated_result, prepare: default_statement)
   end
-  let(:cluster) { double(:cassandra_cluster, connect: connection, keyspace: keyspace) }
+  let(:cluster) { double(:cassandra_cluster, connect: connection, keyspace: keyspace, close: nil) }
 
   before do
     CassandraModel::ConnectionCache.reset!
