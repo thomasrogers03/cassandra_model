@@ -26,7 +26,7 @@ Dir['./spec/support/**.rb'].each { |file| require file }
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
 RSpec.configure do |config|
-  Dir['./lib/cassandra_model/**.rb'].each { |file| require file }
+  require_relative '../lib/cassandra_model'
 
   config.include ConnectionHelper
 
