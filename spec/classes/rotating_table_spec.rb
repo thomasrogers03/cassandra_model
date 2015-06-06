@@ -33,6 +33,22 @@ module CassandraModel
       end
     end
 
+    shared_examples_for 'a table column method' do |method|
+      let(:columns) { [:column1, :column2] }
+
+      subject { rotating_table.public_send(method) }
+
+      before { allow(first_table).to receive(method).and_return(columns) }
+
+      it 'should match the columns of the first table' do
+        is_expected.to eq(columns)
+      end
+    end
+
+    describe('#partition_key') { it_behaves_like 'a table column method', :partition_key }
+    describe('#clustering_columns') { it_behaves_like 'a table column method', :clustering_columns }
+    describe('#columns') { it_behaves_like 'a table column method', :columns }
+
     describe '#name' do
       let(:base_time) { Time.at(0) }
       let(:time) { base_time }
