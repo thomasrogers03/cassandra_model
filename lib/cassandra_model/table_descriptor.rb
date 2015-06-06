@@ -11,11 +11,11 @@ module CassandraModel
       end
 
       def create_descriptor_table
-        connection.execute(table_desc.to_cql(no_id: true))
+        session.execute(table_desc.to_cql(no_id: true))
       end
 
       def drop_descriptor_table
-        connection.execute("DROP TABLE #{table_name}")
+        session.execute("DROP TABLE #{table_name}")
       end
 
       private

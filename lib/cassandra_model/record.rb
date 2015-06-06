@@ -55,8 +55,8 @@ module CassandraModel
       self.class.table
     end
 
-    def connection
-      table.connection.connection
+    def session
+      table.connection.session
     end
 
     def statement(query)
@@ -76,7 +76,7 @@ module CassandraModel
       statement = statement(self.class.query_for_delete)
       attributes = internal_attributes
       column_values = (self.class.partition_key + self.class.clustering_columns).map { |column| attributes[column] }
-      future = connection.execute_async(statement, *column_values, {})
+      future = session.execute_async(statement, *column_values, {})
       ThomasUtils::FutureWrapper.new(future) { self }
     end
 
@@ -110,7 +110,7 @@ module CassandraModel
       statement = statement(query)
       attributes = internal_attributes
       column_values = (self.class.partition_key + self.class.clustering_columns).map { |column| attributes[column] }
-      future = connection.execute_async(statement, *new_attributes.values, *column_values, {})
+      future = session.execute_async(statement, *new_attributes.values, *column_values, {})
       ThomasUtils::FutureWrapper.new(future) do
         self.attributes.merge!(new_attributes)
         self
@@ -127,7 +127,7 @@ module CassandraModel
     end
 
     def save_row_async(options)
-      connection.execute_async(statement(query_for_save(options)), *column_values, {})
+      session.execute_async(statement(query_for_save(options)), *column_values, {})
     end
 
     def save_deferred_columns
@@ -220,7 +220,7 @@ module CassandraModel
         query_options = {}
         query_options[:page_size] = page_size if page_size
 
-        future = connection.execute_async(statement, *where_values, query_options)
+        future = session.execute_async(statement, *where_values, query_options)
         ResultPaginator.new(future) { |row| record_from_result(row, use_query_result) }
       end
 
@@ -254,8 +254,8 @@ module CassandraModel
         @table_data ||= Attributes.new
       end
 
-      def connection
-        table.connection.connection
+      def session
+        table.connection.session
       end
 
       def statement(query)

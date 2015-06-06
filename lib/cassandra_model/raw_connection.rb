@@ -27,8 +27,8 @@ module CassandraModel
       end
     end
 
-    def connection
-      @connection ||= cluster.connect(config[:keyspace])
+    def session
+      @session ||= cluster.connect(config[:keyspace])
     end
 
     def keyspace
@@ -36,7 +36,7 @@ module CassandraModel
     end
 
     def statement(query)
-      @statement_cache[query] ||= connection.prepare(query)
+      @statement_cache[query] ||= session.prepare(query)
     end
 
     private

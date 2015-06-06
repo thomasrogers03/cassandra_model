@@ -118,23 +118,23 @@ module CassandraModel
       end
     end
 
-    describe '#connection' do
+    describe '#session' do
       let(:config) { {keyspace: 'keyspace'} }
-      let(:connection) { double(:connection) }
+      let(:session) { double(:connection) }
 
       before do
         raw_connection.config = config
-        allow(cluster).to receive(:connect).with('keyspace').and_return(connection)
+        allow(cluster).to receive(:connect).with('keyspace').and_return(session)
       end
 
       it 'should connect to the cluster using the pre-configured key-space' do
-        expect(raw_connection.connection).to eq(connection)
+        expect(raw_connection.session).to eq(session)
       end
 
       it 'should cache the connection' do
-        raw_connection.connection
+        raw_connection.session
         expect(cluster).not_to receive(:connect)
-        raw_connection.connection
+        raw_connection.session
       end
     end
 
