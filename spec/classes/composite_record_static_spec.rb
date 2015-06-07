@@ -97,7 +97,7 @@ module CassandraModel
 
     describe '.generate_composite_defaults' do
       subject { MockRecordStatic.composite_defaults }
-      let(:column_defaults){ {model: '', series: ''} }
+      let(:column_defaults) { {model: '', series: ''} }
       let(:truth_table) { [[:model]] }
 
       before { MockRecordStatic.generate_composite_defaults(column_defaults, truth_table) }
@@ -107,7 +107,7 @@ module CassandraModel
 
       context 'with a different truth table' do
         let(:truth_table) { [[:model], []] }
-          it { is_expected.to eq [{rk_series: ''}, {rk_model: '', rk_series: ''} ] }
+        it { is_expected.to eq [{rk_series: ''}, {rk_model: '', rk_series: ''}] }
       end
     end
 
@@ -195,6 +195,16 @@ module CassandraModel
           it 'should add the default values to the query for all default variations' do
             expect(connection).to receive(:execute_async).with(statement, 9.99, '', '', {})
             MockRecordStatic.request_async(price: 9.99)
+          end
+
+          context 'when the composite defaults are in a different order than the partition key' do
+            let(:query) { 'SELECT * FROM mock_records WHERE ck_price = ? AND rk_series = ? AND rk_model = ?' }
+            let(:defaults) { [{model: ''}, {series: '', model: ''}] }
+
+            it 'should add the default values to the query for all default variations' do
+              expect(connection).to receive(:execute_async).with(statement, 9.99, '', '', {})
+              MockRecordStatic.request_async(price: 9.99)
+            end
           end
 
           it 'should map the real columns to composite ones' do

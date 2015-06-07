@@ -25,11 +25,7 @@ module CassandraModel
     end
 
     def composite_defaults
-      if table_data.composite_defaults
-        table_data.composite_defaults.map do |row|
-          row_composite_default(row)
-        end
-      end
+      table_data.internal_defaults ||= build_composite_map
     end
 
     def generate_composite_defaults(column_defaults, truth_table)
@@ -37,6 +33,12 @@ module CassandraModel
     end
 
     private
+
+    def build_composite_map
+      if table_data.composite_defaults
+        table_data.composite_defaults.map { |row| row_composite_default(row) }
+      end
+    end
 
     def composite_columns
       internal_columns.map do |column|
@@ -66,8 +68,8 @@ module CassandraModel
         memo.merge!((composite_pk_map[key] || composite_ck_map[key] || key) => value)
       end
 
-      missing_keys = partition_key - updated_clause.keys
-      default_clause = composite_defaults.find { |row| row.keys == missing_keys }
+      missing_keys = Set.new(partition_key - updated_clause.keys)
+      default_clause = composite_defaults.find { |row| (missing_keys ^ row.keys).empty? }
       updated_clause.merge!(default_clause) if default_clause
 
       super(updated_clause)
@@ -75,8 +77,12 @@ module CassandraModel
 
     def row_composite_default(row)
       row.inject({}) do |memo, (key, value)|
-        memo.merge!((composite_pk_map[key] || key) => value)
+        memo.merge!(composite_default_row_key(key) => value)
       end
+    end
+
+    def composite_default_row_key(key)
+      composite_pk_map[key] || key
     end
 
     def row_attributes(row)
