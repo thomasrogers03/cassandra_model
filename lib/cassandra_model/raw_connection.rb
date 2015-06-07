@@ -3,7 +3,8 @@ module CassandraModel
     DEFAULT_CONFIGURATION = {
         hosts: %w(localhost),
         keyspace: 'default_keyspace',
-        port: '9042'
+        port: '9042',
+        consistency: :one
     }.freeze
 
     def initialize(config_name = nil)
@@ -21,8 +22,8 @@ module CassandraModel
 
     def cluster
       @cluster ||= begin
-        connection_configuration = {hosts: config[:hosts], connect_timeout: 120, logger: Logging.logger}
-        connection_configuration[:compression] = config[:compression].to_sym if config[:compression]
+        connection_configuration = config.slice(:hosts, :compression, :consistency)
+        connection_configuration.merge!(connect_timeout: 120, logger: Logging.logger)
         Cassandra.cluster(connection_configuration)
       end
     end

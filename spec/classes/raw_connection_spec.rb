@@ -11,7 +11,8 @@ module CassandraModel
         {
             hosts: %w(localhost),
             keyspace: 'default_keyspace',
-            port: '9042'
+            port: '9042',
+            consistency: :one
         }
       end
 
@@ -20,7 +21,12 @@ module CassandraModel
       end
 
       context 'when config/cassandra.yml exists' do
-        let(:default_config) { {hosts: %w(behemoth), keyspace: 'keyspace', port: '7777'} }
+        let(:default_config) do
+          {hosts: %w(behemoth),
+           keyspace: 'keyspace',
+           port: '7777',
+           consistency: :all}
+        end
         let(:config) { default_config }
         let(:path) { 'cassandra.yml' }
 
@@ -43,7 +49,12 @@ module CassandraModel
         end
 
         context 'when rails is present' do
-          let(:default_config) { {hosts: %w(behemoth), keyspace: 'keyspace', port: '7777', } }
+          let(:default_config) do
+            {hosts: %w(behemoth),
+             keyspace: 'keyspace',
+             port: '7777',
+             consistency: :quorum}
+          end
           let(:config) { {'production' => default_config} }
           let(:environment) { 'production' }
           let(:rails) { double(:rails, env: environment) }
@@ -75,7 +86,8 @@ module CassandraModel
           {
               hosts: %w(me),
               keyspace: 'new_keyspace',
-              port: '9999'
+              port: '9999',
+              consistency: :all
           }
         end
 
@@ -94,7 +106,12 @@ module CassandraModel
       subject { raw_connection.cluster }
 
       let(:connection_cluster) { double(:cluster) }
-      let(:config) { {hosts: %w(localhost), connect_timeout: 120, logger: Logging.logger} }
+      let(:config) do
+        {hosts: %w(localhost),
+         connect_timeout: 120,
+         logger: Logging.logger,
+         consistency: :one}
+      end
 
       before do
         allow(Cassandra).to receive(:cluster).with(hash_including(config)).and_return(connection_cluster, double(:second_connection))
@@ -112,8 +129,8 @@ module CassandraModel
       end
 
       context 'with a different compression method' do
-        let(:config) { {hosts: %w(localhost), connect_timeout: 120, compression: :snappy} }
-        before { raw_connection.config = {compression: 'snappy'} }
+        let(:config) { {compression: :snappy } }
+        before { raw_connection.config = config }
 
         it { is_expected.to eq(connection_cluster) }
       end
