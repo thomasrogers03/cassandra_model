@@ -1,9 +1,9 @@
 require 'rspec'
 
 module CassandraModel
-  describe CompositeRecordInstance do
+  describe CompositeRecord do
     class MockRecordInstance < Record
-      include CompositeRecordInstance
+      include CompositeRecord
     end
 
     let(:partition_key) { [:rk_model, :rk_series] }

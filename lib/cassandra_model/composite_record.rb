@@ -1,5 +1,5 @@
 module CassandraModel
-  module CompositeRecordInstance
+  module CompositeRecord
     def self.included(klass)
       klass.extend CompositeRecordStatic
     end
