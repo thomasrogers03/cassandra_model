@@ -8,7 +8,25 @@ module CassandraModel
 
     attr_reader :attributes, :valid
 
-    Attributes = Class.new(OpenStruct)
+    Attributes = Struct.new(
+        :table_name,
+        :connection_name,
+        :table,
+
+        :columns,
+        :counter_columns,
+
+        :deferred_column_readers,
+        :deferred_column_writers,
+        :async_deferred_column_readers,
+        :async_deferred_column_writers,
+
+        :internal_defaults,
+        :composite_defaults,
+        :composite_columns,
+        :composite_pk_map,
+        :composite_ck_map,
+    ) # Using this instead of OpenStruct, as there seems to be a bug in JRuby that causes this to get mangled over time
 
     def initialize(attributes, options = {validate: true})
       validate_attributes!(attributes) if options[:validate]
