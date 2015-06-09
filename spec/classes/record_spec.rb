@@ -482,6 +482,17 @@ module CassandraModel
             expect(record.shard).to eq(shard_data.hash % max_shard)
           end
 
+          context 'with a different shard hashing column' do
+            let(:clustering_columns) { [:name] }
+            let(:remaining_columns) { [] }
+            let(:shard_column) { :name }
+            let(:shard_data) { 'hello' }
+
+            it 'should assign the result of the sharding function to the shard column' do
+              expect(record.shard).to eq(shard_data.hash % max_shard)
+            end
+          end
+
           context 'with a different maximum' do
             let(:max_shard) { 2 }
 
@@ -507,6 +518,9 @@ module CassandraModel
           end
 
           context 'with a different shard hashing column' do
+            let(:clustering_columns) { [:name] }
+            let(:remaining_columns) { [] }
+            let(:shard_column) { :name }
             let(:shard_data) { 'hello' }
 
             it 'should assign the result of the sharding function to the shard column' do
