@@ -169,6 +169,10 @@ module CassandraModel
       self.class.internal_columns
     end
 
+    def shard_key
+      self.class.partition_key.last
+    end
+
     class << self
       extend Forwardable
 
@@ -265,15 +269,14 @@ module CassandraModel
       end
 
       def shard(hashing_column = nil, max_shard = nil, &block)
-        shard_key = partition_key.last
         if hashing_column
           if block_given?
-            hashing_shard(hashing_column, shard_key, &block)
+            hashing_shard(hashing_column, &block)
           else
-            modulo_shard(hashing_column, max_shard, shard_key)
+            modulo_shard(hashing_column, max_shard)
           end
         else
-          manual_shard(shard_key, &block)
+          manual_shard(&block)
         end
       end
 
@@ -368,15 +371,15 @@ module CassandraModel
         row.symbolize_keys
       end
 
-      def manual_shard(shard_key, &block)
+      def manual_shard(&block)
         before_save { attributes[shard_key] = instance_eval(&block) }
       end
 
-      def modulo_shard(hashing_column, max_shard, shard_key)
+      def modulo_shard(hashing_column, max_shard)
         before_save { attributes[shard_key] = (attributes[hashing_column].hash % max_shard) }
       end
 
-      def hashing_shard(hashing_column, shard_key)
+      def hashing_shard(hashing_column)
         before_save { attributes[shard_key] = (yield attributes[hashing_column].hash) }
       end
 
