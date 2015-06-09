@@ -171,6 +171,7 @@ module CassandraModel
 
       def_delegators :table, :partition_key, :clustering_columns
       def_delegator :table, :name, :table_name
+      def_delegator :table, :columns, :internal_columns
 
       def table_name=(value)
         table_data.table_name = value
@@ -192,19 +193,13 @@ module CassandraModel
       end
 
       def columns
-        table_data.columns || internal_columns.tap do |columns|
+        table_data.columns ||= internal_columns.tap do |columns|
           columns.each { |column| define_attribute(column) }
         end
       end
 
-      def internal_columns
-        table_data.columns || table.columns
-      end
-
       def query_for_save(options = {})
-        existence_clause = if options[:check_exists]
-                             ' IF NOT EXISTS'
-                           end
+        existence_clause = options[:check_exists] && ' IF NOT EXISTS'
         column_names = internal_columns.join(', ')
         column_sanitizers = (%w(?) * internal_columns.size).join(', ')
         save_query = "INSERT INTO #{table_name} (#{column_names}) VALUES (#{column_sanitizers})"
