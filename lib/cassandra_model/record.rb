@@ -16,6 +16,8 @@ module CassandraModel
         :columns,
         :counter_columns,
 
+        :before_save_callbacks,
+
         :deferred_column_readers,
         :deferred_column_writers,
         :async_deferred_column_readers,
@@ -33,6 +35,7 @@ module CassandraModel
       @valid = true
       @attributes = attributes
       self.class.after_initialize(self)
+      self.class.before_save_callbacks.map { |proc| instance_eval(&proc) }
     end
 
     def save_async(options = {})
@@ -259,6 +262,27 @@ module CassandraModel
 
       def first(clause = {}, options = {})
         first_async(clause, options).get
+      end
+
+      def shard(hashing_column = nil, max_shard = nil, &block)
+        shard_key = partition_key.last
+        if hashing_column
+          if block_given?
+            before_save { attributes[shard_key] = (yield attributes[hashing_column].hash) }
+          else
+            before_save { attributes[shard_key] =  (attributes[hashing_column].hash % max_shard)}
+          end
+        else
+          before_save { attributes[shard_key] = instance_eval(&block) }
+        end
+      end
+
+      def before_save(&block)
+        before_save_callbacks << block
+      end
+
+      def before_save_callbacks
+        table_data.before_save_callbacks ||= []
       end
 
       protected

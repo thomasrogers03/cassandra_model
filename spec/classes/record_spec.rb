@@ -463,6 +463,102 @@ module CassandraModel
       end
     end
 
+    describe '.shard' do
+      let(:partition_key) { [:data_set_name, :shard] }
+      let(:clustering_columns) { [] }
+      let(:remaining_columns) { [:meta_data] }
+      let(:shard_column) { :meta_data }
+      let(:shard_data) { 5 }
+      let(:shard_proc) { ->(hash) { hash } }
+      let(:record) { Record.new(data_set_name: 'data1', shard_column => shard_data) }
+
+      describe 'sharding with a hashing column' do
+        describe 'sharding with a modulus' do
+          let(:max_shard) { 3 }
+
+          before { Record.shard(shard_column, max_shard) }
+
+          it 'should assign the result of the sharding column value hash modulo the maximum shard' do
+            expect(record.shard).to eq(shard_data.hash % max_shard)
+          end
+
+          context 'with a different maximum' do
+            let(:max_shard) { 2 }
+
+            it 'should assign the result of the sharding column value hash modulo the maximum shard' do
+              expect(record.shard).to eq(shard_data.hash % max_shard)
+            end
+          end
+
+          context 'when the shard is not the last part of the partition key' do
+            let(:partition_key) { [:shard, :data_set_name] }
+
+            it 'should still use the last column as the shard' do
+              expect(record.data_set_name).to eq(shard_data.hash % max_shard)
+            end
+          end
+        end
+
+        describe 'sharding with a proc' do
+          before { Record.shard(shard_column, &shard_proc) }
+
+          it 'should assign the result of the sharding function to the shard column' do
+            expect(record.shard).to eq(shard_data.hash)
+          end
+
+          context 'with a different shard hashing column' do
+            let(:shard_data) { 'hello' }
+
+            it 'should assign the result of the sharding function to the shard column' do
+              expect(record.shard).to eq(shard_data.hash)
+            end
+          end
+
+          context 'with a different sharding function' do
+            let(:shard_proc) { ->(hash) { hash % 2 } }
+
+            it 'should assign the result of the sharding function to the shard column' do
+              expect(record.shard).to eq(shard_data.hash % 2)
+            end
+          end
+
+          context 'when the shard is not the last part of the partition key' do
+            let(:partition_key) { [:shard, :data_set_name] }
+
+            it 'should still use the last column as the shard' do
+              expect(record.data_set_name).to eq(shard_data.hash)
+            end
+          end
+        end
+      end
+
+      describe 'sharding manually' do
+        let(:shard_proc) { ->(instance) { 5 } }
+
+        before { Record.shard(&shard_proc) }
+
+        it 'should assign the result of the sharding function to the shard column' do
+          expect(record.shard).to eq(5)
+        end
+
+        context 'when the shard function operates on the Record instance' do
+          let(:shard_proc) { ->(instance) { meta_data * 5 } }
+
+          it 'should assign the result of the sharding function to the shard column' do
+            expect(record.shard).to eq(25)
+          end
+        end
+
+        context 'when the shard is not the last part of the partition key' do
+          let(:partition_key) { [:shard, :data_set_name] }
+
+          it 'should still use the last column as the shard' do
+            expect(record.data_set_name).to eq(5)
+          end
+        end
+      end
+    end
+
     describe '#attributes' do
       it 'should be a valid record initially' do
         record = Record.new(partition: 'Partition Key')
