@@ -2,6 +2,14 @@ require 'rspec'
 
 module CassandraModel
   describe QueryBuilder do
+    class MockQueryResult
+      attr_reader :attributes
+
+      def initialize(attributes)
+        @attributes = attributes
+      end
+    end
+
     let(:results) { %w(results) }
     let(:page_result) { MockPage.new(true, nil, results) }
     let(:page_result_future) { MockFuture.new(page_result) }
@@ -43,6 +51,31 @@ module CassandraModel
       it 'should execute the built query' do
         expect(record).to receive(:first).with({}, {})
         subject.first
+      end
+    end
+
+    describe '#pluck' do
+      let(:first_result) { MockQueryResult.new(column1: 'hello', column2: 'world', column3: 'good bye!') }
+      let(:results) { [first_result] }
+      let(:pluck_columns) { [:column1] }
+
+      subject { QueryBuilder.new(record).pluck(*pluck_columns) }
+
+      it 'should grab the columns from the resulting records' do
+        is_expected.to eq([%w(hello)])
+      end
+
+      context 'with different pluck columns' do
+        let(:pluck_columns) { [:column2, :column3] }
+
+        it { is_expected.to eq([['world', 'good bye!']]) }
+      end
+
+      context 'with multiple results' do
+        let(:second_result) { MockQueryResult.new(column1: 'nothing here...') }
+        let(:results) { [first_result, second_result] }
+
+        it { is_expected.to eq([['hello'], ['nothing here...']]) }
       end
     end
 

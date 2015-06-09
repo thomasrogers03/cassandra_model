@@ -31,6 +31,10 @@ module CassandraModel
       @record_klass.first(@params, @options)
     end
 
+    def pluck(*columns)
+      get.map { |result| result.attributes.slice(*columns).values }
+    end
+
     def each_slice(slice_size = nil, &block)
       paginate(slice_size).async.each_slice(&block)
     end
