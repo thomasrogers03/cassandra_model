@@ -268,12 +268,12 @@ module CassandraModel
         shard_key = partition_key.last
         if hashing_column
           if block_given?
-            before_save { attributes[shard_key] = (yield attributes[hashing_column].hash) }
+            hashing_shard(hashing_column, shard_key, &block)
           else
-            before_save { attributes[shard_key] =  (attributes[hashing_column].hash % max_shard)}
+            modulo_shard(hashing_column, max_shard, shard_key)
           end
         else
-          before_save { attributes[shard_key] = instance_eval(&block) }
+          manual_shard(shard_key, &block)
         end
       end
 
@@ -366,6 +366,18 @@ module CassandraModel
 
       def row_attributes(row)
         row.symbolize_keys
+      end
+
+      def manual_shard(shard_key, &block)
+        before_save { attributes[shard_key] = instance_eval(&block) }
+      end
+
+      def modulo_shard(hashing_column, max_shard, shard_key)
+        before_save { attributes[shard_key] = (attributes[hashing_column].hash % max_shard) }
+      end
+
+      def hashing_shard(hashing_column, shard_key)
+        before_save { attributes[shard_key] = (yield attributes[hashing_column].hash) }
       end
 
     end
