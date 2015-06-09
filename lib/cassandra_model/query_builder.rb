@@ -3,6 +3,8 @@ module CassandraModel
     include Enumerable
     extend Forwardable
 
+    def_delegator :async, :each
+
     def initialize(record_klass)
       @record_klass = record_klass
       @params = {}
@@ -29,8 +31,8 @@ module CassandraModel
       @record_klass.first(@params, @options)
     end
 
-    def each(&block)
-      get.each(&block)
+    def each_slice(slice_size = nil, &block)
+      paginate(slice_size).async.each_slice(&block)
     end
 
     def where(params)

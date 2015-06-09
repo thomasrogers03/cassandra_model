@@ -3,7 +3,10 @@ require 'rspec'
 module CassandraModel
   describe QueryBuilder do
     let(:results) { %w(results) }
-    let(:record) { double(:record, request_async: nil, request: results, request_cql: nil) }
+    let(:page_result) { MockPage.new(true, nil, results) }
+    let(:page_result_future) { MockFuture.new(page_result) }
+    let(:result_paginator) { ResultPaginator.new(page_result_future) { |row| row } }
+    let(:record) { double(:record, request_async: result_paginator, request: results, request_cql: nil) }
 
     subject { QueryBuilder.new(record) }
 
@@ -53,6 +56,32 @@ module CassandraModel
       context 'when no block provided' do
         it 'should return an enumerator' do
           expect(subject.each).to be_a_kind_of(Enumerator)
+        end
+      end
+    end
+
+    describe '#each_slice' do
+      it 'should pass the block to the result of the query' do
+        results = nil
+        subject.each_slice { |rows| results = rows }
+        expect(results).to eq(%w(results))
+      end
+
+      context 'when no block provided' do
+        it 'should return an enumerator' do
+          expect(subject.each_slice).to be_a_kind_of(Enumerator)
+        end
+      end
+
+      context 'with a slice size specified' do
+        it 'should use the slice as the page size' do
+          expect(record).to receive(:request_async).with({}, page_size: 5000)
+          subject.each_slice(5000) {}
+        end
+
+        it 'should support different page sizes' do
+          expect(record).to receive(:request_async).with({}, page_size: 3500)
+          subject.each_slice(3500) {}
         end
       end
     end
