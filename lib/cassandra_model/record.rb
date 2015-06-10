@@ -9,12 +9,19 @@ module CassandraModel
     attr_reader :attributes, :valid
 
     Attributes = Struct.new(
-        :table_name,
-        :connection_name,
         :table,
 
         :columns,
         :counter_columns,
+
+        :internal_defaults,
+        :composite_columns,
+        :composite_pk_map,
+        :composite_ck_map,
+    ) # Using this instead of OpenStruct, as there seems to be a bug in JRuby that causes this to get mangled over time
+    ConfigureableAttributes = Struct.new(
+        :table_name,
+        :connection_name,
 
         :before_save_callbacks,
 
@@ -23,12 +30,8 @@ module CassandraModel
         :async_deferred_column_readers,
         :async_deferred_column_writers,
 
-        :internal_defaults,
         :composite_defaults,
-        :composite_columns,
-        :composite_pk_map,
-        :composite_ck_map,
-    ) # Using this instead of OpenStruct, as there seems to be a bug in JRuby that causes this to get mangled over time
+    )
 
     def initialize(attributes, options = {validate: true})
       validate_attributes!(attributes) if options[:validate]
@@ -181,11 +184,11 @@ module CassandraModel
       def_delegator :table, :columns, :internal_columns
 
       def table_name=(value)
-        table_data.table_name = value
+        table_config.table_name = value
       end
 
       def connection_name=(value)
-        table_data.connection_name = value
+        table_config.connection_name = value
       end
 
       def table=(value)
@@ -194,8 +197,8 @@ module CassandraModel
 
       def table
         table_data.table ||= begin
-          table_name = table_data.table_name || generate_table_name
-          TableRedux.new(table_data.connection_name, table_name)
+          table_name = table_config.table_name || generate_table_name
+          TableRedux.new(table_config.connection_name, table_name)
         end
       end
 
@@ -285,13 +288,17 @@ module CassandraModel
       end
 
       def before_save_callbacks
-        table_data.before_save_callbacks ||= []
+        table_config.before_save_callbacks ||= []
       end
 
       protected
 
       def table_data
         @table_data ||= Attributes.new
+      end
+
+      def table_config
+        @table_config ||= ConfigureableAttributes.new
       end
 
       def session

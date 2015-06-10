@@ -21,6 +21,10 @@ module CassandraModel
         @table_data ||= OpenStruct.new
       end
 
+      def self.table_config
+        @table_data ||= OpenStruct.new
+      end
+
       def save_async
         MockRecord.save_deferred_columns(self)
         futures = MockRecord.save_async_deferred_columns(self)

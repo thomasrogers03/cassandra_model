@@ -2,7 +2,7 @@ module CassandraModel
   module CompositeRecordStatic
     extend Forwardable
 
-    def_delegator :table_data, :composite_defaults=
+    def_delegator :table_config, :composite_defaults=
 
     def columns
       table_data.composite_columns ||= composite_columns.each { |column| define_attribute(column) }
@@ -29,14 +29,14 @@ module CassandraModel
     end
 
     def generate_composite_defaults(column_defaults, truth_table)
-      table_data.composite_defaults = truth_table.map { |row| column_defaults.except(*row) }
+      table_config.composite_defaults = truth_table.map { |row| column_defaults.except(*row) }
     end
 
     private
 
     def build_composite_map
-      if table_data.composite_defaults
-        table_data.composite_defaults.map { |row| row_composite_default(row) }
+      if table_config.composite_defaults
+        table_config.composite_defaults.map { |row| row_composite_default(row) }
       end
     end
 
