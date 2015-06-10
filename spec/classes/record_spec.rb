@@ -251,16 +251,21 @@ module CassandraModel
       context 'when selecting a subset of columns' do
         let(:clause) { {select: :partition} }
         let(:select_clause) { :partition }
+        let(:record) { Record.new(partition: 'Partition Key') }
 
-        it 'should return a QueryResult instead of a record' do
-          expect(Record.request_async({}, clause).get.first).to be_a_kind_of(QueryResult)
+        it 'should return a new instance of the Record with only that attribute assigned' do
+          expect(Record.request_async({}, clause).get.first).to eq(record)
+        end
+
+        it 'should invalidate the record' do
+          expect(Record.request_async({}, clause).get.first.valid).to eq(false)
         end
 
         context 'with multiple columns selected' do
           let(:clause) { {select: [:partition, :cluster]} }
           let(:select_clause) { %w(partition cluster).join(', ') }
           let(:page_results) { [{'partition' => 'Partition Key', cluster: 'Cluster Key'}] }
-          let(:record) { QueryResult.new(partition: 'Partition Key', cluster: 'Cluster Key') }
+          let(:record) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key') }
 
           it 'should select all the specified columns' do
             expect(Record.request_async({}, clause).get.first).to eq(record)

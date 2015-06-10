@@ -364,7 +364,7 @@ module CassandraModel
 
       def record_from_result(row, use_query_result)
         attributes = row_attributes(row)
-        use_query_result ? QueryResult.create(attributes) : self.new(attributes)
+        new(attributes).tap { |result| result.invalidate! if use_query_result }
       end
 
       def row_attributes(row)
