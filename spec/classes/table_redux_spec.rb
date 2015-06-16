@@ -100,6 +100,20 @@ module CassandraModel
         end
       end
 
+      describe '#primary_key' do
+        it 'should be the combination of the partition key and the clustering columns' do
+          expect(subject.primary_key).to eq(partition_key + clustering_columns)
+        end
+
+        context 'with different columns and table name' do
+          let(:table_name) { :cars }
+          let(:partition_key) { [:brand] }
+          let(:clustering_columns) { [:colour] }
+
+          its(:primary_key) { is_expected.to eq(partition_key + clustering_columns) }
+        end
+      end
+
     end
 
     describe '#reset_local_schema!' do
