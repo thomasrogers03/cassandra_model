@@ -127,7 +127,7 @@ module CassandraModel
       context 'when a composite column is part of the remaining columns' do
         let(:partition_key) { [:rk_model, :rk_series] }
         let(:clustering_columns) { [:ck_series] }
-        let(:remaining_columns) { [:model] }
+        let(:remaining_columns) { [] }
         let(:defaults) { [{model: ''}] }
         let(:results) { [['rk_model' => '', 'rk_series' => '91A', 'ck_series' => '91A', 'model' => 'EEFFGG']] }
         let(:query) { 'SELECT * FROM mock_records WHERE rk_series = ? AND rk_model = ?' }
@@ -165,6 +165,18 @@ module CassandraModel
         it 'should add the default values to the query' do
           expect(connection).to receive(:execute_async).with(statement, '91A', 9.99, '', {})
           MockRecordStatic.request_async(series: '91A', price: 9.99)
+        end
+
+        context 'when a field has the same name as a composite column' do
+          let(:partition_key) { [:rk_model, :rk_series] }
+          let(:clustering_columns) { [:ck_series] }
+          let(:remaining_columns) { [:model] }
+          let(:query) { 'SELECT model FROM mock_records WHERE rk_series = ? AND rk_model = ?' }
+
+          it 'should query for the field' do
+            expect(connection).to receive(:execute_async).with(statement, '91A', '', {})
+            MockRecordStatic.request_async({series: '91A'}, select: [:model])
+          end
         end
 
         context 'with different missing information' do
