@@ -59,14 +59,18 @@ module CassandraModel
     end
 
     def select_clause(select)
-      select.map! do |column|
+      select = mapped_select_columns(select) if select
+      super(select)
+    end
+
+    def mapped_select_columns(select)
+      select.map do |column|
         if internal_columns.include?(column)
           column
         else
           mapped_column(column)
         end
-      end if select
-      super(select)
+      end
     end
 
     def where_params(clause)
