@@ -99,7 +99,7 @@ module CassandraModel
 
       statement = statement(self.class.query_for_delete)
       attributes = internal_attributes
-      column_values = (self.class.partition_key + self.class.clustering_columns).map { |column| attributes[column] }
+      column_values = table.primary_key.map { |column| attributes[column] }
       future = session.execute_async(statement, *column_values, {})
       ThomasUtils::FutureWrapper.new(future) { self }
     end
@@ -133,7 +133,7 @@ module CassandraModel
       query = self.class.query_for_update(new_attributes)
       statement = statement(query)
       attributes = internal_attributes
-      column_values = (self.class.partition_key + self.class.clustering_columns).map { |column| attributes[column] }
+      column_values = table.primary_key.map { |column| attributes[column] }
       future = session.execute_async(statement, *new_attributes.values, *column_values, {})
       ThomasUtils::FutureWrapper.new(future) do
         self.attributes.merge!(new_attributes)
@@ -217,12 +217,12 @@ module CassandraModel
       end
 
       def query_for_delete
-        where_clause = (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ')
+        where_clause = table.primary_key.map { |column| "#{column} = ?" }.join(' AND ')
         "DELETE FROM #{table_name} WHERE #{where_clause}"
       end
 
       def query_for_update(new_attributes)
-        where_clause = (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ')
+        where_clause = table.primary_key.map { |column| "#{column} = ?" }.join(' AND ')
         set_clause = new_attributes.keys.map { |column| "#{column} = ?" }.join(' AND ')
         "UPDATE #{table_name} SET #{set_clause} WHERE #{where_clause}"
       end
