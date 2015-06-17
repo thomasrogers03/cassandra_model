@@ -14,7 +14,15 @@ module CassandraModel
     let(:page_result) { MockPage.new(true, nil, results) }
     let(:page_result_future) { MockFuture.new(page_result) }
     let(:result_paginator) { ResultPaginator.new(page_result_future) { |row| row } }
-    let(:record) { double(:record, request_async: result_paginator, request: results, request_cql: nil) }
+    let(:single_result_future) { MockFuture.new(results.first) }
+    let(:create_result) { double(:record) }
+    let(:creat_result_future) { MockFuture.new(create_result) }
+    let(:record) do
+      double(:record_klass, request_async: result_paginator, request: results,
+             first_async: single_result_future, first: results.first,
+             create_async: single_result_future, first: results.first,
+             request_cql: nil)
+    end
 
     subject { QueryBuilder.new(record) }
 
@@ -41,7 +49,7 @@ module CassandraModel
     end
 
     describe '#first_async' do
-      it 'should execute the built query' do
+      it 'should execute the built query asynchronously' do
         expect(record).to receive(:first_async).with({}, {})
         subject.first_async
       end
@@ -51,6 +59,64 @@ module CassandraModel
       it 'should execute the built query' do
         expect(record).to receive(:first).with({}, {})
         subject.first
+      end
+    end
+
+    describe '#create_async' do
+      it 'should execute the built query asynchronously' do
+        expect(record).to receive(:create_async).with({partition_key: 'Partition', cluster_key: 'Cluster'}, check_exists: true)
+        subject.create_async({partition_key: 'Partition', cluster_key: 'Cluster'}, check_exists: true)
+      end
+
+      context 'when called without options' do
+        it 'should create a record with the specified attributes' do
+          expect(record).to receive(:create_async).with({partition_key: 'Partition'}, {})
+          subject.create_async(partition_key: 'Partition')
+        end
+      end
+
+      context 'when called without any arguments' do
+        it 'should create a record with attributes inherited from the current builder state' do
+          expect(record).to receive(:create_async).with({partition_key: 'Partition'}, {})
+          subject.where(partition_key: 'Partition').create_async
+        end
+      end
+    end
+
+    describe '#create' do
+      it 'should execute the built query' do
+        expect(record).to receive(:create).with({partition_key: 'Partition', cluster_key: 'Cluster'}, check_exists: true)
+        subject.create({partition_key: 'Partition', cluster_key: 'Cluster'}, check_exists: true)
+      end
+
+      context 'when called without options' do
+        it 'should create a record with the specified attributes' do
+          expect(record).to receive(:create).with({partition_key: 'Partition'}, {})
+          subject.create(partition_key: 'Partition')
+        end
+      end
+
+      context 'when called without any arguments' do
+        it 'should create a record with attributes inherited from the current builder state' do
+          expect(record).to receive(:create).with({partition_key: 'Partition'}, {})
+          subject.where(partition_key: 'Partition').create
+        end
+      end
+    end
+
+    describe '#check_exists' do
+      context 'when used with #create_async' do
+        it 'should append an option to check the existence of a record' do
+          expect(record).to receive(:create_async).with({partition_key: 'Partition'}, check_exists: true)
+          subject.check_exists.where(partition_key: 'Partition').create_async
+        end
+      end
+
+      context 'when used with #create' do
+        it 'should append an option to check the existence of a record' do
+          expect(record).to receive(:create).with({partition_key: 'Partition'}, check_exists: true)
+          subject.check_exists.where(partition_key: 'Partition').create
+        end
       end
     end
 
@@ -120,7 +186,7 @@ module CassandraModel
     end
 
     describe '#where' do
-      let(:params) { { partition: 'Partition Key' } }
+      let(:params) { {partition: 'Partition Key'} }
 
       it_behaves_like 'a method returning the builder', :where
 

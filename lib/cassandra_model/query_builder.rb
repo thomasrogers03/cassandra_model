@@ -31,6 +31,19 @@ module CassandraModel
       @record_klass.first(@params, @options)
     end
 
+    def create_async(attributes = {}, create_options = {})
+      @record_klass.create_async(@params.merge(attributes), @options.merge(create_options))
+    end
+
+    def create(attributes = {}, create_options = {})
+      @record_klass.create(@params.merge(attributes), @options.merge(create_options))
+    end
+
+    def check_exists
+      @options.merge!(check_exists: true)
+      self
+    end
+
     def pluck(*columns)
       select(*columns).get.map { |result| result.attributes.slice(*columns).values }
     end
