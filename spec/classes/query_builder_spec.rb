@@ -104,6 +104,29 @@ module CassandraModel
       end
     end
 
+    describe '#new' do
+      let(:record) { Record }
+      let(:record_attributes) do
+        {partition: 'Partition', clustering: 'Clustering', meta_data: 'Fake'}
+      end
+
+      before { mock_simple_table(:records, [:partition], [:clustering], [:meta_data]) }
+
+      it 'should create an instance of the record' do
+        expect(subject.new(record_attributes)).to eq(Record.new(record_attributes))
+      end
+
+      context 'with different attributes' do
+        let(:record_attributes) do
+          {partition: 'Updated Partition', clustering: 'Updated Clustering', meta_data: 'No Data'}
+        end
+
+        it 'should create an instance of the record' do
+          expect(subject.new(record_attributes)).to eq(Record.new(record_attributes))
+        end
+      end
+    end
+
     describe '#check_exists' do
       context 'when used with #create_async' do
         it 'should append an option to check the existence of a record' do

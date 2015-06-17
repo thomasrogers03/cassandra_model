@@ -39,6 +39,10 @@ module CassandraModel
       @record_klass.create(@params.merge(attributes), @options.merge(create_options))
     end
 
+    def new(attributes)
+      @record_klass.new(attributes)
+    end
+
     def check_exists
       @options.merge!(check_exists: true)
       self
