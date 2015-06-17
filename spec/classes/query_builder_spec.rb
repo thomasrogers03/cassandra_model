@@ -16,11 +16,11 @@ module CassandraModel
     let(:result_paginator) { ResultPaginator.new(page_result_future) { |row| row } }
     let(:single_result_future) { MockFuture.new(results.first) }
     let(:create_result) { double(:record) }
-    let(:creat_result_future) { MockFuture.new(create_result) }
+    let(:create_result_future) { MockFuture.new(create_result) }
     let(:record) do
       double(:record_klass, request_async: result_paginator, request: results,
              first_async: single_result_future, first: results.first,
-             create_async: single_result_future, create: results.first,
+             create_async: create_result_future, create: create_result,
              request_cql: nil)
     end
 
