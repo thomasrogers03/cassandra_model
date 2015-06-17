@@ -1,6 +1,9 @@
 if ENV['COVERAGE'].to_i > 0
   require 'simplecov'
-  SimpleCov.start
+  SimpleCov.start do
+    add_filter '/spec/'
+    add_filter '/examples/'
+    end
 end
 
 require 'bundler'
