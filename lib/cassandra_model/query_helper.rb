@@ -9,7 +9,9 @@ module CassandraModel
 
     def_query_helper(:where)
     def_query_helper(:select)
+    def_query_helper(:pluck)
     def_query_helper(:paginate)
+    def_query_helper(:each_slice)
     def_query_helper(:limit)
     def_query_helper(:order)
   end

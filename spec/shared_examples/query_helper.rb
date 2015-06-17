@@ -8,15 +8,18 @@ module CassandraModel
       end
 
       it "should delegate #{method} to new QueryBuilder" do
-        expect(query_builder).to receive(method).with(args)
-        subject.send(method, args)
+        args = [no_args] if args.empty?
+        expect(query_builder).to receive(method).with(*args)
+        subject.send(method, *args)
       end
     end
 
-    it_behaves_like 'a query helper method', :where, { partition: 'Partition Key' }
-    it_behaves_like 'a query helper method', :select, :partition
-    it_behaves_like 'a query helper method', :paginate, 5000
-    it_behaves_like 'a query helper method', :order, :cluster
-    it_behaves_like 'a query helper method', :limit, 100
+    it_behaves_like 'a query helper method', :where, [{partition: 'Partition Key'}]
+    it_behaves_like 'a query helper method', :select, [:partition, :clustering]
+    it_behaves_like 'a query helper method', :pluck, [:partition, :clustering]
+    it_behaves_like 'a query helper method', :paginate, [5000]
+    it_behaves_like 'a query helper method', :each_slice, [1000]
+    it_behaves_like 'a query helper method', :order, [:cluster]
+    it_behaves_like 'a query helper method', :limit, [100]
   end
 end
