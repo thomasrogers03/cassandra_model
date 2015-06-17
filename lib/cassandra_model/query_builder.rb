@@ -32,7 +32,7 @@ module CassandraModel
     end
 
     def pluck(*columns)
-      get.map { |result| result.attributes.slice(*columns).values }
+      select(*columns).get.map { |result| result.attributes.slice(*columns).values }
     end
 
     def each_slice(slice_size = nil, &block)
