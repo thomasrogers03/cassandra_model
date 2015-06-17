@@ -37,14 +37,12 @@ module CassandraModel
     end
 
     def statement(query)
-      @statement_cache[query] ||= session.prepare(query)
+      statement_cache[query] ||= session.prepare(query)
     end
 
     private
 
-    def statement_cache
-      @statement_cache ||= {}
-    end
+    attr_reader :statement_cache
 
     def load_config
       if File.exists?(config_path)
