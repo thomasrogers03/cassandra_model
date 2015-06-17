@@ -20,7 +20,7 @@ module CassandraModel
     let(:record) do
       double(:record_klass, request_async: result_paginator, request: results,
              first_async: single_result_future, first: results.first,
-             create_async: single_result_future, first: results.first,
+             create_async: single_result_future, create: results.first,
              request_cql: nil)
     end
 
