@@ -365,10 +365,6 @@ module CassandraModel
         "#{key} IN (#{(%w(?) * value.count).join(', ')})"
       end
 
-      def result_records(results, use_query_result)
-        results.map { |row| record_from_result(row, use_query_result) }
-      end
-
       def record_from_result(row, use_query_result)
         attributes = row_attributes(row)
         new(attributes).tap { |result| result.invalidate! if use_query_result }
