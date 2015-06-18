@@ -15,7 +15,7 @@ module ConnectionHelper
     end
   end
 
-  let(:keyspace) { double(:keyspaceA, table: nil) }
+  let(:keyspace) { double(:keyspace, table: nil) }
   let(:query_results) { [] }
   let(:paginated_result) { MockPage.new(true, nil, query_results) }
   let(:paginated_result_future) { MockFuture.new(paginated_result) }
