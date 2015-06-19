@@ -11,7 +11,7 @@ module CassandraModel
       end
 
       def create_descriptor_table
-        session.execute(table_desc.to_cql(no_id: true))
+        session.execute(table_desc.to_cql(no_id: true)) unless descriptor_table_exists?
       end
 
       def drop_descriptor_table
@@ -19,6 +19,10 @@ module CassandraModel
       end
 
       private
+
+      def descriptor_table_exists?
+        table.connection.keyspace.table(table.name)
+      end
 
       def table_descriptor(table_definition)
         {name: table_definition.name.to_s,
