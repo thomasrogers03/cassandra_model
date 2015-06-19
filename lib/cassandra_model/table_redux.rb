@@ -10,6 +10,15 @@ module CassandraModel
       @connection = ConnectionCache[connection_name]
     end
 
+    def allow_truncation!
+      @allow_truncation = true
+    end
+
+    def truncate!
+      raise "Truncation not enabled for table '#{name}'" unless @allow_truncation
+      @connection.session.execute("TRUNCATE #{name}")
+    end
+
     def reset_local_schema!
       @partition_key = nil
       @clustering_columns = nil

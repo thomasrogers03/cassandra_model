@@ -48,6 +48,42 @@ module CassandraModel
       end
     end
 
+    describe '#truncate!' do
+      let(:allow_truncate) { true }
+
+      before { subject.allow_truncation! if allow_truncate }
+
+      it 'should truncate the table' do
+        expect(connection).to receive(:execute).with("TRUNCATE #{table_name}")
+        subject.truncate!
+      end
+
+      context 'with a different table name' do
+        let(:table_name) { :images }
+
+        it 'should truncate the table' do
+          expect(connection).to receive(:execute).with("TRUNCATE #{table_name}")
+          subject.truncate!
+        end
+      end
+
+      context 'when truncation is not enabled' do
+        let(:allow_truncate) { false }
+
+        it 'should raise an error' do
+          expect { subject.truncate! }.to raise_error("Truncation not enabled for table '#{table_name}'")
+        end
+
+        context 'with a different table name' do
+          let(:table_name) { :images }
+
+          it 'should raise an error' do
+            expect { subject.truncate! }.to raise_error("Truncation not enabled for table '#{table_name}'")
+          end
+        end
+      end
+    end
+
     describe 'table column names' do
       shared_examples_for 'a method caching column names' do |method, table_method|
         it 'should cache the columns names' do
