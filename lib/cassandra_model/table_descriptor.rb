@@ -15,7 +15,7 @@ module CassandraModel
       end
 
       def drop_descriptor_table
-        session.execute("DROP TABLE #{table_name}")
+        session.execute("DROP TABLE #{table_name}") if descriptor_table_exists?
       end
 
       private

@@ -110,6 +110,13 @@ module CassandraModel
           TableDescriptor.create_descriptor_table
         end
       end
+
+      describe '.drop_descriptor_table' do
+        it 'should drop the table from cassandra' do
+          expect(connection).not_to receive(:execute)
+          TableDescriptor.drop_descriptor_table
+        end
+      end
     end
 
   end
