@@ -4,7 +4,7 @@ class MockFuture
   end
 
   def join
-
+    self
   end
 
   def get
