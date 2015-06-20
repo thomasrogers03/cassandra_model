@@ -12,7 +12,9 @@ module CassandraModel
             hosts: %w(localhost),
             keyspace: 'default_keyspace',
             port: '9042',
-            consistency: :one
+            consistency: :one,
+            connection_timeout: 10,
+            timeout: 10
         }
       end
 
@@ -22,10 +24,14 @@ module CassandraModel
 
       context 'when config/cassandra.yml exists' do
         let(:default_config) do
-          {hosts: %w(behemoth),
-           keyspace: 'keyspace',
-           port: '7777',
-           consistency: :all}
+          {
+              hosts: %w(behemoth),
+              keyspace: 'keyspace',
+              port: '7777',
+              consistency: :all,
+              connection_timeout: 60,
+              timeout: 40
+          }
         end
         let(:config) { default_config }
         let(:path) { 'cassandra.yml' }
@@ -50,10 +56,14 @@ module CassandraModel
 
         context 'when rails is present' do
           let(:default_config) do
-            {hosts: %w(behemoth),
-             keyspace: 'keyspace',
-             port: '7777',
-             consistency: :quorum}
+            {
+                hosts: %w(behemoth),
+                keyspace: 'keyspace',
+                port: '7777',
+                consistency: :quorum,
+                connection_timeout: 60,
+                timeout: 60
+            }
           end
           let(:config) { {'production' => default_config} }
           let(:environment) { 'production' }
@@ -87,7 +97,9 @@ module CassandraModel
               hosts: %w(me),
               keyspace: 'new_keyspace',
               port: '9999',
-              consistency: :all
+              consistency: :all,
+              connection_timeout: 60,
+              timeout: 30
           }
         end
 
@@ -107,10 +119,13 @@ module CassandraModel
 
       let(:connection_cluster) { double(:cluster) }
       let(:config) do
-        {hosts: %w(localhost),
-         connect_timeout: 120,
-         logger: Logging.logger,
-         consistency: :one}
+        {
+            hosts: %w(localhost),
+            logger: Logging.logger,
+            consistency: :one,
+            connection_timeout: 10,
+            timeout: 10
+        }
       end
 
       before do
@@ -129,7 +144,14 @@ module CassandraModel
       end
 
       context 'with a different compression method' do
-        let(:config) { {compression: :snappy } }
+        let(:config) { {compression: :snappy} }
+        before { raw_connection.config = config }
+
+        it { is_expected.to eq(connection_cluster) }
+      end
+
+      context 'with a other options' do
+        let(:config) { {compression: :all, consistency: :all, connection_timeout: 30, timeout: 15} }
         before { raw_connection.config = config }
 
         it { is_expected.to eq(connection_cluster) }
