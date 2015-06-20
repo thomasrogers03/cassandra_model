@@ -151,7 +151,22 @@ module CassandraModel
       end
 
       context 'with a other options' do
-        let(:config) { {compression: :all, consistency: :all, connection_timeout: 30, timeout: 15} }
+        let(:config) do
+          {
+              compression: :snappy,
+              consistency: :all,
+              connection_timeout: 30,
+              timeout: 15,
+              address_resolution: :ec2_multi_region
+          }
+        end
+        before { raw_connection.config = config }
+
+        it { is_expected.to eq(connection_cluster) }
+      end
+
+      context 'with authentication' do
+        let(:config) { { username: 'Greate User Tony Bobas', password: 'BackBone' } }
         before { raw_connection.config = config }
 
         it { is_expected.to eq(connection_cluster) }

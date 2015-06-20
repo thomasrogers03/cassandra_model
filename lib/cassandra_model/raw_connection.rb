@@ -27,8 +27,9 @@ module CassandraModel
         connection_configuration = config.slice(:hosts,
                                                 :compression,
                                                 :consistency,
-                                                :connection_timeout,
-                                                :timeout)
+                                                :connection_timeout, :timeout,
+                                                :username, :password,
+                                                :address_resolution)
         connection_configuration.merge!(logger: Logging.logger)
         Cassandra.cluster(connection_configuration)
       end
