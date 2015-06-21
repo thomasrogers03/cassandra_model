@@ -37,6 +37,7 @@ module CassandraModel
         case value
           when Integer then inquirer.partition_key[column] = :int
           when Float then inquirer.partition_key[column] = :double
+          when Time then inquirer.partition_key[column] = :timestamp
         end
       end
     end

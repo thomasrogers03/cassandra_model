@@ -92,10 +92,17 @@ module CassandraModel
           expect(subject.partition_key).to eq(series: :int)
         end
 
-        context 'with a different type' do
+        context 'with a floating point type' do
           it 'should infer the type from the default value' do
             subject.knows_about(:price).defaults(:price).to(0.0)
             expect(subject.partition_key).to eq(price: :double)
+          end
+        end
+
+        context 'with a timestamp' do
+          it 'should infer the type from the default value' do
+            subject.knows_about(:price).defaults(:price).to(Time.at(0))
+            expect(subject.partition_key).to eq(price: :timestamp)
           end
         end
       end
