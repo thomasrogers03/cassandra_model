@@ -14,5 +14,19 @@ module CassandraModel
       knows_about(*columns)
       @clustering_columns = columns
     end
+
+    def retype(column)
+      raise "Cannot default unknown column #{column}" unless columns.include?(column)
+      ColumnType.new(column, self)
+    end
+
+    private
+
+    ColumnType = Struct.new(:column, :inquirer) do
+      def to(type)
+        inquirer.columns[column] = type
+      end
+    end
+
   end
 end
