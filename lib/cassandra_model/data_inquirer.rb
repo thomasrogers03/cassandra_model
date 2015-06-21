@@ -28,17 +28,42 @@ module CassandraModel
       ColumnDefault.new(column, self)
     end
 
+    def retype(column)
+      raise "Cannot default unknown column #{column}" unless partition_key.include?(column)
+      ColumnType.new(column, self)
+    end
+
     private
 
     ColumnDefault = Struct.new(:column, :inquirer) do
       def to(value)
-        inquirer.column_defaults[column] = value
+        default_to(value)
 
         case value
-          when Integer then inquirer.partition_key[column] = :int
-          when Float then inquirer.partition_key[column] = :double
-          when Time then inquirer.partition_key[column] = :timestamp
+          when Integer then retype_to(:int)
+          when Float then retype_to(:double)
+          when Time then retype_to(:timestamp)
         end
+      end
+
+      def default_to(value)
+        inquirer.column_defaults[column] = value
+      end
+
+      private
+
+      def retype_to(type)
+        ColumnType.new(column, inquirer).retype_to(type)
+      end
+    end
+
+    ColumnType = Struct.new(:column, :inquirer) do
+      def to(type)
+        retype_to(type)
+      end
+
+      def retype_to(type)
+        inquirer.partition_key[column] = type
       end
     end
 

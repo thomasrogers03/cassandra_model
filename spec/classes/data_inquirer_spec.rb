@@ -58,7 +58,7 @@ module CassandraModel
           expect(subject.column_defaults).to eq(title: 'NULL')
         end
 
-        context 'with a different colun and default value' do
+        context 'with a different column and default value' do
           let(:column) { :series }
 
           it 'should default the specified column to the requested value' do
@@ -73,7 +73,7 @@ module CassandraModel
           expect { subject.defaults(:title) }.to raise_error("Cannot default unknown column #{column}")
         end
 
-        context 'with a different colun and default value' do
+        context 'with a different column' do
           let(:column) { :series }
 
           it 'should raise an error' do
@@ -82,6 +82,42 @@ module CassandraModel
         end
       end
 
+    end
+
+    describe '#retype' do
+      let(:column) { :series }
+
+      context 'when the column is known' do
+        before { subject.knows_about(column) }
+
+        it 'should change the column type' do
+          subject.retype(:series).to(:int)
+          expect(subject.partition_key).to eq(series: :int)
+        end
+
+        context 'with a different column and default value' do
+          let(:column) { :created_at }
+
+          it 'should default the specified column to the requested value' do
+            subject.retype(:created_at).to(:timestamp)
+            expect(subject.partition_key).to eq(created_at: :timestamp)
+          end
+        end
+      end
+
+      context 'when the column is not known' do
+        it 'should raise an error' do
+          expect { subject.retype(:series) }.to raise_error("Cannot default unknown column #{column}")
+        end
+
+        context 'with a different column' do
+          let(:column) { :created_at }
+
+          it 'should raise an error' do
+            expect { subject.retype(:created_at) }.to raise_error("Cannot default unknown column #{column}")
+          end
+        end
+      end
     end
 
     describe 'typing' do
