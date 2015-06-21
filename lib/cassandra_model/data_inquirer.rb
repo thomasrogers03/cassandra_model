@@ -60,10 +60,22 @@ module CassandraModel
     ColumnType = Struct.new(:column, :inquirer) do
       def to(type)
         retype_to(type)
+
+        case type
+          when :int then default_to(0)
+          when :double then default_to(0.0)
+          when :timestamp then default_to(Time.at(0))
+        end
       end
 
       def retype_to(type)
         inquirer.partition_key[column] = type
+      end
+
+      private
+
+      def default_to(value)
+        ColumnDefault.new(column, inquirer).default_to(value)
       end
     end
 

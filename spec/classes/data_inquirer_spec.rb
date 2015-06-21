@@ -143,6 +143,27 @@ module CassandraModel
         end
       end
 
+      context 'when mixing #knows_about and #retype' do
+        it 'should infer the type from the default value' do
+          subject.knows_about(:series).retype(:series).to(:int)
+          expect(subject.column_defaults).to eq(series: 0)
+        end
+
+        context 'with a floating point type' do
+          it 'should infer the type from the default value' do
+            subject.knows_about(:price).retype(:price).to(:double)
+            expect(subject.column_defaults).to eq(price: 0.0)
+          end
+        end
+
+        context 'with a timestamp' do
+          it 'should infer the type from the default value' do
+            subject.knows_about(:price).retype(:price).to(:timestamp)
+            expect(subject.column_defaults).to eq(price: Time.at(0))
+          end
+        end
+      end
+
     end
 
   end
