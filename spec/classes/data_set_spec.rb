@@ -25,5 +25,30 @@ module CassandraModel
       end
     end
 
+    describe '#is_defined_by' do
+      it 'should define the clustering columns for this data set' do
+        subject.is_defined_by(:name)
+        expect(subject.clustering_columns).to eq([:name])
+      end
+
+      it 'should "know" about the columns' do
+        subject.is_defined_by(:name)
+        expect(subject.columns).to eq([:name])
+      end
+
+      context 'with different columns' do
+        it 'should define the clustering columns for this data set' do
+          subject.is_defined_by(:title, :series)
+          expect(subject.clustering_columns).to eq([:title, :series])
+        end
+
+        it 'should "know" about the columns' do
+          subject.is_defined_by(:title, :series)
+          expect(subject.columns).to eq([:title, :series])
+        end
+      end
+
+    end
+
   end
 end
