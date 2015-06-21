@@ -107,14 +107,14 @@ module CassandraModel
 
       context 'when the column is not known' do
         it 'should raise an error' do
-          expect { subject.retype(:series) }.to raise_error("Cannot default unknown column #{column}")
+          expect { subject.retype(:series) }.to raise_error("Cannot retype unknown column #{column}")
         end
 
         context 'with a different column' do
           let(:column) { :created_at }
 
           it 'should raise an error' do
-            expect { subject.retype(:created_at) }.to raise_error("Cannot default unknown column #{column}")
+            expect { subject.retype(:created_at) }.to raise_error("Cannot retype unknown column #{column}")
           end
         end
       end

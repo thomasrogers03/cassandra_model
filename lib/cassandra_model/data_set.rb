@@ -16,7 +16,7 @@ module CassandraModel
     end
 
     def retype(column)
-      raise "Cannot default unknown column #{column}" unless columns.include?(column)
+      raise "Cannot retype unknown column #{column}" unless columns.include?(column)
       ColumnType.new(column, self)
     end
 
