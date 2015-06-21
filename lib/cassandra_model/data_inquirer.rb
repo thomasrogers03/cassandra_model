@@ -18,14 +18,19 @@ module CassandraModel
 
     def defaults(column)
       raise "Cannot default unknown column #{column}" unless partition_key.include?(column)
-      ColumnDefault.new(column, column_defaults)
+      ColumnDefault.new(column, self)
     end
 
     private
 
-    ColumnDefault = Struct.new(:column, :column_defaults) do
+    ColumnDefault = Struct.new(:column, :inquirer) do
       def to(value)
-        column_defaults[column] = value
+        inquirer.column_defaults[column] = value
+
+        case value
+          when Integer then inquirer.partition_key[column] = :int
+          when Float then inquirer.partition_key[column] = :double
+        end
       end
     end
 

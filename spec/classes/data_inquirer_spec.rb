@@ -69,7 +69,21 @@ module CassandraModel
     end
 
     describe 'typing' do
-      context 'when '
+
+      context 'when mixing #knows_about and #defaults' do
+        it 'should infer the type from the default value' do
+          subject.knows_about(:series).defaults(:series).to(0)
+          expect(subject.partition_key).to eq(series: :int)
+        end
+
+        context 'with a different type' do
+          it 'should infer the type from the default value' do
+            subject.knows_about(:price).defaults(:price).to(0.0)
+            expect(subject.partition_key).to eq(price: :double)
+          end
+        end
+      end
+
     end
 
   end
