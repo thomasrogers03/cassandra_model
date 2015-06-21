@@ -20,7 +20,7 @@ module CassandraModel
     def composite_rows
       @known_keys.map do |row|
         partition_key.keys - row
-      end
+      end.reject(&:empty?)
     end
 
     def defaults(column)

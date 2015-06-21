@@ -18,6 +18,11 @@ module CassandraModel
         expect(subject.column_defaults).to eq(name: '')
       end
 
+      it 'should not define any key rows for composite defaults when called with all known columns' do
+        subject.knows_about(:title, :series)
+        expect(subject.composite_rows).to eq([])
+      end
+
       context 'with different columns' do
         before { subject.knows_about(:title, :series) }
 
