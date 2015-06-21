@@ -17,6 +17,7 @@ module CassandraModel
     end
 
     def defaults(column)
+      raise "Cannot default unknown column #{column}" unless partition_key.include?(column)
       ColumnDefault.new(column, column_defaults)
     end
 

@@ -32,17 +32,44 @@ module CassandraModel
     end
 
     describe '#defaults' do
-      it 'should default the specified column to the requested value' do
-        subject.defaults(:title).to('NULL')
-        expect(subject.column_defaults).to eq(title: 'NULL')
-      end
+      let(:column) { :title }
 
-      context 'with a different column and default value' do
+      context 'when the column is known' do
+        before { subject.knows_about(column) }
+
         it 'should default the specified column to the requested value' do
-          subject.defaults(:series).to('1A')
-          expect(subject.column_defaults).to eq(series: '1A')
+          subject.defaults(:title).to('NULL')
+          expect(subject.column_defaults).to eq(title: 'NULL')
+        end
+
+        context 'with a different colun and default value' do
+          let(:column) { :series }
+
+          it 'should default the specified column to the requested value' do
+            subject.defaults(:series).to('1A')
+            expect(subject.column_defaults).to eq(series: '1A')
+          end
         end
       end
+
+      context 'when the column is not known' do
+        it 'should raise an error' do
+          expect { subject.defaults(:title) }.to raise_error("Cannot default unknown column #{column}")
+        end
+
+        context 'with a different colun and default value' do
+          let(:column) { :series }
+
+          it 'should raise an error' do
+            expect { subject.defaults(:series) }.to raise_error("Cannot default unknown column #{column}")
+          end
+        end
+      end
+
+    end
+
+    describe 'typing' do
+      context 'when '
     end
 
   end
