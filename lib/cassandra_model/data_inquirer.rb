@@ -1,11 +1,11 @@
 module CassandraModel
   class DataInquirer
-    attr_reader :partition_key
-    attr_reader :column_defaults
+    attr_reader :partition_key, :column_defaults
 
     def initialize
       @partition_key = Hash.new { |hash, key| hash[key] = :string }
       @column_defaults = Hash.new { |hash, key| hash[key] = '' }
+      @known_keys = []
     end
 
     def knows_about(*columns)
@@ -13,7 +13,14 @@ module CassandraModel
         partition_key[column]
         column_defaults[column]
       end
+      @known_keys << columns
       self
+    end
+
+    def composite_rows
+      @known_keys.map do |row|
+        partition_key.keys - row
+      end
     end
 
     def defaults(column)

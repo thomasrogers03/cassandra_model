@@ -19,14 +19,30 @@ module CassandraModel
       end
 
       context 'with different columns' do
+        before { subject.knows_about(:title, :series) }
+
         it 'should define the partition key' do
-          subject.knows_about(:title, :series)
           expect(subject.partition_key).to eq(title: :string, series: :string)
         end
 
         it 'should define default values for the specified columns' do
+          expect(subject.column_defaults).to eq(title: '', series: '')
+        end
+      end
+
+      context 'when called multiple times' do
+        it 'should define multiple rows of keys for composite defaults' do
           subject.knows_about(:name)
-          expect(subject.column_defaults).to eq(name: '')
+          subject.knows_about(:title, :series)
+          expect(subject.composite_rows).to eq([[:title, :series], [:name]])
+        end
+
+        context 'with different columns' do
+          it 'should define multiple rows of keys for composite defaults' do
+            subject.knows_about(:title, :series)
+            subject.knows_about(:author, :title)
+            expect(subject.composite_rows).to eq([[:author], [:series]])
+          end
         end
       end
     end
