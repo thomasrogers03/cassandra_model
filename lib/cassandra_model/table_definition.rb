@@ -3,13 +3,9 @@ module CassandraModel
     attr_reader :name
 
     def self.from_data_model(name, inquirer, data_set)
-      partition_key = inquirer.partition_key.inject({}) do |memo, (key, value)|
-        memo.merge!(:"rk_#{key}" => value)
-      end
-      clustering_columns = data_set.clustering_columns.inject({}) do |memo, column|
-        memo.merge!(:"ck_#{column}" => data_set.columns[column])
-      end
-      remaining_columns = data_set.columns.except(*data_set.clustering_columns)
+      partition_key = inquirer_partition_key(inquirer)
+      clustering_columns = table_set_clustering_columns(data_set)
+      remaining_columns = table_set_remaining_columns(data_set)
       new(name: name, partition_key: partition_key, clustering_columns: clustering_columns, remaining_columns: remaining_columns)
     end
 
@@ -38,6 +34,22 @@ module CassandraModel
     end
 
     private
+
+    def self.table_set_remaining_columns(data_set)
+      data_set.columns.except(*data_set.clustering_columns)
+    end
+
+    def self.table_set_clustering_columns(data_set)
+      data_set.clustering_columns.inject({}) do |memo, column|
+        memo.merge!(:"ck_#{column}" => data_set.columns[column])
+      end
+    end
+
+    def self.inquirer_partition_key(inquirer)
+      inquirer.partition_key.inject({}) do |memo, (key, value)|
+        memo.merge!(:"rk_#{key}" => value)
+      end
+    end
 
     def columns
       @columns.map { |name, type| "#{name} #{type}" } * ', '
