@@ -10,7 +10,7 @@ module CassandraModel
 
       it 'should define the partition key based on what the inquirer knows about' do
         subject.knows_about(:name)
-        expect(subject.partition_key).to eq(name: :string)
+        expect(subject.partition_key).to eq(name: :text)
       end
 
       it 'should define default values for the specified columns' do
@@ -27,7 +27,7 @@ module CassandraModel
         before { subject.knows_about(:title, :series) }
 
         it 'should define the partition key' do
-          expect(subject.partition_key).to eq(title: :string, series: :string)
+          expect(subject.partition_key).to eq(title: :text, series: :text)
         end
 
         it 'should define default values for the specified columns' do

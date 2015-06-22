@@ -3,7 +3,7 @@ module CassandraModel
     attr_reader :partition_key, :column_defaults
 
     def initialize
-      @partition_key = Hash.new { |hash, key| hash[key] = :string }
+      @partition_key = Hash.new { |hash, key| hash[key] = :text }
       @column_defaults = Hash.new { |hash, key| hash[key] = '' }
       @known_keys = []
     end

@@ -3,7 +3,7 @@ module CassandraModel
     attr_reader :columns, :clustering_columns
 
     def initialize
-      @columns = Hash.new { |hash, key| hash[key] = :string }
+      @columns = Hash.new { |hash, key| hash[key] = :text }
     end
 
     def knows_about(*columns)

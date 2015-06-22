@@ -6,13 +6,13 @@ module CassandraModel
     describe '#knows_about' do
       it 'should define the columns of data within the set' do
         subject.knows_about(:title, :series)
-        expect(subject.columns).to eq(title: :string, series: :string)
+        expect(subject.columns).to eq(title: :text, series: :text)
       end
 
       context 'with different columns' do
         it 'should define the columns of data within the set' do
           subject.knows_about(:name, :apartment)
-          expect(subject.columns).to eq(name: :string, apartment: :string)
+          expect(subject.columns).to eq(name: :text, apartment: :text)
         end
       end
 
@@ -20,7 +20,7 @@ module CassandraModel
         it 'should define a unique set of columns' do
           subject.knows_about(:title, :name)
           subject.knows_about(:name, :series)
-          expect(subject.columns).to eq(title: :string, name: :string, series: :string)
+          expect(subject.columns).to eq(title: :text, name: :text, series: :text)
         end
       end
     end
@@ -33,7 +33,7 @@ module CassandraModel
 
       it 'should "know" about the columns' do
         subject.is_defined_by(:name)
-        expect(subject.columns).to eq(name: :string)
+        expect(subject.columns).to eq(name: :text)
       end
 
       context 'with different columns' do
@@ -44,7 +44,7 @@ module CassandraModel
 
         it 'should "know" about the columns' do
           subject.is_defined_by(:title, :series)
-          expect(subject.columns).to eq(title: :string, series: :string)
+          expect(subject.columns).to eq(title: :text, series: :text)
         end
       end
     end
