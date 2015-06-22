@@ -32,6 +32,14 @@ module CassandraModel
       table_config.composite_defaults = truth_table.map { |row| column_defaults.except(*row) }
     end
 
+    def composite_defaults_from_inquirer(inquirer)
+      table_config.composite_defaults = inquirer.composite_rows.map do |row|
+        row.inject({}) do |memo, column|
+          memo.merge!(:"rk_#{column}" => inquirer.column_defaults[column])
+        end
+      end
+    end
+
     private
 
     def build_composite_map

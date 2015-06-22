@@ -96,11 +96,13 @@ module CassandraModel
     end
 
     describe '.generate_composite_defaults' do
-      subject { MockRecordStatic.composite_defaults }
       let(:column_defaults) { {model: '', series: ''} }
       let(:truth_table) { [[:model]] }
 
+      subject { MockRecordStatic.composite_defaults }
+
       before { MockRecordStatic.generate_composite_defaults(column_defaults, truth_table) }
+
       it 'should should generate a table of composite defaults given default column mapping and a truth table' do
         is_expected.to eq([{rk_series: ''}])
       end
@@ -108,6 +110,36 @@ module CassandraModel
       context 'with a different truth table' do
         let(:truth_table) { [[:model], []] }
         it { is_expected.to eq [{rk_series: ''}, {rk_model: '', rk_series: ''}] }
+      end
+    end
+
+    describe '.composite_defaults_from_inquirer' do
+      let(:inquirer) { DataInquirer.new }
+      let(:partition_key) { {title: 'NO TITLE', series: 'NULL', year: 1900} }
+      let(:first_inquiry) { [:title, :series, :year] }
+      let(:second_inquiry) { [:series, :year] }
+
+      subject { MockRecordStatic.composite_defaults }
+
+      before do
+        inquirer.knows_about(*first_inquiry)
+        inquirer.knows_about(*second_inquiry)
+        partition_key.each { |key, value| inquirer.defaults(key).to(value) }
+        MockRecordStatic.composite_defaults_from_inquirer(inquirer)
+      end
+
+      it 'should generate a table of composite defaults from the data set inquirer' do
+        is_expected.to eq([rk_title: 'NO TITLE'])
+      end
+
+      context 'with a different inquiry' do
+        let(:partition_key) { {make: '', model: 'NULL', year: 0} }
+        let(:first_inquiry) { [:make, :model] }
+        let(:second_inquiry) { [:year] }
+
+        it 'should generate a table of composite defaults from the data set inquirer' do
+          is_expected.to eq([{rk_year: 0}, {rk_make: '', rk_model: 'NULL'}])
+        end
       end
     end
 
