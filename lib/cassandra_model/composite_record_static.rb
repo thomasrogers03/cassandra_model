@@ -35,7 +35,7 @@ module CassandraModel
     def generate_composite_defaults_from_inquirer(inquirer)
       table_config.composite_defaults = inquirer.composite_rows.map do |row|
         row.inject({}) do |memo, column|
-          memo.merge!(:"rk_#{column}" => inquirer.column_defaults[column])
+          memo.merge!(column => inquirer.column_defaults[column])
         end
       end
     end

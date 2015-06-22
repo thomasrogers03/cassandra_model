@@ -114,8 +114,10 @@ module CassandraModel
     end
 
     describe '.generate_composite_defaults_from_inquirer' do
+      let(:partition_key) { inquirer_columns.keys.map { |column| :"rk_#{column}" } }
+      let(:clustering_columns) { inquirer_columns.keys.map { |column| :"ck_#{column}" } }
       let(:inquirer) { DataInquirer.new }
-      let(:partition_key) { {title: 'NO TITLE', series: 'NULL', year: 1900} }
+      let(:inquirer_columns) { {title: 'NO TITLE', series: 'NULL', year: 1900} }
       let(:first_inquiry) { [:title, :series, :year] }
       let(:second_inquiry) { [:series, :year] }
 
@@ -124,7 +126,7 @@ module CassandraModel
       before do
         inquirer.knows_about(*first_inquiry)
         inquirer.knows_about(*second_inquiry)
-        partition_key.each { |key, value| inquirer.defaults(key).to(value) }
+        inquirer_columns.each { |key, value| inquirer.defaults(key).to(value) }
         MockRecordStatic.generate_composite_defaults_from_inquirer(inquirer)
       end
 
@@ -133,7 +135,7 @@ module CassandraModel
       end
 
       context 'with a different inquiry' do
-        let(:partition_key) { {make: '', model: 'NULL', year: 0} }
+        let(:inquirer_columns) { {make: '', model: 'NULL', year: 0} }
         let(:first_inquiry) { [:make, :model] }
         let(:second_inquiry) { [:year] }
 
