@@ -22,6 +22,61 @@ module CassandraModel
 
     its(:name_in_cassandra) { is_expected.to eq("#{subject.name}_#{subject.table_id}") }
 
+    describe '.from_data_model' do
+      let(:inquirer) { DataInquirer.new }
+      let(:data_set) { DataSet.new }
+      let(:partition_key) { {title: :string, series: :string, year: :int} }
+      let(:rk_partition_key) do
+        partition_key.inject({}) do |memo, (key, value)|
+          memo.merge!(:"rk_#{key}" => value)
+        end
+      end
+      let(:clustering_columns) { {price: :double} }
+      let(:ck_clustering_columns) do
+        clustering_columns.inject({}) do |memo, (key, value)|
+          memo.merge!(:"ck_#{key}" => value)
+        end
+      end
+      let(:remaining_columns) { {description: :string} }
+      let(:attributes) do
+        {
+            name: table_name,
+            partition_key: rk_partition_key,
+            clustering_columns: ck_clustering_columns,
+            remaining_columns: remaining_columns
+        }
+      end
+
+      subject { TableDefinition.from_data_model(table_name, inquirer, data_set) }
+
+      before do
+        inquirer.knows_about(*partition_key.keys)
+        partition_key.each { |key, value| inquirer.retype(key).to(value) }
+
+        data_set.is_defined_by(*clustering_columns.keys)
+        clustering_columns.each { |key, value| data_set.retype(key).to(value) }
+
+        data_set.knows_about(*remaining_columns.keys)
+        remaining_columns.each { |key, value| data_set.retype(key).to(value) }
+      end
+
+      it 'should generate a table definition from an inquirer/data set pair' do
+        is_expected.to eq(TableDefinition.new(attributes))
+      end
+
+      context 'with a different table' do
+        let(:table_name) { :images }
+        let(:partition_key) { {make: :string, model: :string, year: :int} }
+        let(:clustering_columns) { {model: :string, price: :double} }
+        let(:remaining_columns) { {} }
+
+        it 'should generate a table definition from an inquirer/data set pair' do
+          is_expected.to eq(TableDefinition.new(attributes))
+        end
+
+      end
+    end
+
     describe '#table_id' do
       subject { TableDefinition.new(options).table_id }
 
