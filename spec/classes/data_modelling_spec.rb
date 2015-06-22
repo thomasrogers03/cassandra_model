@@ -34,6 +34,10 @@ module CassandraModel
     let(:connection_name) { nil }
     let(:table_name) { :cars }
 
+    subject { MockDataModel.new }
+
+    it { is_expected.to be_a_kind_of(CompositeRecord) }
+
     before do
       MockDataModel.connection_name = connection_name
       allow(MockDataModel).to receive(:generate_table_name).and_return(table_name)

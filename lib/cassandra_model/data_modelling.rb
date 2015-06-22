@@ -1,6 +1,10 @@
 module CassandraModel
   module DataModelling
 
+    def self.extended(base)
+      base.include(CompositeRecord)
+    end
+
     def model_data
       inquirer = DataInquirer.new
       data_set = DataSet.new
