@@ -113,7 +113,7 @@ module CassandraModel
       end
     end
 
-    describe '.composite_defaults_from_inquirer' do
+    describe '.generate_composite_defaults_from_inquirer' do
       let(:inquirer) { DataInquirer.new }
       let(:partition_key) { {title: 'NO TITLE', series: 'NULL', year: 1900} }
       let(:first_inquiry) { [:title, :series, :year] }
@@ -125,7 +125,7 @@ module CassandraModel
         inquirer.knows_about(*first_inquiry)
         inquirer.knows_about(*second_inquiry)
         partition_key.each { |key, value| inquirer.defaults(key).to(value) }
-        MockRecordStatic.composite_defaults_from_inquirer(inquirer)
+        MockRecordStatic.generate_composite_defaults_from_inquirer(inquirer)
       end
 
       it 'should generate a table of composite defaults from the data set inquirer' do
