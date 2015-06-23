@@ -37,6 +37,32 @@ module CassandraModel
 
     it { is_expected.to be_a_kind_of(TableRedux) }
 
+    describe '#==' do
+      it 'should should be equal when the connections and table definitions are the same' do
+        expect(table).to eq(klass.new(connection_name, definition))
+      end
+
+      context 'when the connection names are different' do
+        it 'should be equal' do
+          expect(table).not_to eq(klass.new(:single, definition))
+        end
+      end
+
+      context 'when the table definitions are different' do
+        let(:other_table_definition) do
+          {name: :images,
+           partition_key: {author: :text},
+           clustering_columns: {title: :text},
+           remaining_columns: {price: :double}}
+        end
+        let(:other_definition) { TableDefinition.new(other_table_definition) }
+
+        it 'should not be equal' do
+          expect(table).not_to eq(klass.new(connection_name, other_definition))
+        end
+      end
+    end
+
     describe '#connection' do
       it 'should be the cached cassandra connection' do
         expect(subject.connection).to eq(ConnectionCache[nil])

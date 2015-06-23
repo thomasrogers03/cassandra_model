@@ -16,6 +16,15 @@ module CassandraModel
       end
     end
 
+    def ==(rhs)
+      connection == rhs.connection &&
+          table_definition == rhs.table_definition
+    end
+
+    protected
+
+    attr_reader :table_definition
+
     private
 
     def table
