@@ -6,6 +6,7 @@ module CassandraModel
       @partition_key = Hash.new { |hash, key| hash[key] = :text }
       @column_defaults = Hash.new { |hash, key| hash[key] = '' }
       @known_keys = []
+      @is_sharding = false
     end
 
     def knows_about(*columns)
@@ -15,6 +16,11 @@ module CassandraModel
       end
       @known_keys << columns
       self
+    end
+
+    def shards_queries
+      knows_about(:shard)
+      retype(:shard).to(:int)
     end
 
     def composite_rows

@@ -52,6 +52,13 @@ module CassandraModel
       end
     end
 
+    describe '#shards_queries' do
+      it 'should create a sharding column at the end of the partition key' do
+        subject.shards_queries
+        expect(subject.partition_key).to eq(shard: :int)
+      end
+    end
+
     describe '#defaults' do
       let(:column) { :title }
 
