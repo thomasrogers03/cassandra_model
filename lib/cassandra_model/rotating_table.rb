@@ -17,6 +17,15 @@ module CassandraModel
       @tables.reject { |table| table.is_a?(MetaTable) }.each(&:reset_local_schema!)
     end
 
+    def ==(rhs)
+      @schedule == rhs.schedule &&
+          @tables == rhs.tables
+    end
+
+    protected
+
+    attr_reader :schedule, :tables
+
     private
 
     def first_table

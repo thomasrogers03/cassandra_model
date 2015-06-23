@@ -33,6 +33,24 @@ module CassandraModel
       end
     end
 
+    describe '#==' do
+      it 'should be equal when the tables used and schedules are equal' do
+        expect(subject).to eq(RotatingTable.new([first_table, second_table, third_table], rotating_schedule))
+      end
+
+      context 'with a different schedule' do
+        it 'should not be equal' do
+          expect(subject).not_to eq(RotatingTable.new([first_table, second_table, third_table], 5.minutes))
+        end
+      end
+
+      context 'with different tables' do
+        it 'should not be equal' do
+          expect(subject).not_to eq(RotatingTable.new([third_table], rotating_schedule))
+        end
+      end
+    end
+
     shared_examples_for 'a table column method' do |method|
       let(:columns) { [:column1, :column2] }
 
