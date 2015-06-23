@@ -20,7 +20,7 @@ module CassandraModel
       @clustering_columns = columns
     end
 
-    def retype(column)
+    def change_type_of(column)
       raise "Cannot retype unknown column #{column}" unless columns.include?(column)
       ColumnType.new(column, self)
     end

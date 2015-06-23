@@ -20,7 +20,7 @@ module CassandraModel
 
     def shards_queries
       knows_about(:shard)
-      retype(:shard).to(:int)
+      change_type_of(:shard).to(:int)
     end
 
     def composite_rows
@@ -34,7 +34,7 @@ module CassandraModel
       ColumnDefault.new(column, self)
     end
 
-    def retype(column)
+    def change_type_of(column)
       raise "Cannot retype unknown column #{column}" unless partition_key.include?(column)
       ColumnType.new(column, self)
     end

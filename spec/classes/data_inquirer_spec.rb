@@ -103,7 +103,7 @@ module CassandraModel
         before { subject.knows_about(column) }
 
         it 'should change the column type' do
-          subject.retype(:series).to(:int)
+          subject.change_type_of(:series).to(:int)
           expect(subject.partition_key).to eq(series: :int)
         end
 
@@ -111,7 +111,7 @@ module CassandraModel
           let(:column) { :created_at }
 
           it 'should default the specified column to the requested value' do
-            subject.retype(:created_at).to(:timestamp)
+            subject.change_type_of(:created_at).to(:timestamp)
             expect(subject.partition_key).to eq(created_at: :timestamp)
           end
         end
@@ -119,14 +119,14 @@ module CassandraModel
 
       context 'when the column is not known' do
         it 'should raise an error' do
-          expect { subject.retype(:series) }.to raise_error("Cannot retype unknown column #{column}")
+          expect { subject.change_type_of(:series) }.to raise_error("Cannot retype unknown column #{column}")
         end
 
         context 'with a different column' do
           let(:column) { :created_at }
 
           it 'should raise an error' do
-            expect { subject.retype(:created_at) }.to raise_error("Cannot retype unknown column #{column}")
+            expect { subject.change_type_of(:created_at) }.to raise_error("Cannot retype unknown column #{column}")
           end
         end
       end
@@ -157,20 +157,20 @@ module CassandraModel
 
       context 'when mixing #knows_about and #retype' do
         it 'should infer the type from the default value' do
-          subject.knows_about(:series).retype(:series).to(:int)
+          subject.knows_about(:series).change_type_of(:series).to(:int)
           expect(subject.column_defaults).to eq(series: 0)
         end
 
         context 'with a floating point type' do
           it 'should infer the type from the default value' do
-            subject.knows_about(:price).retype(:price).to(:double)
+            subject.knows_about(:price).change_type_of(:price).to(:double)
             expect(subject.column_defaults).to eq(price: 0.0)
           end
         end
 
         context 'with a timestamp' do
           it 'should infer the type from the default value' do
-            subject.knows_about(:price).retype(:price).to(:timestamp)
+            subject.knows_about(:price).change_type_of(:price).to(:timestamp)
             expect(subject.column_defaults).to eq(price: Time.at(0))
           end
         end

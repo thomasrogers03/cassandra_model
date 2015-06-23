@@ -145,10 +145,10 @@ module CassandraModel
             inquirer.defaults(:artist).to('NULL')
 
             data_set.is_defined_by(:price, :artist, :year)
-            data_set.retype(:price).to(:double)
-            data_set.retype(:year).to(:int)
+            data_set.change_type_of(:price).to(:double)
+            data_set.change_type_of(:year).to(:int)
             data_set.knows_about(:damages)
-            data_set.retype(:damages).to('map<text,text>')
+            data_set.change_type_of(:damages).to('map<text,text>')
           end
         end
 

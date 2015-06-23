@@ -51,13 +51,13 @@ module CassandraModel
 
       before do
         inquirer.knows_about(*partition_key.keys)
-        partition_key.each { |key, value| inquirer.retype(key).to(value) }
+        partition_key.each { |key, value| inquirer.change_type_of(key).to(value) }
 
         data_set.is_defined_by(*clustering_columns.keys)
-        clustering_columns.each { |key, value| data_set.retype(key).to(value) }
+        clustering_columns.each { |key, value| data_set.change_type_of(key).to(value) }
 
         data_set.knows_about(*remaining_columns.keys)
-        remaining_columns.each { |key, value| data_set.retype(key).to(value) }
+        remaining_columns.each { |key, value| data_set.change_type_of(key).to(value) }
       end
 
       it 'should generate a table definition from an inquirer/data set pair' do
