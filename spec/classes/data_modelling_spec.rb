@@ -25,12 +25,16 @@ module CassandraModel
 
     let(:connection_name) { nil }
     let(:table_name) { :cars }
+    let(:invalid_table_descriptor) { TableDescriptor.new({}).tap { |desc| desc.invalidate! } }
 
     subject { MockDataModel.new }
 
     it { is_expected.to be_a_kind_of(CompositeRecord) }
 
     before do
+      mock_simple_table(:table_descriptors, [:name], [:created_at], [:id])
+      allow(TableDescriptor).to receive(:create).and_return(invalid_table_descriptor)
+      allow_any_instance_of(MetaTable).to receive(:sleep)
       MockDataModel.connection_name = connection_name
       MockDataModel.table_name = table_name
     end
@@ -67,6 +71,47 @@ module CassandraModel
 
         it 'should generate composite defaults from the inquirer' do
           expect(MockDataModel.composite_defaults).to eq([{model: ''}, {make: ''}])
+        end
+      end
+
+      context 'when a table rotation has been specified' do
+        let(:table_slices) { 2 }
+        let(:rotation_interval) { 1.day }
+        let(:table_attributes) do
+          {
+              name: table_name,
+              partition_key: {rk_make: :text},
+              clustering_columns: {ck_model: :text},
+              remaining_columns: {}
+          }
+        end
+        let!(:rotating_tables) do
+          table_slices.times.map do |index|
+            updated_attributes = table_attributes.merge(name: "#{table_name}_#{index}")
+            table_defintion = TableDefinition.new(updated_attributes)
+            mock_simple_table(table_defintion.name_in_cassandra, [:rk_make], [:ck_model], [])
+            MetaTable.new(connection_name, table_defintion)
+          end
+        end
+
+        before do
+          MockDataModel.model_data do |inquirer, data_set|
+            inquirer.knows_about(:make)
+            data_set.is_defined_by(:model)
+            data_set.rotates_storage_across(table_slices).tables_every(rotation_interval)
+          end
+        end
+
+        it 'should sufficient tables for rotation using the specified interval' do
+          expect(MockDataModel.table).to eq(RotatingTable.new(rotating_tables, rotation_interval))
+        end
+
+        context 'with a different table name' do
+          let(:table_name) { :planes }
+
+          it 'should sufficient tables for rotation using the specified interval' do
+            expect(MockDataModel.table).to eq(RotatingTable.new(rotating_tables, rotation_interval))
+          end
         end
       end
 
