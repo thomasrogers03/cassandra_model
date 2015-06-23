@@ -10,19 +10,23 @@ module CassandraModel
       data_set = DataSet.new
       yield inquirer, data_set
 
-      if data_set.data_rotation[:slices]
-        rotating_tables = 2.times.map do |index|
-          meta_table("#{generate_table_name}_#{index}", inquirer, data_set)
-        end
-        self.table = CassandraModel::RotatingTable.new(rotating_tables, 1.day)
+      self.table = if data_set.data_rotation[:slices]
+        rotating_table(data_set, inquirer)
       else
-        self.table = meta_table(generate_table_name, inquirer, data_set)
+        meta_table(generate_table_name, inquirer, data_set)
       end
 
       generate_composite_defaults_from_inquirer(inquirer)
     end
 
     private
+
+    def rotating_table(data_set, inquirer)
+      table_list = 2.times.map do |index|
+        meta_table("#{generate_table_name}_#{index}", inquirer, data_set)
+      end
+      CassandraModel::RotatingTable.new(table_list, 1.day)
+    end
 
     def meta_table(table_name, inquirer, data_set)
       table_definition = CassandraModel::TableDefinition.from_data_model(table_name, inquirer, data_set)
