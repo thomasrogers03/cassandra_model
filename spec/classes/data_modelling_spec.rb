@@ -102,14 +102,23 @@ module CassandraModel
           end
         end
 
-        it 'should sufficient tables for rotation using the specified interval' do
+        it 'should create sufficient tables for rotation using the specified interval' do
           expect(MockDataModel.table).to eq(RotatingTable.new(rotating_tables, rotation_interval))
         end
 
         context 'with a different table name' do
           let(:table_name) { :planes }
 
-          it 'should sufficient tables for rotation using the specified interval' do
+          it 'should use the proper table' do
+            expect(MockDataModel.table).to eq(RotatingTable.new(rotating_tables, rotation_interval))
+          end
+        end
+
+        context 'with a different rotating setup' do
+          let(:table_slices) { 3 }
+          let(:rotation_interval) { 1.week }
+
+          it 'should create sufficient tables for rotation using the specified interval' do
             expect(MockDataModel.table).to eq(RotatingTable.new(rotating_tables, rotation_interval))
           end
         end

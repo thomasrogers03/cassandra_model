@@ -10,7 +10,7 @@ module CassandraModel
       data_set = DataSet.new
       yield inquirer, data_set
 
-      self.table = if data_set.data_rotation[:slices]
+      self.table = if table_sliced?(data_set)
         rotating_table(data_set, inquirer)
       else
         meta_table(generate_table_name, inquirer, data_set)
@@ -21,11 +21,15 @@ module CassandraModel
 
     private
 
+    def table_sliced?(data_set)
+      data_set.data_rotation[:slices]
+    end
+
     def rotating_table(data_set, inquirer)
-      table_list = 2.times.map do |index|
+      table_list = data_set.data_rotation[:slices].times.map do |index|
         meta_table("#{generate_table_name}_#{index}", inquirer, data_set)
       end
-      CassandraModel::RotatingTable.new(table_list, 1.day)
+      CassandraModel::RotatingTable.new(table_list, data_set.data_rotation[:frequency])
     end
 
     def meta_table(table_name, inquirer, data_set)
