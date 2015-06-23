@@ -6,22 +6,14 @@ module CassandraModel
       extend DataModelling
 
       class << self
-        attr_reader :table_definition, :table, :composite_defaults
-        attr_accessor :connection_name
-
-        def table=(table)
-          # hack to test the table schema
-          @table_definition = table.instance_variable_get(:@table_definition)
-          @table = table
-        end
+        attr_reader :table_definition, :composite_defaults
+        attr_accessor :connection_name, :table_name, :table
 
         def table_config
           self
         end
 
-        def generate_table_name
-          # nothing here...
-        end
+        alias :generate_table_name :table_name
 
         def generate_composite_defaults_from_inquirer(inquirer)
           @composite_defaults = inquirer.composite_rows.map do |row|
@@ -40,7 +32,7 @@ module CassandraModel
 
     before do
       MockDataModel.connection_name = connection_name
-      allow(MockDataModel).to receive(:generate_table_name).and_return(table_name)
+      MockDataModel.table_name = table_name
     end
 
     describe '#model_data' do
@@ -52,6 +44,7 @@ module CassandraModel
             remaining_columns: {description: :text}
         }
       end
+      let(:table_defintion) { TableDefinition.new(table_attributes) }
 
       context 'with a basic inquiry/data set pair' do
         before do
@@ -68,12 +61,8 @@ module CassandraModel
           expect(MockDataModel.table).to be_a_kind_of(MetaTable)
         end
 
-        it 'should use the specified connection name' do
-          expect(MockDataModel.table.connection).to eq(CassandraModel::ConnectionCache[connection_name])
-        end
-
         it 'should create a table based on an inquirer/data set pair' do
-          expect(MockDataModel.table_definition).to eq(CassandraModel::TableDefinition.new(table_attributes))
+          expect(MockDataModel.table).to eq(MetaTable.new(connection_name, table_defintion))
         end
 
         it 'should generate composite defaults from the inquirer' do
@@ -109,12 +98,8 @@ module CassandraModel
           end
         end
 
-        it 'should use the specified connection name' do
-          expect(MockDataModel.table.connection).to eq(CassandraModel::ConnectionCache[connection_name])
-        end
-
         it 'should create a table based on an inquirer/data set pair' do
-          expect(MockDataModel.table_definition).to eq(CassandraModel::TableDefinition.new(table_attributes))
+          expect(MockDataModel.table).to eq(MetaTable.new(connection_name, table_defintion))
         end
 
         it 'should generate composite defaults from the inquirer' do
