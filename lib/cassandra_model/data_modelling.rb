@@ -2,7 +2,7 @@ module CassandraModel
   module DataModelling
 
     def self.extended(base)
-      base.include(CompositeRecord)
+      base.send(:include, CompositeRecord)
     end
 
     def model_data
