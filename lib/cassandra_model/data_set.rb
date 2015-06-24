@@ -5,6 +5,7 @@ module CassandraModel
     def initialize
       @columns = Hash.new { |hash, key| hash[key] = :text }
       @data_rotation = {}
+      @clustering_columns = []
     end
 
     def knows_about(*columns)

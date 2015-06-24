@@ -53,6 +53,12 @@ module CassandraModel
       end
     end
 
+    describe '#clustering_columns' do
+      it 'should be an empty array by default' do
+        expect(subject.clustering_columns).to eq([])
+      end
+    end
+
     describe '#is_defined_by' do
       it 'should define the clustering columns for this data set' do
         subject.is_defined_by(:name)
