@@ -89,6 +89,8 @@ GEM
     rb-fsevent (0.9.5)
     rb-inotify (0.9.5)
       ffi (>= 0.5.0)
+    rdoc (4.2.0)
+      json (~> 1.4)
     ref (1.0.5)
     rspec (3.1.0)
       rspec-core (~> 3.1.0)
@@ -138,6 +140,7 @@ DEPENDENCIES
   guard-bundler
   guard-rspec
   pry
+  rdoc
   rspec (~> 3.1.0)
   rspec-its
   simplecov
