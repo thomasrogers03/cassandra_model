@@ -73,7 +73,20 @@ module CassandraModel
         it 'should generate a table definition from an inquirer/data set pair' do
           is_expected.to eq(TableDefinition.new(attributes))
         end
+      end
 
+      context 'when the inquirer shards requests' do
+        let(:rk_partition_key) do
+          partition_key.inject({}) do |memo, (key, value)|
+            memo.merge!(:"rk_#{key}" => value)
+          end.merge(rk_shard: :int)
+        end
+
+        before { inquirer.shards_queries }
+
+        it 'should generate a table definition from an inquirer/data set pair' do
+          is_expected.to eq(TableDefinition.new(attributes))
+        end
       end
     end
 

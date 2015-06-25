@@ -4,9 +4,12 @@ module CassandraModel
 
     def self.from_data_model(name, inquirer, data_set)
       partition_key = inquirer_partition_key(inquirer)
+      partition_key.merge!(rk_shard: :int) if inquirer.is_sharding
       clustering_columns = table_set_clustering_columns(data_set)
       remaining_columns = table_set_remaining_columns(data_set)
-      new(name: name, partition_key: partition_key, clustering_columns: clustering_columns, remaining_columns: remaining_columns)
+      new(name: name, partition_key: partition_key,
+          clustering_columns: clustering_columns,
+          remaining_columns: remaining_columns)
     end
 
     def initialize(options)
