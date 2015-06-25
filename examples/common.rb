@@ -1,10 +1,7 @@
-require 'pp'
-require 'cassandra'
-require 'benchmark'
-require 'thwait'
 require 'bundler'
-require 'active_support/all'
+Bundler.require(:default, :development)
+require './lib/cassandra_model'
 
-Bundler.require(:default)
-Dir['./lib/**/*.rb'].each { |f| require f }
-puts '=> loaded'
+CassandraModel::ConnectionCache[nil].config = {hosts: %w(cassandra.dev), keyspace: 'test'}
+
+at_exit { CassandraModel::ConnectionCache.clear }
