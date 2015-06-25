@@ -1,12 +1,11 @@
 module CassandraModel
   class DataInquirer
-    attr_reader :partition_key, :column_defaults
+    attr_reader :partition_key, :column_defaults, :is_sharding
 
     def initialize
       @partition_key = Hash.new { |hash, key| hash[key] = :text }
       @column_defaults = Hash.new { |hash, key| hash[key] = '' }
       @known_keys = []
-      @is_sharding = false
     end
 
     def knows_about(*columns)
@@ -19,8 +18,7 @@ module CassandraModel
     end
 
     def shards_queries
-      knows_about(:shard)
-      change_type_of(:shard).to(:int)
+      @is_sharding = true
     end
 
     def composite_rows

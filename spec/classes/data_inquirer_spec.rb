@@ -53,9 +53,13 @@ module CassandraModel
     end
 
     describe '#shards_queries' do
-      it 'should create a sharding column at the end of the partition key' do
+      it 'should mark the inquirer as sharding the requests for data' do
         subject.shards_queries
-        expect(subject.partition_key).to eq(shard: :int)
+        expect(subject.is_sharding).to eq(true)
+      end
+
+      it 'should not shard the requests by default' do
+        expect(!!subject.is_sharding).to eq(false)
       end
     end
 
