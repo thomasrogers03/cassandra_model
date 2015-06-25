@@ -3,7 +3,7 @@ module CassandraModel
     extend Forwardable
 
     def_delegators :first_table, :partition_key, :clustering_columns, :columns
-    def_delegators :table, :connection, :name
+    def_delegators :table, :connection, :name, :truncate!
 
     def initialize(tables, schedule)
       columns = tables.first.columns
@@ -11,6 +11,10 @@ module CassandraModel
 
       @tables = tables
       @schedule = schedule
+    end
+
+    def allow_truncation!
+      tables.each(&:allow_truncation!)
     end
 
     def reset_local_schema!

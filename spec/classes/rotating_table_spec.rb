@@ -9,7 +9,8 @@ module CassandraModel
     let(:table_methods) do
       {partition_key: partition_key,
        clustering_columns: clustering_columns,
-       columns: columns}
+       columns: columns,
+       :truncate! => nil}
     end
     let(:first_table) { double(:table, table_methods.merge(name: 'table 1')) }
     let(:second_table) { double(:table, table_methods.merge(name: 'table 2')) }
@@ -31,6 +32,48 @@ module CassandraModel
           expect { subject }.to raise_error('RotatingTable, Table columns do not match')
         end
       end
+    end
+
+    describe '#allow_truncation!' do
+      it 'should forward the call to each of the tables' do
+        expect(first_table).to receive(:allow_truncation!)
+        expect(second_table).to receive(:allow_truncation!)
+        expect(third_table).to receive(:allow_truncation!)
+        subject.allow_truncation!
+      end
+    end
+
+    describe '#truncate!' do
+      let(:time) { Time.at(0) }
+      let(:current_table) { first_table }
+
+      around do |example|
+        Timecop.freeze(time) { example.run }
+      end
+
+      shared_examples_for 'a rotating table truncation' do
+        it 'should delegate to the current table' do
+          expect(current_table).to receive(:truncate!)
+          subject.truncate!
+        end
+      end
+
+      context 'with the first table' do
+        it_behaves_like 'a rotating table truncation'
+      end
+
+      context 'with the second table' do
+        let(:time) { Time.at(0) + rotating_schedule }
+        let(:current_table) { second_table }
+        it_behaves_like 'a rotating table truncation'
+      end
+
+      context 'with the second table' do
+        let(:time) { Time.at(0) + 2 * rotating_schedule }
+        let(:current_table) { third_table }
+        it_behaves_like 'a rotating table truncation'
+      end
+
     end
 
     describe '#==' do
