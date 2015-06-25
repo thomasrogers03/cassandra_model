@@ -3,6 +3,9 @@ require_relative 'common'
 class WorkData < CassandraModel::Record
   extend CassandraModel::DataModelling
 
+  MAX_SHARD = 25
+  SHARD_RANGE = (0..MAX_SHARD).to_a
+
   Data = Struct.new(:data)
 
   deferred_column :data,
@@ -14,6 +17,7 @@ class WorkData < CassandraModel::Record
     inquirer.knows_about(:work_type)
     inquirer.knows_about(:ran_at)
     inquirer.defaults(:ran_at).to(Time.at(0))
+    inquirer.shards_queries
 
     data_set.is_defined_by(:ran_at, :inserted_at, :work_id, :work_type)
     data_set.change_type_of(:ran_at).to(:timestamp)
@@ -22,6 +26,8 @@ class WorkData < CassandraModel::Record
     data_set.rotates_storage_across(3).tables_every(1.week)
   end
   table.allow_truncation!
+
+  shard(:inserted_at) { |hash| hash % MAX_SHARD }
 
   class << self
 
@@ -51,14 +57,14 @@ WorkData.prepare_example
 data = WorkData.where({}).limit(3).map(&:data).map(&:data) * "\n"
 puts "=> sample data:\n#{data}\n\n"
 
-data_count = WorkData.where(work_type: 'Hard Work').get.count
+data_count = WorkData.where(work_type: 'Hard Work', shard: WorkData::SHARD_RANGE).get.count
 puts "=> #{data_count} items for Hard Work"
 
-data_count = WorkData.where(work_type: 'Good Work').get.count
+data_count = WorkData.where(work_type: 'Good Work', shard: WorkData::SHARD_RANGE).get.count
 puts "=> #{data_count} items for Good Work"
 
-data_count = WorkData.where(ran_at: Time.at(0)).get.count
+data_count = WorkData.where(ran_at: Time.at(0), shard: WorkData::SHARD_RANGE).get.count
 puts "=> #{data_count} items ran at #{Time.at(0)}"
 
-data_count = WorkData.where(work_id: 'Fake Work', work_type: 'Good Work').get.count
+data_count = WorkData.where(work_id: 'Fake Work', work_type: 'Good Work', shard: WorkData::SHARD_RANGE).get.count
 puts "=> #{data_count} items for Fake Work id"
