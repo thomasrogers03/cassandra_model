@@ -474,6 +474,8 @@ module CassandraModel
       let(:remaining_columns) { [:meta_data] }
       let(:shard_column) { :meta_data }
       let(:shard_data) { 5 }
+      let(:shard_md5) { Digest::MD5.hexdigest(shard_data.to_s) }
+      let(:shard_hash) { shard_md5.unpack('L').first }
       let(:shard_proc) { ->(hash) { hash } }
       let(:record) { Record.new(data_set_name: 'data1', shard_column => shard_data) }
 
@@ -484,7 +486,7 @@ module CassandraModel
           before { Record.shard(shard_column, max_shard) }
 
           it 'should assign the result of the sharding column value hash modulo the maximum shard' do
-            expect(record.shard).to eq(shard_data.hash % max_shard)
+            expect(record.shard).to eq(shard_hash % max_shard)
           end
 
           context 'with a different shard hashing column' do
@@ -494,7 +496,7 @@ module CassandraModel
             let(:shard_data) { 'hello' }
 
             it 'should assign the result of the sharding function to the shard column' do
-              expect(record.shard).to eq(shard_data.hash % max_shard)
+              expect(record.shard).to eq(shard_hash % max_shard)
             end
           end
 
@@ -502,7 +504,7 @@ module CassandraModel
             let(:max_shard) { 2 }
 
             it 'should assign the result of the sharding column value hash modulo the maximum shard' do
-              expect(record.shard).to eq(shard_data.hash % max_shard)
+              expect(record.shard).to eq(shard_hash % max_shard)
             end
           end
 
@@ -510,7 +512,7 @@ module CassandraModel
             let(:partition_key) { [:shard, :data_set_name] }
 
             it 'should still use the last column as the shard' do
-              expect(record.data_set_name).to eq(shard_data.hash % max_shard)
+              expect(record.data_set_name).to eq(shard_hash % max_shard)
             end
           end
         end
@@ -519,7 +521,7 @@ module CassandraModel
           before { Record.shard(shard_column, &shard_proc) }
 
           it 'should assign the result of the sharding function to the shard column' do
-            expect(record.shard).to eq(shard_data.hash)
+            expect(record.shard).to eq(shard_hash)
           end
 
           context 'with a different shard hashing column' do
@@ -529,7 +531,7 @@ module CassandraModel
             let(:shard_data) { 'hello' }
 
             it 'should assign the result of the sharding function to the shard column' do
-              expect(record.shard).to eq(shard_data.hash)
+              expect(record.shard).to eq(shard_hash)
             end
           end
 
@@ -537,7 +539,7 @@ module CassandraModel
             let(:shard_proc) { ->(hash) { hash % 2 } }
 
             it 'should assign the result of the sharding function to the shard column' do
-              expect(record.shard).to eq(shard_data.hash % 2)
+              expect(record.shard).to eq(shard_hash % 2)
             end
           end
 
@@ -545,7 +547,7 @@ module CassandraModel
             let(:partition_key) { [:shard, :data_set_name] }
 
             it 'should still use the last column as the shard' do
-              expect(record.data_set_name).to eq(shard_data.hash)
+              expect(record.data_set_name).to eq(shard_hash)
             end
           end
         end

@@ -177,7 +177,7 @@ module CassandraModel
     end
 
     def column_hash(hashing_column)
-      attributes[hashing_column].hash
+      Digest::MD5.hexdigest(attributes[hashing_column].to_s).unpack('L').first
     end
 
     class << self
