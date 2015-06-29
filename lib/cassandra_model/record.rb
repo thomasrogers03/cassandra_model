@@ -176,6 +176,10 @@ module CassandraModel
       self.class.partition_key.last
     end
 
+    def column_hash(hashing_column)
+      attributes[hashing_column].hash
+    end
+
     class << self
       extend Forwardable
 
@@ -379,11 +383,11 @@ module CassandraModel
       end
 
       def modulo_shard(hashing_column, max_shard)
-        before_save { attributes[shard_key] = (attributes[hashing_column].hash % max_shard) }
+        before_save { attributes[shard_key] = (column_hash(hashing_column) % max_shard) }
       end
 
       def hashing_shard(hashing_column)
-        before_save { attributes[shard_key] = (yield attributes[hashing_column].hash) }
+        before_save { attributes[shard_key] = (yield column_hash(hashing_column)) }
       end
 
     end
