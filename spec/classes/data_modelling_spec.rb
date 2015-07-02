@@ -7,13 +7,13 @@ module CassandraModel
 
       class << self
         attr_reader :table_definition, :composite_defaults
-        attr_accessor :connection_name, :table_name, :table
+        attr_accessor :connection_name, :generated_table_name, :table_name, :table
 
         def table_config
           self
         end
 
-        alias :generate_table_name :table_name
+        alias :generate_table_name :generated_table_name
 
         def generate_composite_defaults_from_inquirer(inquirer)
           @composite_defaults = inquirer.composite_rows.map do |row|
@@ -24,7 +24,10 @@ module CassandraModel
     end
 
     let(:connection_name) { nil }
-    let(:table_name) { :cars }
+    let(:generated_table_name) { :cars }
+    let(:table_name) { nil }
+    let(:table_suffix) { 'ac6c09f271f7464bb2ac77992153eaef' }
+    let(:full_table_name) { "#{table_name}_#{table_suffix}" if table_name }
     let(:invalid_table_descriptor) { TableDescriptor.new({}).tap { |desc| desc.invalidate! } }
 
     subject { MockDataModel.new }
@@ -32,23 +35,25 @@ module CassandraModel
     it { is_expected.to be_a_kind_of(CompositeRecord) }
 
     before do
+      MockDataModel.table_name = table_name
+      mock_simple_table(full_table_name, [:make, :model], [:make, :model], [:description]) if full_table_name
       mock_simple_table(:table_descriptors, [:name], [:created_at], [:id])
       allow(TableDescriptor).to receive(:create).and_return(invalid_table_descriptor)
       allow_any_instance_of(MetaTable).to receive(:sleep)
       MockDataModel.connection_name = connection_name
-      MockDataModel.table_name = table_name
+      MockDataModel.generated_table_name = generated_table_name
     end
 
     describe '#model_data' do
       let(:table_attributes) do
         {
-            name: table_name,
+            name: generated_table_name,
             partition_key: {rk_make: :text, rk_model: :text},
             clustering_columns: {ck_make: :text, ck_model: :text},
             remaining_columns: {description: :text}
         }
       end
-      let(:table_defintion) { TableDefinition.new(table_attributes) }
+      let(:table_definition) { TableDefinition.new(table_attributes) }
 
       context 'with a basic inquiry/data set pair' do
         before do
@@ -66,11 +71,17 @@ module CassandraModel
         end
 
         it 'should create a table based on an inquirer/data set pair' do
-          expect(MockDataModel.table).to eq(MetaTable.new(connection_name, table_defintion))
+          expect(MockDataModel.table).to eq(MetaTable.new(connection_name, table_definition))
         end
 
         it 'should generate composite defaults from the inquirer' do
           expect(MockDataModel.composite_defaults).to eq([{model: ''}, {make: ''}])
+        end
+        
+        context 'when overriding the table name' do
+          let(:table_name) { :super_cars }
+
+          it { expect(MockDataModel.table.name).to start_with(table_name.to_s) }
         end
       end
 
@@ -79,7 +90,7 @@ module CassandraModel
         let(:rotation_interval) { 1.day }
         let(:table_attributes) do
           {
-              name: table_name,
+              name: generated_table_name,
               partition_key: {rk_make: :text},
               clustering_columns: {ck_model: :text},
               remaining_columns: {}
@@ -87,14 +98,16 @@ module CassandraModel
         end
         let!(:rotating_tables) do
           table_slices.times.map do |index|
-            updated_attributes = table_attributes.merge(name: "#{table_name}_#{index}")
-            table_defintion = TableDefinition.new(updated_attributes)
-            mock_simple_table(table_defintion.name_in_cassandra, [:rk_make], [:ck_model], [])
-            MetaTable.new(connection_name, table_defintion)
+            updated_attributes = table_attributes.merge(name: "#{generated_table_name}_#{index}")
+            table_definition = TableDefinition.new(updated_attributes)
+            mock_simple_table(table_definition.name_in_cassandra, [:rk_make], [:ck_model], [])
+            MetaTable.new(connection_name, table_definition)
           end
         end
+        let(:table_suffix) { '3f51ba68dd4a3295d013082186dd5d76' }
 
         before do
+          table_slices.times { |index| mock_simple_table("#{table_name}_#{index}_#{table_suffix}", [:make], [:model], []) }
           MockDataModel.model_data do |inquirer, data_set|
             inquirer.knows_about(:make)
             data_set.is_defined_by(:model)
@@ -107,7 +120,7 @@ module CassandraModel
         end
 
         context 'with a different table name' do
-          let(:table_name) { :planes }
+          let(:generated_table_name) { :planes }
 
           it 'should use the proper table' do
             expect(MockDataModel.table).to eq(RotatingTable.new(rotating_tables, rotation_interval))
@@ -122,14 +135,20 @@ module CassandraModel
             expect(MockDataModel.table).to eq(RotatingTable.new(rotating_tables, rotation_interval))
           end
         end
+
+        context 'when overriding the table name' do
+          let(:table_name) { :super_cars }
+
+          it { expect(MockDataModel.table.name).to match(/^#{table_name}_\d/) }
+        end
       end
 
       context 'with a different table setup' do
         let(:connection_name) { :single }
-        let(:table_name) { :images }
+        let(:generated_table_name) { :images }
         let(:table_attributes) do
           {
-              name: table_name,
+              name: generated_table_name,
               partition_key: {rk_artist: :text, rk_year: :int},
               clustering_columns: {ck_price: :double, ck_artist: :text, ck_year: :int},
               remaining_columns: {damages: 'map<text,text>'}
@@ -153,7 +172,7 @@ module CassandraModel
         end
 
         it 'should create a table based on an inquirer/data set pair' do
-          expect(MockDataModel.table).to eq(MetaTable.new(connection_name, table_defintion))
+          expect(MockDataModel.table).to eq(MetaTable.new(connection_name, table_definition))
         end
 
         it 'should generate composite defaults from the inquirer' do
