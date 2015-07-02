@@ -22,7 +22,7 @@ module CassandraModel
     private
 
     def row_key_attributes(row_key)
-      row_key.map { |key| attributes[key] }
+      row_key.map { |key| internal_attributes[key] }
     end
 
     def increment_statement(counter_clause, where_clause)
