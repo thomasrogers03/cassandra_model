@@ -24,7 +24,8 @@ module CassandraModel
     end
 
     def inspect
-      limit(10).get.inspect
+      results = limit(@options[:limit] || 10).get
+      inspected_results(results)
     end
 
     def first_async
@@ -86,5 +87,12 @@ module CassandraModel
       @options[:page_size] = page_size
       self
     end
+
+    private
+
+    def inspected_results(results)
+      "#{self.class.to_s}: #{results.map(&:inspect) + %w(...)}"
+    end
+
   end
 end

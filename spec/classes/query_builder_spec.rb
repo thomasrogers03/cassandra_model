@@ -302,19 +302,27 @@ module CassandraModel
       let(:record) { Record }
       let(:attributes) { {partition: 'Partition'} }
       let(:options) { {limit: 10} }
-      let(:results) { %w(result1 result2 result 3) }
+      let(:results) { %w(result1 result2 result3) }
+      let(:expected_result) { "CassandraModel::QueryBuilder: #{results.map(&:inspect) + %w(...)}" }
 
       subject { QueryBuilder.new(record).where(attributes).inspect }
 
       before { allow(Record).to receive(:request).with(attributes, options).and_return(results) }
 
-      it { is_expected.to eq(results.inspect) }
+      it { is_expected.to eq(expected_result) }
 
       context 'with different attributes' do
         let(:attributes) { {partition: 'Partition'} }
         let(:results) { %w(image1 image2 image3) }
 
-        it { is_expected.to eq(results.inspect) }
+        it { is_expected.to eq(expected_result) }
+      end
+
+      context 'when the limit is overridden' do
+        let(:options) { {limit: 100} }
+        subject { QueryBuilder.new(record).where(attributes).limit(100).inspect }
+
+        it { is_expected.to eq(expected_result) }
       end
     end
 
