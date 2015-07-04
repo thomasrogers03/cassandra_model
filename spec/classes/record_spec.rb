@@ -903,6 +903,36 @@ module CassandraModel
       end
     end
 
+    describe '#inspect' do
+      let(:attributes) { {partition_key: 'Partition', clustering: 45} }
+      let(:klass) { Record }
+      let(:record) { klass.new(attributes, validate: false) }
+      subject { record.inspect }
+
+      it { is_expected.to eq('#<CassandraModel::Record partition_key: "Partition", clustering: "45">') }
+
+      context 'with a different record' do
+        let(:attributes) { {partition_key: 'Different Partition', description: 'A great image!'} }
+        let(:klass) { ImageData }
+
+        it { is_expected.to eq('#<CassandraModel::ImageData partition_key: "Different Partition", description: "A great image!">') }
+      end
+
+      context 'with an invalid record' do
+        before { record.invalidate! }
+
+        it { is_expected.to eq('#<CassandraModel::Record(Invalidated) partition_key: "Partition", clustering: "45">') }
+      end
+
+      context 'with a really long attribute' do
+        let(:key) { 'My super awesome really long and crazy partition key of spamming your irb' }
+        let(:trimmed_key) { key.truncate(53) }
+        let(:attributes) { {partition_key: key} }
+
+        it { is_expected.to eq(%Q{#<CassandraModel::Record partition_key: "#{trimmed_key}">}) }
+      end
+    end
+
     describe '#==' do
       it 'should be true when the attributes match' do
         expect(Record.new(partition: 'Partition Key')).to eq(Record.new(partition: 'Partition Key'))

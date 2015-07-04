@@ -69,8 +69,24 @@ module CassandraModel
       update_async(new_attributes).get
     end
 
+    def inspect
+      %Q{#<#{self.class.to_s}#{inspected_validation} #{inspected_attributes}>}
+    end
+
     def ==(rhs)
       @attributes == rhs.attributes
+    end
+
+    private
+
+    def inspected_validation
+      '(Invalidated)' unless valid
+    end
+
+    def inspected_attributes
+      attributes.map do |key, value|
+        %Q{#{key}: "#{value.to_s.truncate(53)}"}
+      end * ', '
     end
 
     protected
