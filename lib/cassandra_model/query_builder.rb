@@ -25,7 +25,7 @@ module CassandraModel
 
     def inspect
       results = limit(@options[:limit] || 10).get
-      inspected_results(results)
+      "#<#{self.class.to_s}: #{inspected_results(results)}>"
     end
 
     def first_async
@@ -91,7 +91,7 @@ module CassandraModel
     private
 
     def inspected_results(results)
-      "#{self.class.to_s}: [#{(results.map(&:to_s) + %w(...)) * ', '}]"
+      "[#{(results.map(&:to_s) + %w(...)) * ', '}]"
     end
 
   end

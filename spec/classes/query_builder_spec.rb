@@ -304,7 +304,7 @@ module CassandraModel
       let(:options) { {limit: 10} }
       let(:results) { %w(result1 result2 result3) }
       let(:inspected_results) { results.map(&:to_s) * ', ' }
-      let(:expected_result) { "CassandraModel::QueryBuilder: [#{inspected_results}, ...]" }
+      let(:expected_result) { "#<CassandraModel::QueryBuilder: [#{inspected_results}, ...]>" }
 
       subject { QueryBuilder.new(record).where(attributes).inspect }
 
