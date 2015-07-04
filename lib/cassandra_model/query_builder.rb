@@ -91,7 +91,7 @@ module CassandraModel
     private
 
     def inspected_results(results)
-      "#{self.class.to_s}: #{results.map(&:to_s) + %w(...)}"
+      "#{self.class.to_s}: [#{(results.map(&:to_s) + %w(...)) * ', '}]"
     end
 
   end
