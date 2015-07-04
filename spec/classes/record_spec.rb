@@ -903,11 +903,10 @@ module CassandraModel
       end
     end
 
-    describe '#inspect' do
+    shared_examples_for 'an inspection method' do
       let(:attributes) { {partition_key: 'Partition', clustering: 45} }
       let(:klass) { Record }
       let(:record) { klass.new(attributes, validate: false) }
-      subject { record.inspect }
 
       it { is_expected.to eq('#<CassandraModel::Record partition_key: "Partition", clustering: "45">') }
 
@@ -931,6 +930,16 @@ module CassandraModel
 
         it { is_expected.to eq(%Q{#<CassandraModel::Record partition_key: "#{trimmed_key}">}) }
       end
+    end
+
+    describe '#inspect' do
+      subject { record.inspect }
+      it_behaves_like 'an inspection method'
+    end
+
+    describe '#to_s' do
+      subject { record.to_s }
+      it_behaves_like 'an inspection method'
     end
 
     describe '#==' do

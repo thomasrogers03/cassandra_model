@@ -73,6 +73,8 @@ module CassandraModel
       %Q{#<#{self.class.to_s}#{inspected_validation} #{inspected_attributes}>}
     end
 
+    alias :to_s :inspect
+
     def ==(rhs)
       @attributes == rhs.attributes
     end
