@@ -298,5 +298,25 @@ module CassandraModel
       end
     end
 
+    describe '#inspect' do
+      let(:record) { Record }
+      let(:attributes) { {partition: 'Partition'} }
+      let(:options) { {limit: 10} }
+      let(:results) { %w(result1 result2 result 3) }
+
+      subject { QueryBuilder.new(record).where(attributes).inspect }
+
+      before { allow(Record).to receive(:request).with(attributes, options).and_return(results) }
+
+      it { is_expected.to eq(results.inspect) }
+
+      context 'with different attributes' do
+        let(:attributes) { {partition: 'Partition'} }
+        let(:results) { %w(image1 image2 image3) }
+
+        it { is_expected.to eq(results.inspect) }
+      end
+    end
+
   end
 end

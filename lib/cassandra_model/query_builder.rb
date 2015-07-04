@@ -23,6 +23,10 @@ module CassandraModel
       @record_klass.request_meta(@params, @options).first
     end
 
+    def inspect
+      limit(10).get.inspect
+    end
+
     def first_async
       @record_klass.first_async(@params, @options)
     end
