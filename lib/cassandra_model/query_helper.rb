@@ -14,5 +14,14 @@ module CassandraModel
     def_query_helper(:each_slice)
     def_query_helper(:limit)
     def_query_helper(:order)
+
+    def find_by(attributes)
+      where(attributes).first
+    end
+
+    def all
+      where({})
+    end
+
   end
 end
