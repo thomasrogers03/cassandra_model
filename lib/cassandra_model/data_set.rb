@@ -12,6 +12,14 @@ module CassandraModel
       columns.each { |column| @columns[column] }
     end
 
+    def counts(*columns)
+      if columns.empty?
+        count_column(:count)
+      else
+        columns.map { |column| count_column(column) }
+      end
+    end
+
     def rotates_storage_across(slices)
       TableRotation.new(slices, self)
     end
@@ -27,6 +35,10 @@ module CassandraModel
     end
 
     private
+
+    def count_column(column)
+      @columns[column] = :counter
+    end
 
     ColumnType = Struct.new(:column, :data_set) do
       def to(type)

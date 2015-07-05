@@ -53,6 +53,22 @@ module CassandraModel
       end
     end
 
+    describe '#counts' do
+      it 'should define a counter column' do
+        subject.counts
+        expect(subject.columns).to eq(count: :counter)
+      end
+
+      context 'with multiple, named counters' do
+        let(:columns) { [:failed, :completed, :pending] }
+
+        it 'should define counter columns with the specified names' do
+          subject.counts(*columns)
+          expect(subject.columns).to eq(failed: :counter, completed: :counter, pending: :counter)
+        end
+      end
+    end
+
     describe '#clustering_columns' do
       it 'should be an empty array by default' do
         expect(subject.clustering_columns).to eq([])
