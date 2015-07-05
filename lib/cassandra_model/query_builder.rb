@@ -54,7 +54,12 @@ module CassandraModel
     end
 
     def pluck(*columns)
-      select(*columns).get.map { |result| result.attributes.slice(*columns).values }
+      query = select(*columns)
+      if columns.length == 1
+        query.map { |result| pluck_values(columns, result).first }
+      else
+        query.map { |result| pluck_values(columns, result) }
+      end
     end
 
     def each_slice(slice_size = nil, &block)
@@ -89,6 +94,10 @@ module CassandraModel
     end
 
     private
+
+    def pluck_values(columns, result)
+      result.attributes.slice(*columns).values
+    end
 
     def inspected_results(results)
       "[#{(results.map(&:to_s) + %w(...)) * ', '}]"

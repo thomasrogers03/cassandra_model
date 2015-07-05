@@ -151,7 +151,7 @@ module CassandraModel
       subject { QueryBuilder.new(record).pluck(*pluck_columns) }
 
       it 'should grab the columns from the resulting records' do
-        is_expected.to eq([%w(hello)])
+        is_expected.to eq(%w(hello))
       end
 
       context 'with different pluck columns' do
@@ -161,10 +161,11 @@ module CassandraModel
       end
 
       context 'with multiple results' do
-        let(:second_result) { MockQueryResult.new(column1: 'nothing here...') }
+        let(:pluck_columns) { [:column1, :column2] }
+        let(:second_result) { MockQueryResult.new(column1: 'nothing here...', column2: 'really nothing...') }
         let(:results) { [first_result, second_result] }
 
-        it { is_expected.to eq([['hello'], ['nothing here...']]) }
+        it { is_expected.to eq([%w(hello world), ['nothing here...', 'really nothing...']]) }
       end
     end
 
