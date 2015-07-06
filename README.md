@@ -113,7 +113,7 @@ One of the ways to avoid numerous queries to Cassandra is to de-normalize data a
 To use this, we define an inquirer and a data set with the pieces of information we know, and let it handle what we don't know.
 
 ```ruby
-class Car < CassandraMode::Record
+class Car < CassandraModel::Record
     extend CassandraModel::DataModelling
 
     model_data do |inquirer, data_set|
