@@ -124,12 +124,12 @@ class Car < CassandraModel::Record
         inquirer.defaults(:year).to(1900)
 
         data_set.is_defined_by(:price, :vin, :make, :model, :colour)
-        data_set.change_type_of(:year).to(:int)
+        data_set.change_type_of(:price).to(:double)
         data_set.knows_about(:description)
     end
 end
 
-Car.create(make: 'Honda', model: 'Civic', year: 2003, colour: 'Blue', vin: '123456789', description: 'A very reliable car')
+Car.create(make: 'Honda', model: 'Civic', year: 2003, colour: 'Blue', vin: '123456789', price: 2_000.0, description: 'A very reliable car')
 ```
 
 With this model in hand, now we can ask questions like "What are all the cars we have for Toyota?" Or "How many 2001 Honda Civics do we have in blue?" We can also ask for the price range of a very specific model if we want to.
