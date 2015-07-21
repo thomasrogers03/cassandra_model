@@ -20,6 +20,7 @@ module CassandraModel
       loop do
         page_results = current_page.get
         modified_results = page_results.map(&@callback)
+        break if page_results.empty?
         if page_results.last_page?
           yield modified_results
           break

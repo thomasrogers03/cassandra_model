@@ -3,7 +3,7 @@ class MockPage
   extend Forwardable
 
   attr_reader :next_page_async
-  def_delegator :@results, :each
+  def_delegators :@results, :each, :empty?
 
   def initialize(last_page, next_page_async, results)
     @last_page = last_page

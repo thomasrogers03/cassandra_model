@@ -56,6 +56,13 @@ module CassandraModel
           expect(subject.each_slice).to be_a_kind_of(Enumerator)
         end
       end
+
+      context 'with an empty result set' do
+        let(:first_page_results) { [] }
+        it 'should not yield the block' do
+          expect { |b| subject.each_slice(&b) }.to_not yield_control
+        end
+      end
     end
 
     describe '#get' do
