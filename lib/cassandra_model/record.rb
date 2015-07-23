@@ -43,7 +43,6 @@ module CassandraModel
     end
 
     def save_async(options = {})
-      self.class.before_save_callbacks.map { |proc| instance_eval(&proc) }
       internal_save_async(options)
     end
 
@@ -127,6 +126,7 @@ module CassandraModel
     def internal_save_async(options = {})
       raise 'Cannot save invalidated record!' unless valid
 
+      self.class.before_save_callbacks.map { |proc| instance_eval(&proc) }
       if self.class.deferred_column_writers || self.class.async_deferred_column_writers
         ThomasUtils::Future.new do
           save_deferred_columns
