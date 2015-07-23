@@ -18,6 +18,8 @@ module CassandraModel
         :composite_columns,
         :composite_pk_map,
         :composite_ck_map,
+
+        :composite_shard_key,
     ) # Using this instead of OpenStruct, as there seems to be a bug in JRuby that causes this to get mangled over time
     ConfigureableAttributes = Struct.new(
         :table_name,
@@ -191,7 +193,7 @@ module CassandraModel
     end
 
     def shard_key
-      self.class.partition_key.last
+      self.class.shard_key
     end
 
     def column_hash(hashing_column)
@@ -311,6 +313,10 @@ module CassandraModel
 
       def before_save_callbacks
         table_config.before_save_callbacks ||= []
+      end
+
+      def shard_key
+        partition_key.last
       end
 
       protected

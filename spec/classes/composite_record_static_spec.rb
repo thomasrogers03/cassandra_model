@@ -274,5 +274,18 @@ module CassandraModel
       end
     end
 
+    describe 'sharding' do
+      let(:sharding_column) { :shard }
+      let(:klass) { MockRecordStatic }
+
+      it_behaves_like 'a sharding model'
+
+      context 'with a composite shard' do
+        let(:sharding_column) { :rk_shard }
+
+        it_behaves_like 'a sharding model'
+      end
+    end
+
   end
 end

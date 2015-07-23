@@ -40,6 +40,13 @@ module CassandraModel
       end
     end
 
+    def shard_key
+      table_data.composite_shard_key ||= begin
+        column = super
+        column =~ /^rk_/ ? composite_pk_map[column] : column
+      end
+    end
+
     private
 
     def build_composite_map
