@@ -38,10 +38,10 @@ module CassandraModel
       @valid = true
       @attributes = attributes
       self.class.after_initialize(self)
-      self.class.before_save_callbacks.map { |proc| instance_eval(&proc) }
     end
 
     def save_async(options = {})
+      self.class.before_save_callbacks.map { |proc| instance_eval(&proc) }
       internal_save_async(options)
     end
 

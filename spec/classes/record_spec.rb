@@ -477,7 +477,7 @@ module CassandraModel
       let(:shard_md5) { Digest::MD5.hexdigest(shard_data.to_s) }
       let(:shard_hash) { shard_md5.unpack('L').first }
       let(:shard_proc) { ->(hash) { hash } }
-      let(:record) { Record.new(data_set_name: 'data1', shard_column => shard_data) }
+      let(:record) { Record.new(data_set_name: 'data1', shard_column => shard_data).tap(&:save) }
 
       describe 'sharding with a hashing column' do
         describe 'sharding with a modulus' do
