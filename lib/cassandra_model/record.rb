@@ -247,7 +247,7 @@ module CassandraModel
 
       def query_for_update(new_attributes)
         where_clause = table.primary_key.map { |column| "#{column} = ?" }.join(' AND ')
-        set_clause = new_attributes.keys.map { |column| "#{column} = ?" }.join(' AND ')
+        set_clause = new_attributes.keys.map { |column| "#{column} = ?" }.join(', ')
         "UPDATE #{table_name} SET #{set_clause} WHERE #{where_clause}"
       end
 

@@ -733,7 +733,7 @@ module CassandraModel
 
       context 'with multiple new attributes' do
         let(:new_attributes) { {meta_data: 'meta-data', misc_data: 'Some additional information'} }
-        let(:query) { "UPDATE #{table_name} SET meta_data = ? AND misc_data = ? WHERE #{where_clause}" }
+        let(:query) { "UPDATE #{table_name} SET meta_data = ?, misc_data = ? WHERE #{where_clause}" }
 
         it 'should update the record in the database with those attributes' do
           expect(connection).to receive(:execute_async).with(statement, 'meta-data', 'Some additional information', 'Partition Key', 'Cluster Key', {})
