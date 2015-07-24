@@ -2,7 +2,7 @@ module CassandraModel
   class RotatingTable
     extend Forwardable
 
-    def_delegators :first_table, :partition_key, :clustering_columns, :columns
+    def_delegators :first_table, :primary_key, :partition_key, :clustering_columns, :columns
     def_delegators :table, :connection, :name, :truncate!
 
     def initialize(tables, schedule)

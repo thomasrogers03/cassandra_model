@@ -9,6 +9,7 @@ module CassandraModel
     let(:table_methods) do
       {partition_key: partition_key,
        clustering_columns: clustering_columns,
+       primary_key: partition_key + clustering_columns,
        columns: columns,
        :truncate! => nil}
     end
@@ -109,6 +110,20 @@ module CassandraModel
     describe('#partition_key') { it_behaves_like 'a table column method', :partition_key }
     describe('#clustering_columns') { it_behaves_like 'a table column method', :clustering_columns }
     describe('#columns') { it_behaves_like 'a table column method', :columns }
+
+    describe '#primary_key' do
+      it 'should be the combination of the partition key and the clustering columns' do
+        expect(subject.primary_key).to eq(partition_key + clustering_columns)
+      end
+
+      context 'with different columns and table name' do
+        let(:table_name) { :cars }
+        let(:partition_key) { [:brand] }
+        let(:clustering_columns) { [:colour] }
+
+        its(:primary_key) { is_expected.to eq(partition_key + clustering_columns) }
+      end
+    end
 
     shared_examples_for 'a rotating table method' do |method|
       let(:base_time) { Time.at(0) }
