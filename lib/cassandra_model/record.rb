@@ -171,7 +171,9 @@ module CassandraModel
     end
 
     def save_row_async(options)
-      session.execute_async(statement(query_for_save(options)), *column_values, {})
+      session.execute_async(statement(query_for_save(options)), *column_values, {}).tap do |future|
+        future.on_failure { |error| Logging.logger.error("Error saving #{self.class}: #{error}") }
+      end
     end
 
     def save_deferred_columns

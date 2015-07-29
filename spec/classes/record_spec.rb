@@ -506,7 +506,9 @@ module CassandraModel
       let(:existence_check) { nil }
       let(:query) { "INSERT INTO table (#{columns.join(', ')}) VALUES (#{(%w(?) * columns.size).join(', ')})#{existence_check}" }
       let(:page_results) { [] }
-      let(:results) { MockFuture.new(page_results) }
+      let(:future_result) { page_results }
+      let(:future_error) { nil }
+      let(:results) { MockFuture.new(result: page_results, error: future_error) }
 
       before do
         Record.table_name = table_name
@@ -541,6 +543,36 @@ module CassandraModel
       it 'should save the record to the database' do
         expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
         Record.new(attributes).save_async
+      end
+
+      it 'should not log an error' do
+        expect(Logging.logger).not_to receive(:error)
+        Record.new(attributes).save_async
+      end
+
+      context 'when an error occurs' do
+        let(:future_error) { 'IOError: Connection Closed' }
+
+        it 'should log the error' do
+          expect(Logging.logger).to receive(:error).with('Error saving CassandraModel::Record: IOError: Connection Closed')
+          Record.new(attributes).save_async
+        end
+
+        context 'with a different error' do
+          let(:future_error) { 'Error, received only 2 responses' }
+
+          it 'should log the error' do
+            expect(Logging.logger).to receive(:error).with('Error saving CassandraModel::Record: Error, received only 2 responses')
+            Record.new(attributes).save_async
+          end
+        end
+
+        context 'with a different model' do
+          it 'should log the error' do
+            expect(Logging.logger).to receive(:error).with('Error saving CassandraModel::ImageData: IOError: Connection Closed')
+            ImageData.new(attributes).save_async
+          end
+        end
       end
 
       it 'should return a future resolving to the record instance' do
