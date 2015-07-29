@@ -119,8 +119,7 @@ module CassandraModel
       statement = statement(self.class.query_for_delete)
       attributes = internal_attributes
       column_values = table.primary_key.map { |column| attributes[column] }
-      future = session.execute_async(statement, *column_values, {})
-      ThomasUtils::FutureWrapper.new(future) { self }
+      session.execute_async(statement, *column_values, {}).then { self }
     end
 
     def internal_save_async(options = {})
@@ -152,8 +151,7 @@ module CassandraModel
       statement = statement(query)
       attributes = internal_attributes
       column_values = table.primary_key.map { |column| attributes[column] }
-      future = session.execute_async(statement, *new_attributes.values, *column_values, {})
-      ThomasUtils::FutureWrapper.new(future) do
+      session.execute_async(statement, *new_attributes.values, *column_values, {}).then do
         self.attributes.merge!(new_attributes)
         self
       end
@@ -284,7 +282,7 @@ module CassandraModel
       end
 
       def first_async(clause = {}, options = {})
-        ThomasUtils::FutureWrapper.new(request_async(clause, options.merge(limit: 1))) { |results| results.first }
+        request_async(clause, options.merge(limit: 1)).then { |results| results.first }
       end
 
       def request(clause, options = {})

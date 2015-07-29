@@ -411,7 +411,7 @@ module CassandraModel
       end
 
       it 'should default the request clause to {}' do
-        expect(Record).to receive(:request_async).with({}, limit: 1)
+        expect(Record).to receive(:request_async).with({}, limit: 1).and_return(future_record)
         Record.first_async
       end
     end
