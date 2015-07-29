@@ -370,7 +370,7 @@ module CassandraModel
         let(:clause) { {page_size: 2} }
         let(:first_page_results) { [{'partition' => 'Partition Key 1'}, {'partition' => 'Partition Key 2'}] }
         let(:first_page) { MockPage.new(true, nil, first_page_results) }
-        let(:first_page_future) { double(:result, get: first_page) }
+        let(:first_page_future) { MockFuture.new(first_page) }
 
         it 'should return an enumerable capable of producing all the records' do
           allow(connection).to receive(:execute_async).with(statement, page_size: 2).and_return(first_page_future)

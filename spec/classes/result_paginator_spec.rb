@@ -6,7 +6,7 @@ module CassandraModel
     let(:last_page) { true }
     let(:second_page_future) { nil }
     let(:first_page) { MockPage.new(last_page, second_page_future, first_page_results) }
-    let(:first_page_future) { double(:result, get: first_page) }
+    let(:first_page_future) { MockFuture.new(first_page) }
     subject { ResultPaginator.new(first_page_future) { |result| "Modified #{result}" } }
 
     it { should be_a_kind_of(Enumerable) }
@@ -14,6 +14,17 @@ module CassandraModel
     describe '#each' do
       it 'should yield the modified results of the page' do
         expect { |block| subject.each(&block) }.to yield_with_args('Modified Record 1')
+      end
+
+      describe 'concurrent processing' do
+        let(:then_future) { double(:future) }
+
+        before { allow(first_page_future).to receive(:then).and_return(then_future) }
+
+        it 'should block on pagination' do
+          expect(then_future).to receive(:join)
+          subject.each {}
+        end
       end
 
       context 'when no block provided' do
@@ -38,7 +49,7 @@ module CassandraModel
         let(:last_page) { false }
         let(:second_page_results) { ['Record 2'] }
         let(:second_page) { MockPage.new(true, nil, second_page_results) }
-        let(:second_page_future) { double(:result, get: second_page) }
+        let(:second_page_future) { MockFuture.new(second_page) }
 
         it 'should yield the results from both pages' do
           results = []

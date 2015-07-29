@@ -14,7 +14,9 @@ class MockFuture
 
   def then
     unless @error
-      MockFuture.new(yield @result)
+      updated_result = yield @result
+      updated_result = updated_result.get if updated_result.respond_to?(:get)
+      MockFuture.new(updated_result)
     end
   end
 
