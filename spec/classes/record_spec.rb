@@ -312,8 +312,8 @@ module CassandraModel
       end
 
       context 'with multiple results' do
-        let(:clause) { {limit: 1} }
-        let(:where_clause) { ' LIMIT 1' }
+        let(:clause) { {limit: 2} }
+        let(:where_clause) { ' LIMIT 2' }
         let(:results) { MockFuture.new([{'partition' => 'Partition Key 1'}, {'partition' => 'Partition Key 2'}]) }
 
         it 'should support limits' do
