@@ -7,8 +7,7 @@ module CassandraModel
       where_clause = where_clause(row_key)
       counter_clause = counter_clause(options)
       statement = increment_statement(counter_clause, where_clause)
-      future = session.execute_async(statement, *options.values, *row_key_attributes, {})
-      ThomasUtils::FutureWrapper.new(future) { self }
+      session.execute_async(statement, *options.values, *row_key_attributes, {}).then { self }
     end
 
     def increment!(options)
