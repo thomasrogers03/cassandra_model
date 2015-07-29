@@ -12,6 +12,12 @@ class MockFuture
     self
   end
 
+  def then
+    unless @error
+      MockFuture.new(yield @result)
+    end
+  end
+
   def on_success
     yield @result unless @error
     self

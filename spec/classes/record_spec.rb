@@ -526,12 +526,6 @@ module CassandraModel
         end
       end
 
-      context 'when the Record class does not have deferred columns' do
-        it 'should return the wrapped cassandra future' do
-          expect(Record.new(attributes).save_async).to be_a_kind_of(ThomasUtils::FutureWrapper)
-        end
-      end
-
       context 'when the record has been invalidated' do
         before { allow_any_instance_of(Record).to receive(:valid).and_return(false) }
 

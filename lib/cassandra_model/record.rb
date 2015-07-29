@@ -130,12 +130,10 @@ module CassandraModel
       if self.class.deferred_column_writers || self.class.async_deferred_column_writers
         ThomasUtils::Future.new do
           save_deferred_columns
-          future = save_row_async(options)
-          ThomasUtils::FutureWrapper.new(future) { self }
+          save_row_async(options).then { self }
         end
       else
-        future = save_row_async(options)
-        ThomasUtils::FutureWrapper.new(future) do |result|
+        save_row_async(options).then do |result|
           invalidate! if save_rejected?(result)
           self
         end
