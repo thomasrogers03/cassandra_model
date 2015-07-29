@@ -265,8 +265,13 @@ module CassandraModel
         query_options = {}
         query_options[:page_size] = page_size if page_size
 
+
         future = session.execute_async(statement, *where_values, query_options)
-        ResultPaginator.new(future) { |row| record_from_result(row, use_query_result) }
+        if options[:limit] == 1 then
+          future.then { |rows| record_from_result(rows.first, use_query_result) }
+        else
+          ResultPaginator.new(future) { |row| record_from_result(row, use_query_result) }
+        end
       end
 
       def request_meta(clause, options)
@@ -282,7 +287,7 @@ module CassandraModel
       end
 
       def first_async(clause = {}, options = {})
-        request_async(clause, options.merge(limit: 1)).then { |results| results.first }
+        request_async(clause, options.merge(limit: 1))
       end
 
       def request(clause, options = {})

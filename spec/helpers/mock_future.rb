@@ -1,6 +1,7 @@
 class MockFuture
   def initialize(result_or_options)
-    if result_or_options.is_a?(Hash)
+    if result_or_options.is_a?(Hash) &&
+        (result_or_options.include?(:result) || result_or_options.include?(:error))
       @result = result_or_options[:result]
       @error = result_or_options[:error]
     else

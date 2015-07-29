@@ -400,19 +400,32 @@ module CassandraModel
     end
 
     describe '.first_async' do
+      let(:request_attributes) { ['Partition Key'] }
       let(:clause) { {partition: 'Partition Key'} }
       let(:options) { {select: :partition} }
       let(:record) { Record.new(partition: 'Partition Key') }
-      let(:future_record) { MockFuture.new([record]) }
+
+      let(:query) { 'SELECT partition FROM records WHERE partition = ? LIMIT 1' }
+      let(:page_results) { ['partition' => 'Partition Key'] }
+      let(:result_page) { MockPage.new(true, MockFuture.new([]), page_results) }
+      let(:results) { MockFuture.new(result_page) }
+
+      before do
+        Record.table_name = table_name
+        allow(connection).to receive(:execute_async).with(statement, *request_attributes, {}).and_return(results)
+      end
 
       it 'should delegate to request using a limit of 1' do
-        allow(Record).to receive(:request_async).with(clause, options.merge(limit: 1)).and_return(future_record)
         expect(Record.first_async(clause, options).get).to eq(record)
       end
 
-      it 'should default the request clause to {}' do
-        expect(Record).to receive(:request_async).with({}, limit: 1).and_return(future_record)
-        Record.first_async
+      context 'when the request clause is omitted' do
+        let(:request_attributes) { [] }
+        let(:query) { 'SELECT * FROM records LIMIT 1' }
+
+        it 'should default the request clause to {}' do
+          expect(Record.first_async.get).to eq(record)
+        end
       end
     end
 
