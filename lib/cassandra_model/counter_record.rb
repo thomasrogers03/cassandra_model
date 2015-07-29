@@ -7,7 +7,9 @@ module CassandraModel
       where_clause = where_clause(row_key)
       counter_clause = counter_clause(options)
       statement = increment_statement(counter_clause, where_clause)
-      session.execute_async(statement, *options.values, *row_key_attributes, {}).then { self }
+      session.execute_async(statement, *options.values, *row_key_attributes, {}).on_failure do |error|
+        Logging.logger.error("Error incrementing #{self.class}: #{error}")
+      end.then { self }
     end
 
     def increment!(options)

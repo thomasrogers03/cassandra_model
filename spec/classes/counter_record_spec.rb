@@ -111,7 +111,8 @@ module CassandraModel
       let!(:statement) { mock_prepare(query) }
       let(:clustering_columns) { [] }
       let(:counter_columns) { [:counter, :additional_counter] }
-      let(:results) { MockFuture.new([]) }
+      let(:future_error) { nil }
+      let(:results) { MockFuture.new(result: [], error: future_error) }
 
       before do
         allow(CounterRecord).to receive(:statement).with(query).and_return(statement)
@@ -121,6 +122,36 @@ module CassandraModel
       it 'should increment the specified counter by the specified amount' do
         expect(connection).to receive(:execute_async).with(statement, 1, 'Partition Key', {})
         CounterRecord.new(partition: 'Partition Key').increment_async!(counter: 1)
+      end
+
+      it 'should not log an error' do
+        expect(Logging.logger).not_to receive(:error)
+        CounterRecord.new(partition: 'Partition Key').increment_async!(counter: 1)
+      end
+
+      context 'when an error occurs' do
+        let(:future_error) { 'IOError: Connection Closed' }
+
+        it 'should log the error' do
+          expect(Logging.logger).to receive(:error).with('Error incrementing CassandraModel::CounterRecord: IOError: Connection Closed')
+          CounterRecord.new(partition: 'Partition Key').increment_async!(counter: 1)
+        end
+
+        context 'with a different error' do
+          let(:future_error) { 'Error, received only 2 responses' }
+
+          it 'should log the error' do
+            expect(Logging.logger).to receive(:error).with('Error incrementing CassandraModel::CounterRecord: Error, received only 2 responses')
+            CounterRecord.new(partition: 'Partition Key').increment_async!(counter: 1)
+          end
+        end
+
+        context 'with a different model' do
+          it 'should log the error' do
+            expect(Logging.logger).to receive(:error).with('Error incrementing CassandraModel::ImageCounter: IOError: Connection Closed')
+            ImageCounter.new(partition: 'Partition Key').increment_async!(counter: 1)
+          end
+        end
       end
 
       it 'should return the record instance' do
@@ -165,9 +196,10 @@ module CassandraModel
 
     describe '#increment!' do
       let(:record) { CounterRecord.new(partition: 'Other Partition Key', cluster: 'Cluster Key') }
+      let(:result_future) { MockFuture.new(result: record) }
 
       before do
-        allow(record).to receive(:increment_async!).with(counter: 1).and_return(MockFuture.new(record))
+        allow(record).to receive(:increment_async!).with(counter: 1).and_return(result_future)
       end
 
       it 'should delegate to #increment_async!' do
