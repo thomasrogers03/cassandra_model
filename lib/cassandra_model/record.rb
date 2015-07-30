@@ -123,8 +123,7 @@ module CassandraModel
       attributes = internal_attributes
       column_values = table.primary_key.map { |column| attributes[column] }
 
-      query_options = {}
-      query_options[:consistency] = self.class.write_consistency if self.class.write_consistency
+      query_options = write_query_options
       session.execute_async(statement, *column_values, query_options).then { self }
     end
 
@@ -158,12 +157,21 @@ module CassandraModel
       attributes = internal_attributes
       column_values = table.primary_key.map { |column| attributes[column] }
 
-      query_options = {}
-      query_options[:consistency] = self.class.write_consistency if self.class.write_consistency
+      query_options = write_query_options
       session.execute_async(statement, *new_attributes.values, *column_values, query_options).then do
         self.attributes.merge!(new_attributes)
         self
       end
+    end
+
+    def write_query_options
+      {}.tap do |options|
+        options[:consistency] = write_consistency if write_consistency
+      end
+    end
+
+    def write_consistency
+      self.class.write_consistency
     end
 
     def column_values
@@ -176,8 +184,7 @@ module CassandraModel
     end
 
     def save_row_async(options)
-      query_options = {}
-      query_options[:consistency] = self.class.write_consistency if self.class.write_consistency
+      query_options = write_query_options
       session.execute_async(statement(query_for_save(options)), *column_values, query_options).tap do |future|
         future.on_failure { |error| Logging.logger.error("Error saving #{self.class}: #{error}") }
       end
