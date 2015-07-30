@@ -560,6 +560,26 @@ module CassandraModel
         Record.new(attributes).save_async
       end
 
+      context 'when a consistency is specified' do
+        let(:consistency) { :quorum }
+
+        before { Record.write_consistency = consistency }
+
+        it 'should save the record to the database' do
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', consistency: consistency).and_return(results)
+          Record.new(attributes).save_async
+        end
+
+        context 'with a different consistency' do
+          let(:consistency) { :all }
+
+          it 'should save the record to the database' do
+            expect(connection).to receive(:execute_async).with(statement, 'Partition Key', consistency: consistency).and_return(results)
+            Record.new(attributes).save_async
+          end
+        end
+      end
+
       it 'should not log an error' do
         expect(Logging.logger).not_to receive(:error)
         Record.new(attributes).save_async
@@ -682,6 +702,26 @@ module CassandraModel
         Record.new(attributes).delete_async
       end
 
+      context 'when a consistency is specified' do
+        let(:consistency) { :quorum }
+
+        before { Record.write_consistency = consistency }
+
+        it 'should delete the record from the database' do
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', consistency: consistency)
+          Record.new(attributes).delete_async
+        end
+
+        context 'with a different consistency' do
+          let(:consistency) { :all }
+
+          it 'should delete the record from the database' do
+            expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', consistency: consistency)
+            Record.new(attributes).delete_async
+          end
+        end
+      end
+
       it 'should return a future resolving to the record instance' do
         record = Record.new(partition: 'Partition Key')
         expect(record.delete_async.get).to eq(record)
@@ -758,6 +798,26 @@ module CassandraModel
       it 'should update the record in the database' do
         expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', {})
         Record.new(attributes).update_async(new_attributes)
+      end
+
+      context 'when a consistency is specified' do
+        let(:consistency) { :quorum }
+
+        before { Record.write_consistency = consistency }
+
+        it 'should update the record in the database' do
+          expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', consistency: consistency)
+          Record.new(attributes).update_async(new_attributes)
+        end
+
+        context 'with a different consistency' do
+          let(:consistency) { :all }
+
+          it 'should update the record in the database' do
+            expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', consistency: consistency)
+            Record.new(attributes).update_async(new_attributes)
+          end
+        end
       end
 
       context 'with an invalid column' do

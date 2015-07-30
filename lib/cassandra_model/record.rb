@@ -25,6 +25,9 @@ module CassandraModel
         :table_name,
         :connection_name,
 
+        :write_consistency,
+        :read_consistency,
+
         :before_save_callbacks,
 
         :deferred_column_readers,
@@ -119,7 +122,10 @@ module CassandraModel
       statement = statement(self.class.query_for_delete)
       attributes = internal_attributes
       column_values = table.primary_key.map { |column| attributes[column] }
-      session.execute_async(statement, *column_values, {}).then { self }
+
+      query_options = {}
+      query_options[:consistency] = self.class.write_consistency if self.class.write_consistency
+      session.execute_async(statement, *column_values, query_options).then { self }
     end
 
     def internal_save_async(options = {})
@@ -151,7 +157,10 @@ module CassandraModel
       statement = statement(query)
       attributes = internal_attributes
       column_values = table.primary_key.map { |column| attributes[column] }
-      session.execute_async(statement, *new_attributes.values, *column_values, {}).then do
+
+      query_options = {}
+      query_options[:consistency] = self.class.write_consistency if self.class.write_consistency
+      session.execute_async(statement, *new_attributes.values, *column_values, query_options).then do
         self.attributes.merge!(new_attributes)
         self
       end
@@ -167,7 +176,9 @@ module CassandraModel
     end
 
     def save_row_async(options)
-      session.execute_async(statement(query_for_save(options)), *column_values, {}).tap do |future|
+      query_options = {}
+      query_options[:consistency] = self.class.write_consistency if self.class.write_consistency
+      session.execute_async(statement(query_for_save(options)), *column_values, query_options).tap do |future|
         future.on_failure { |error| Logging.logger.error("Error saving #{self.class}: #{error}") }
       end
     end
@@ -204,6 +215,7 @@ module CassandraModel
       def_delegators :table, :partition_key, :clustering_columns
       def_delegator :table, :name, :table_name
       def_delegator :table, :columns, :internal_columns
+      def_delegators :table_config, :write_consistency, :read_consistency, :write_consistency=, :read_consistency=
 
       def table_name=(value)
         table_config.table_name = value
@@ -267,7 +279,7 @@ module CassandraModel
 
 
         future = session.execute_async(statement, *where_values, query_options)
-        if options[:limit] == 1 then
+        if options[:limit] == 1
           single_result_row_future(future, invalidated_result)
         else
           paginator_result_future(future, invalidated_result)
