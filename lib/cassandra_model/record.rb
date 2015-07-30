@@ -268,7 +268,9 @@ module CassandraModel
 
         future = session.execute_async(statement, *where_values, query_options)
         if options[:limit] == 1 then
-          future.then { |rows| record_from_result(rows.first, use_query_result) }
+          future.then do |rows|
+            record_from_result(rows.first, use_query_result) if rows.first
+          end
         else
           ResultPaginator.new(future) { |row| record_from_result(row, use_query_result) }
         end

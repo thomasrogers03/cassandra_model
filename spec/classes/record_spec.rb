@@ -419,6 +419,14 @@ module CassandraModel
         expect(Record.first_async(clause, options).get).to eq(record)
       end
 
+      context 'when the request returns no results' do
+        let(:page_results) { [] }
+
+        it 'should return nil' do
+          expect(Record.first_async(clause, options).get).to be_nil
+        end
+      end
+
       context 'when the request clause is omitted' do
         let(:request_attributes) { [] }
         let(:query) { 'SELECT * FROM records LIMIT 1' }
