@@ -237,6 +237,26 @@ module CassandraModel
         end
       end
 
+      context 'with a read consistency configured' do
+        let(:consistency) { :quorum }
+
+        before { Record.read_consistency = consistency }
+
+        it 'should query using the specified consistency' do
+          expect(connection).to receive(:execute_async).with(statement, consistency: consistency).and_return(results)
+          Record.request_async(clause)
+        end
+
+        context 'with a different consistency' do
+          let(:consistency) { :all }
+
+          it 'should query using the specified consistency' do
+            expect(connection).to receive(:execute_async).with(statement, consistency: consistency).and_return(results)
+            Record.request_async(clause)
+          end
+        end
+      end
+
       context 'when restricting by multiple values' do
         let(:clause) { {partition: ['Partition Key', 'Other Partition Key']} }
         let(:where_clause) { ' WHERE partition IN (?, ?)' }

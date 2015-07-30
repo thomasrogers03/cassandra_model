@@ -283,7 +283,7 @@ module CassandraModel
 
         query_options = {}
         query_options[:page_size] = page_size if page_size
-
+        query_options[:consistency] = read_consistency if read_consistency
 
         future = session.execute_async(statement, *where_values, query_options)
         if options[:limit] == 1
