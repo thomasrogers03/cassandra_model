@@ -268,11 +268,9 @@ module CassandraModel
 
         future = session.execute_async(statement, *where_values, query_options)
         if options[:limit] == 1 then
-          future.then do |rows|
-            record_from_result(rows.first, invalidated_result) if rows.first
-          end
+          single_result_row_future(future, invalidated_result)
         else
-          ResultPaginator.new(future) { |row| record_from_result(row, invalidated_result) }
+          paginator_result_future(future, invalidated_result)
         end
       end
 
@@ -349,6 +347,16 @@ module CassandraModel
       def define_attribute(column)
         define_method(:"#{column}=") { |value| self.attributes[column] = value }
         define_method(column.to_sym) { self.attributes[column] }
+      end
+
+      def paginator_result_future(future, invalidated_result)
+        ResultPaginator.new(future) { |row| record_from_result(row, invalidated_result) }
+      end
+
+      def single_result_row_future(future, invalidated_result)
+        future.then do |rows|
+          record_from_result(rows.first, invalidated_result) if rows.first
+        end
       end
 
       def limit_clause(options)
