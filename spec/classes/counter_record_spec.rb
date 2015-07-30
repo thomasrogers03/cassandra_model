@@ -124,6 +124,26 @@ module CassandraModel
         CounterRecord.new(partition: 'Partition Key').increment_async!(counter: 1)
       end
 
+      context 'when a consistency is specified' do
+        let(:consistency) { :quorum }
+
+        before { CounterRecord.write_consistency = consistency }
+
+        it 'should increment the specified counter by the specified amount' do
+          expect(connection).to receive(:execute_async).with(statement, 1, 'Partition Key', consistency: consistency)
+          CounterRecord.new(partition: 'Partition Key').increment_async!(counter: 1)
+        end
+
+        context 'with a different consistency' do
+          let(:consistency) { :all }
+
+          it 'should increment the specified counter by the specified amount' do
+            expect(connection).to receive(:execute_async).with(statement, 1, 'Partition Key', consistency: consistency)
+            CounterRecord.new(partition: 'Partition Key').increment_async!(counter: 1)
+          end
+        end
+      end
+
       it 'should not log an error' do
         expect(Logging.logger).not_to receive(:error)
         CounterRecord.new(partition: 'Partition Key').increment_async!(counter: 1)
