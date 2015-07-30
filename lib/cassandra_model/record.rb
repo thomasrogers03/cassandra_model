@@ -259,7 +259,7 @@ module CassandraModel
 
       def request_async(clause, options = {})
         page_size = options[:page_size]
-        request_query, use_query_result, where_values = request_meta(clause, options)
+        request_query, invalidated_result, where_values = request_meta(clause, options)
         statement = statement(request_query)
 
         query_options = {}
@@ -269,10 +269,10 @@ module CassandraModel
         future = session.execute_async(statement, *where_values, query_options)
         if options[:limit] == 1 then
           future.then do |rows|
-            record_from_result(rows.first, use_query_result) if rows.first
+            record_from_result(rows.first, invalidated_result) if rows.first
           end
         else
-          ResultPaginator.new(future) { |row| record_from_result(row, use_query_result) }
+          ResultPaginator.new(future) { |row| record_from_result(row, invalidated_result) }
         end
       end
 
@@ -398,9 +398,9 @@ module CassandraModel
         "#{key} IN (#{(%w(?) * value.count).join(', ')})"
       end
 
-      def record_from_result(row, use_query_result)
+      def record_from_result(row, invalidate_result)
         attributes = row_attributes(row)
-        new(attributes).tap { |result| result.invalidate! if use_query_result }
+        new(attributes).tap { |result| result.invalidate! if invalidate_result }
       end
 
       def row_attributes(row)
