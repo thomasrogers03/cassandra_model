@@ -1,5 +1,10 @@
 module CassandraModel
   class RawConnection
+    CLUSTER_MUTEX = Mutex.new
+    SESSION_MUTEX = Mutex.new
+    CONFIG_MUTEX = Mutex.new
+    STATEMENT_MUTEX = Mutex.new
+
     DEFAULT_CONFIGURATION = {
         hosts: %w(localhost),
         keyspace: 'default_keyspace',
@@ -15,15 +20,15 @@ module CassandraModel
     end
 
     def config=(value)
-      @config = DEFAULT_CONFIGURATION.merge(value)
+      CONFIG_MUTEX.synchronize { @config = DEFAULT_CONFIGURATION.merge(value) }
     end
 
     def config
-      @config ||= load_config
+      safe_getset_variable(CONFIG_MUTEX, :@config) { load_config }
     end
 
     def cluster
-      @cluster ||= begin
+      safe_getset_variable(CLUSTER_MUTEX, :@cluster) do
         connection_configuration = config.slice(:hosts,
                                                 :compression,
                                                 :consistency,
@@ -36,7 +41,7 @@ module CassandraModel
     end
 
     def session
-      @session ||= cluster.connect(config[:keyspace])
+      safe_getset_variable(SESSION_MUTEX, :@session) { cluster.connect(config[:keyspace]) }
     end
 
     def keyspace
@@ -44,12 +49,26 @@ module CassandraModel
     end
 
     def statement(query)
-      statement_cache[query] ||= session.prepare(query)
+      statement_cache[query] || begin
+        STATEMENT_MUTEX.synchronize { statement_cache[query] ||= session.prepare(query) }
+      end
     end
 
     private
 
     attr_reader :statement_cache
+
+    def safe_getset_variable(mutex, name, &block)
+      result = instance_variable_get(name)
+      return result if result
+
+      mutex.synchronize do
+        result = instance_variable_get(name)
+        return result if result
+
+        instance_variable_set(name, block.call)
+      end
+    end
 
     def load_config
       if File.exists?(config_path)
