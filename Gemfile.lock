@@ -7,7 +7,7 @@ GIT
 PATH
   remote: .
   specs:
-    cassandra_model (0.6.0)
+    cassandra_model (0.6.1)
       activesupport (>= 4.0)
       cassandra-driver (~> 1.1)
       thomas_utils (>= 0.1.12)
@@ -138,3 +138,6 @@ DEPENDENCIES
   simplecov
   thomas_utils (~> 0.1.4)!
   timecop
+
+BUNDLED WITH
+   1.10.6
