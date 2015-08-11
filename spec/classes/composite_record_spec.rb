@@ -26,7 +26,7 @@ module CassandraModel
     shared_examples_for 'an instance query method' do |method, params|
 
       describe 'resulting future' do
-        let(:future) { double(:future, get: nil) }
+        let(:future) { MockFuture.new(nil) }
 
         before do
           args = params.empty? ? [no_args] : params
@@ -34,7 +34,7 @@ module CassandraModel
         end
 
         it 'should return a future resolving all related futures dealing with this record' do
-          expect(future).to receive(:get).exactly(3).times
+          expect(future).to receive(:on_complete).exactly(3).times.and_call_original
           subject.public_send(method, *params).get
         end
 
@@ -42,9 +42,8 @@ module CassandraModel
           expect(subject.public_send(method, *params).get).to eq(subject)
         end
 
-        it 'should set a leader when wrapping multiple futures' do
-          expect(future).to receive(:on_success).once
-          subject.public_send(method, *params).on_success {  }
+        it 'should return the original record on completion' do
+          subject.public_send(method, *params).on_success { |result| expect(result).to eq(subject) }
         end
       end
     end

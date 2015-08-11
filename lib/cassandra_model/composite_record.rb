@@ -7,28 +7,22 @@ module CassandraModel
     def save_async(options = {})
       futures = composite_rows.map { |record| record.internal_save_async(options) }
 
-      leader = internal_save_async(options)
-      futures << leader
-      futures = ThomasUtils::MultiFutureWrapper.new(futures, leader) { }
-      ThomasUtils::FutureWrapper.new(futures) { self }
+      futures << internal_save_async(options)
+      Cassandra::Future.all(futures).then { self }
     end
 
     def delete_async
       futures = composite_rows.map { |record| record.internal_delete_async }
 
-      leader = internal_delete_async
-      futures << leader
-      futures = ThomasUtils::MultiFutureWrapper.new(futures, leader) { |result| result }
-      ThomasUtils::FutureWrapper.new(futures) { self }
+      futures << internal_delete_async
+      Cassandra::Future.all(futures).then { self }
     end
 
     def update_async(new_attributes)
       futures = composite_rows.map { |record| record.internal_update_async(new_attributes) }
 
-      leader = internal_update_async(new_attributes)
-      futures << leader
-      futures = ThomasUtils::MultiFutureWrapper.new(futures, leader) { |result| result }
-      ThomasUtils::FutureWrapper.new(futures) { self }
+      futures << internal_update_async(new_attributes)
+      Cassandra::Future.all(futures).then { self }
     end
 
     private

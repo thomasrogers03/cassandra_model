@@ -23,6 +23,11 @@ class MockFuture
     end
   end
 
+  def on_complete
+    yield(@result, @error)
+    self
+  end
+
   def on_success
     yield @result unless @error
     self
