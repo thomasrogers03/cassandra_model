@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'cassandra_model'
-  s.version = '0.6.1'
+  s.version = '0.6.2'
   s.license = 'Apache License 2.0'
   s.summary = ''
   s.description = ''

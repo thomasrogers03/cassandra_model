@@ -557,13 +557,22 @@ module CassandraModel
       end
 
       context 'when the Record class has deferred columns' do
+        let(:record) { Record.new(attributes) }
+
         before do
           Record.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
           Record.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
         end
 
         it 'should wrap everything in a future' do
-          expect(Record.new(attributes).save_async).to be_a_kind_of(ThomasUtils::Future)
+          # expect(Record.new(attributes).save_async).to be_a_kind_of(ThomasUtils::Future)
+
+          expect(ThomasUtils::Future).to receive(:new) do |&block|
+            expect(Record).to receive(:save_deferred_columns).with(record).and_return([])
+            expect(Record).to receive(:save_async_deferred_columns).with(record).and_return([])
+            block.call
+          end.and_return(MockFuture.new(record))
+          record.save_async
         end
       end
 
