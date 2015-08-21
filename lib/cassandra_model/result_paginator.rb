@@ -13,30 +13,25 @@ module CassandraModel
       each_slice { |slice| slice.each(&block) }
     end
 
-    def each_slice(&block)
+    def each_slice
       return to_enum(:each_slice) unless block_given?
 
-      each_slice_async(@page, &block).join
-    end
-
-    alias :get :to_a
-
-    private
-
-    def each_slice_async(future, &block)
-      future.then do |page|
-        next if page.empty?
-        modified_results = page.map(&@callback)
-
-        if page.last_page?
+      current_page = @page
+      loop do
+        page_results = current_page.get
+        modified_results = page_results.map(&@callback)
+        break if page_results.empty?
+        if page_results.last_page?
           yield modified_results
+          break
         else
-          next_future = page.next_page_async
+          current_page = page_results.next_page_async
           yield modified_results
-          each_slice_async(next_future, &block)
         end
       end
     end
+
+    alias :get :to_a
 
   end
 end
