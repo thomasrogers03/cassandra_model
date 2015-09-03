@@ -292,13 +292,14 @@ module CassandraModel
       def request_meta(clause, options)
         where_clause, where_values = where_params(clause)
         select_clause, use_query_result = select_params(options)
-        order_by = options[:order_by]
-        order_by_clause = if order_by
-                            " ORDER BY #{multi_csv_clause(order_by)}"
-                          end
+        order_by_clause = order_by_clause(options[:order_by])
         limit_clause = limit_clause(options)
         request_query = "SELECT #{select_clause} FROM #{table_name}#{where_clause}#{order_by_clause}#{limit_clause}"
         [request_query, use_query_result, where_values]
+      end
+
+      def order_by_clause(order_by)
+        " ORDER BY #{multi_csv_clause(order_by)}" if order_by
       end
 
       def first_async(clause = {}, options = {})
