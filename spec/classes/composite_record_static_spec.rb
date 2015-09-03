@@ -193,6 +193,15 @@ module CassandraModel
         end
       end
 
+      context 'with a column ordering specified' do
+        let(:query) { 'SELECT * FROM mock_records WHERE rk_model = ? AND rk_series = ? AND ck_price = ? ORDER BY ck_model' }
+
+        it 'should map the composite column to the clustering column' do
+          expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 9.99, {})
+          MockRecordStatic.request_async({model: 'AABBCCDD', series: '91A', price: 9.99}, order_by: [:model])
+        end
+      end
+
       context 'when missing information from the query' do
         let(:query) { 'SELECT * FROM mock_records WHERE rk_series = ? AND ck_price = ? AND rk_model = ?' }
 

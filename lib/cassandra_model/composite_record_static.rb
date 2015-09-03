@@ -78,6 +78,11 @@ module CassandraModel
       super(select)
     end
 
+    def order_by_clause(order_by)
+      order_by = mapped_select_columns(order_by) if order_by
+      super(order_by)
+    end
+
     def mapped_select_columns(select)
       select.map do |column|
         if internal_columns.include?(column)
