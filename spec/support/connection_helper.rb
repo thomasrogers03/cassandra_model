@@ -15,13 +15,22 @@ module ConnectionHelper
     end
   end
 
+  class DummyStatement < MockStatement
+    def inspect
+      "<Prepared Dummy Statement::{#{query}}>"
+    end
+  end
+
   let(:keyspace) { double(:keyspace, table: nil) }
   let(:query_results) { [] }
   let(:paginated_result) { MockPage.new(true, nil, query_results) }
   let(:paginated_result_future) { MockFuture.new(paginated_result) }
-  let(:default_statement) { MockStatement.new('DUMMY STATEMENT') }
   let(:connection) do
-    double(:connection, execute_async: paginated_result_future, execute: paginated_result, prepare: default_statement)
+    double(:connection, execute_async: paginated_result_future, execute: paginated_result).tap do |connection|
+      allow(connection).to receive(:prepare) do |query|
+        DummyStatement.new(query)
+      end
+    end
   end
   let(:cluster) { double(:cassandra_cluster, connect: connection, keyspace: keyspace, close: nil) }
 
