@@ -577,6 +577,7 @@ module CassandraModel
         let(:record) { Record.new(attributes) }
 
         before do
+          allow(ThomasUtils::Future).to receive(:new).and_yield
           Record.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
           Record.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
         end
@@ -588,6 +589,15 @@ module CassandraModel
             block.call
           end.and_return(MockFuture.new(record))
           record.save_async
+        end
+
+        context 'when specifying explicitly not to save deferred columns' do
+
+          it 'should not save them' do
+            expect(Record).not_to receive(:save_deferred_columns)
+            expect(Record).not_to receive(:save_async_deferred_columns)
+            record.save_async(skip_deferred_columns: true)
+          end
         end
       end
 

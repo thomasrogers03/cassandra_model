@@ -131,7 +131,7 @@ module CassandraModel
       raise 'Cannot save invalidated record!' unless valid
 
       self.class.before_save_callbacks.map { |proc| instance_eval(&proc) }
-      if self.class.deferred_column_writers || self.class.async_deferred_column_writers
+      if !options[:skip_deferred_columns] && (self.class.deferred_column_writers || self.class.async_deferred_column_writers)
         promise = Cassandra::Future.promise
         ThomasUtils::Future.new { promise.fulfill(save_deferred_columns) }
         promise.future.then { save_row_async(options) }.then { self }
