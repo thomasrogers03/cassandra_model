@@ -578,7 +578,13 @@ module CassandraModel
         let(:save_block) { ->(attributes, value) {} }
 
         before do
-          allow(ThomasUtils::Future).to(receive(:new)) { |&block| block.call rescue nil }
+          allow(ThomasUtils::Future).to(receive(:new)) do |&block|
+            begin
+              block.call
+            rescue Exception
+              nil
+            end
+          end
           Record.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: save_block
           Record.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: save_block
         end
@@ -593,11 +599,12 @@ module CassandraModel
         end
 
         context 'when the block raises an error' do
-          let(:error) { StandardError.new('Death #' + SecureRandom.uuid) }
-          let(:save_block) { ->(_, _) { raise error } }
+          let(:error) { Exception }
+          let(:error_message) { 'Death #' + SecureRandom.uuid }
+          let(:save_block) { ->(_, _) { raise error, error_message } }
 
           it 'should resolve to a future raising that error' do
-            expect { record.save_async.get }.to raise_error(error)
+            expect { record.save_async.get }.to raise_error(error, error_message)
           end
         end
 

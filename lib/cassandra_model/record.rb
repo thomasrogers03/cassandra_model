@@ -136,7 +136,7 @@ module CassandraModel
         ThomasUtils::Future.new do
           begin
             promise.fulfill(save_deferred_columns)
-          rescue => e
+          rescue Exception => e
             promise.break(e)
           end
         end
