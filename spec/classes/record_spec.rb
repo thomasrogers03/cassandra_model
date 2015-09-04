@@ -565,8 +565,6 @@ module CassandraModel
         end
 
         it 'should wrap everything in a future' do
-          # expect(Record.new(attributes).save_async).to be_a_kind_of(ThomasUtils::Future)
-
           expect(ThomasUtils::Future).to receive(:new) do |&block|
             expect(Record).to receive(:save_deferred_columns).with(record).and_return([])
             expect(Record).to receive(:save_async_deferred_columns).with(record).and_return([])
