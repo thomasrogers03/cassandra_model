@@ -133,7 +133,13 @@ module CassandraModel
       self.class.before_save_callbacks.map { |proc| instance_eval(&proc) }
       if !options[:skip_deferred_columns] && (self.class.deferred_column_writers || self.class.async_deferred_column_writers)
         promise = Cassandra::Future.promise
-        ThomasUtils::Future.new { promise.fulfill(save_deferred_columns) }
+        ThomasUtils::Future.new do
+          begin
+            promise.fulfill(save_deferred_columns)
+          rescue => e
+            promise.break(e)
+          end
+        end
         promise.future.then { save_row_async(options) }.then { self }
       else
         save_row_async(options).then do |result|
@@ -200,6 +206,7 @@ module CassandraModel
     def columns
       self.class.columns
     end
+
     alias :ensure_attributes_accessible! :columns
 
     def internal_columns

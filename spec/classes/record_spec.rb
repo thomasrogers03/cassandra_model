@@ -575,11 +575,12 @@ module CassandraModel
 
       context 'when the Record class has deferred columns' do
         let(:record) { Record.new(attributes) }
+        let(:save_block) { ->(attributes, value) {} }
 
         before do
-          allow(ThomasUtils::Future).to receive(:new).and_yield
-          Record.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
-          Record.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
+          allow(ThomasUtils::Future).to(receive(:new)) { |&block| block.call rescue nil }
+          Record.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: save_block
+          Record.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: save_block
         end
 
         it 'should wrap everything in a future' do
@@ -589,6 +590,15 @@ module CassandraModel
             block.call
           end.and_return(MockFuture.new(record))
           record.save_async
+        end
+
+        context 'when the block raises an error' do
+          let(:error) { StandardError.new('Death #' + SecureRandom.uuid) }
+          let(:save_block) { ->(_, _) { raise error } }
+
+          it 'should resolve to a future raising that error' do
+            expect { record.save_async.get }.to raise_error(error)
+          end
         end
 
         context 'when specifying explicitly not to save deferred columns' do
