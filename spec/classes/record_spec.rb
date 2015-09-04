@@ -80,6 +80,23 @@ module CassandraModel
           end
         end
       end
+
+      describe 'record initialization' do
+        before do
+          Record.send(:remove_method, :partition) if Record.instance_methods(false).include?(:partition)
+          Record.send(:remove_method, :partition=) if Record.instance_methods(false).include?(:partition=)
+        end
+
+        it 'should ensure that the getters are defined' do
+          record = Record.new({}, validate: false)
+          expect { record.partition }.not_to raise_error
+        end
+
+        it 'should ensure that the setters are defined' do
+          record = Record.new({}, validate: false)
+          expect { record.partition = 'bob' }.not_to raise_error
+        end
+      end
     end
 
     describe '.table_name' do

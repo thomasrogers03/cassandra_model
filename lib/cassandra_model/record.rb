@@ -39,6 +39,7 @@ module CassandraModel
     )
 
     def initialize(attributes, options = {validate: true})
+      ensure_attributes_accessible!
       validate_attributes!(attributes) if options[:validate]
       @valid = true
       @attributes = attributes
@@ -199,6 +200,7 @@ module CassandraModel
     def columns
       self.class.columns
     end
+    alias :ensure_attributes_accessible! :columns
 
     def internal_columns
       self.class.internal_columns
