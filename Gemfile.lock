@@ -7,7 +7,7 @@ GIT
 PATH
   remote: .
   specs:
-    cassandra_model (0.6.5)
+    cassandra_model (0.6.6)
       activesupport (>= 4.0)
       cassandra-driver (~> 1.1)
       thomas_utils (>= 0.1.12)
