@@ -188,8 +188,8 @@ module CassandraModel
     end
 
     def save_row_async(options)
-      session.execute_async(statement(query_for_save(options)), *column_values, write_query_options).tap do |future|
-        future.on_failure { |error| Logging.logger.error("Error saving #{self.class}: #{error}") }
+      session.execute_async(statement(query_for_save(options)), *column_values, write_query_options).on_failure do |error|
+        Logging.logger.error("Error saving #{self.class}: #{error}")
       end
     end
 
