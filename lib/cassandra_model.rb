@@ -15,6 +15,7 @@
 #++
 
 require 'cassandra_model/logging'
+require 'cassandra_model/single_token_batch'
 require 'cassandra_model/single_token_unlogged_batch'
 require 'cassandra_model/raw_connection'
 require 'cassandra_model/connection_cache'
