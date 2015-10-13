@@ -43,21 +43,41 @@ module CassandraModel
       let(:statements) { [0, 1, 2] }
 
       before do
-        futures = statements.map do |statement|
-          subject.perform_within_batch(statement) { |batch| batch << statement }
+        unless statements.empty?
+          futures = statements.map do |statement|
+            subject.perform_within_batch(statement) { |batch| batch << statement }
+          end
+          Ione::Future.all(futures).get
         end
-        Ione::Future.all(futures).get
       end
 
       it 'should partition the work by keyspace and statement partition key' do
         expect(host_buffers).to match_array([[0], [1], [2]])
       end
 
+      it 'should return a Cassandra::Future' do
+        expect(subject.perform_within_batch(0) {}).to be_a_kind_of(Cassandra::Future)
+      end
+
       describe 'batch execution' do
         let(:statements) { [0] }
+        let(:hosts) { [:host1] }
 
         it 'should execute the batch on the provided session' do
           expect(execution_result).to eq([[0]])
+        end
+
+        context 'when the batch fails' do
+          let(:statements) { [] }
+          let(:error) { StandardError.new('Batch blew up!') }
+
+          before do
+            allow(session).to(receive(:execute_async)) { |_| Cassandra::Future.error(error) }
+          end
+
+          it 'should return a future resolving to a failed result' do
+            expect { (subject.perform_within_batch(0) {}.get) }.to raise_error(StandardError, 'Batch blew up!')
+          end
         end
       end
 

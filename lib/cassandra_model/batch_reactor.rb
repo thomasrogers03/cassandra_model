@@ -10,6 +10,14 @@ module CassandraModel
       super(cluster.hosts.count, options, &method(:batch_callback))
     end
 
+    def perform_within_batch(statement)
+      promise = Cassandra::Future.promise
+      super(statement).on_complete do |value, error|
+        error ? promise.break(error) : promise.fulfill(value)
+      end
+      promise.future
+    end
+
     private
 
     def partition(statement)
