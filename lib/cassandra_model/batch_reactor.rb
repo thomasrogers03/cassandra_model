@@ -1,9 +1,9 @@
 module CassandraModel
   class BatchReactor < ::BatchReactor::ReactorCluster
 
-    def initialize(cluster, keyspace, batch_klass, options)
+    def initialize(cluster, session, batch_klass, options)
       @cluster = cluster
-      @keyspace = keyspace
+      @session = session
       @batch_klass = batch_klass
 
       define_partitioner(&method(:partition))
@@ -13,7 +13,7 @@ module CassandraModel
     private
 
     def partition(statement)
-      hosts = @cluster.find_replicas(@keyspace, statement)
+      hosts = @cluster.find_replicas(@session.keyspace, statement)
       @cluster.hosts.find_index(hosts.first) || 0
     end
 

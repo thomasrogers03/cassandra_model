@@ -6,11 +6,12 @@ module CassandraModel
     let(:hosts) { [:host1, :host2, :host3] }
     let(:host_buffers) { hosts.map { [] } }
     let(:cluster) { double(:cluster, hosts: hosts) }
+    let(:session) { double(:session, execute_async: nil, keyspace: keyspace) }
     let(:keyspace) { 'test' }
     let(:max_batch_size) { 10 }
     let(:batch_klass) { SingleTokenUnloggedBatch }
 
-    subject { BatchReactor.new(cluster, keyspace, batch_klass, max_batch_size: max_batch_size) }
+    subject { BatchReactor.new(cluster, session, batch_klass, max_batch_size: max_batch_size) }
 
     before do
       allow(cluster).to receive(:find_replicas) do |statement_keyspace, statement|
