@@ -9,6 +9,7 @@ group :development do
   require 'active_support/core_ext/class/attribute_accessors'
   gem 'concurrent-ruby', require: 'concurrent'
   gem 'thomas_utils', '~> 0.1.4', git: 'https://github.com/thomasrogers03/thomas_utils.git'
+  gem 'batch_reactor', github: 'thomasrogers03/batch_reactor'
 end
 
 group :test do

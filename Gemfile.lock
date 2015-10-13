@@ -1,4 +1,11 @@
 GIT
+  remote: git://github.com/thomasrogers03/batch_reactor.git
+  revision: 2157b894e4a6561f6ca8c15ae868e40d403a885a
+  specs:
+    batch_reactor (0.0.1)
+      ione
+
+GIT
   remote: https://github.com/thomasrogers03/thomas_utils.git
   revision: 3f086207025ea20bb3962ae8e9ebb3b95a45eaa3
   specs:
@@ -124,6 +131,7 @@ PLATFORMS
 
 DEPENDENCIES
   activesupport
+  batch_reactor!
   cassandra-driver (~> 1.1)
   cassandra_model!
   concurrent-ruby
