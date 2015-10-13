@@ -1,7 +1,5 @@
 source 'https://rubygems.org'
 
-gemspec
-
 group :development do
   require 'yaml'
   require 'logger'
@@ -23,3 +21,5 @@ group :test do
   gem 'timecop'
   gem 'simplecov', require: false
 end
+
+gemspec
