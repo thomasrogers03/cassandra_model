@@ -18,8 +18,9 @@ module CassandraModel
     end
 
     def batch_callback(_)
-      yield @batch_klass.new
-      Ione::Future.resolved(true)
+      batch = @batch_klass.new
+      yield batch
+      @session.execute_async(batch)
     end
 
   end

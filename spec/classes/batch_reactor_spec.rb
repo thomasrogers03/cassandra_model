@@ -6,7 +6,8 @@ module CassandraModel
     let(:hosts) { [:host1, :host2, :host3] }
     let(:host_buffers) { hosts.map { [] } }
     let(:cluster) { double(:cluster, hosts: hosts) }
-    let(:session) { double(:session, execute_async: nil, keyspace: keyspace) }
+    let(:session) { double(:session, keyspace: keyspace) }
+    let(:execution_result) { [] }
     let(:keyspace) { 'test' }
     let(:max_batch_size) { 10 }
     let(:batch_klass) { SingleTokenUnloggedBatch }
@@ -29,6 +30,10 @@ module CassandraModel
         end
       end
       allow(batch_klass).to receive(:new).and_return(*host_buffers)
+      allow(session).to receive(:execute_async) do |batch|
+        execution_result << batch
+        Cassandra::Future.value(true)
+      end
       subject.start.get
     end
 
@@ -46,6 +51,14 @@ module CassandraModel
 
       it 'should partition the work by keyspace and statement partition key' do
         expect(host_buffers).to match_array([[0], [1], [2]])
+      end
+
+      describe 'batch execution' do
+        let(:statements) { [0] }
+
+        it 'should execute the batch on the provided session' do
+          expect(execution_result).to eq([[0]])
+        end
       end
 
       context 'with a different batch klass' do
