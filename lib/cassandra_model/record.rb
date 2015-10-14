@@ -126,7 +126,12 @@ module CassandraModel
       attributes = internal_attributes
       column_values = table.primary_key.map { |column| attributes[column] }
 
-      session.execute_async(statement, *column_values, write_query_options).then { self }
+      future = if batch_reactor
+                 execute_async_in_batch(statement, column_values)
+               else
+                 session.execute_async(statement, *column_values, write_query_options)
+               end
+      future.then { self }
     end
 
     def internal_save_async(options = {})
@@ -192,7 +197,7 @@ module CassandraModel
     def save_row_async(options)
       statement = statement(query_for_save(options))
       future = if batch_reactor
-                 save_row_in_batch(statement)
+                 execute_async_in_batch(statement, column_values)
                else
                  session.execute_async(statement, *column_values, write_query_options)
                end
@@ -201,7 +206,7 @@ module CassandraModel
       end
     end
 
-    def save_row_in_batch(statement)
+    def execute_async_in_batch(statement, column_values)
       bound_statement = statement.bind(*column_values)
       batch_reactor.perform_within_batch(bound_statement) do |batch|
         batch.add(bound_statement)
