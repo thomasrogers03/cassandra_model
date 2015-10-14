@@ -4,6 +4,7 @@ module CassandraModel
     SESSION_MUTEX = Mutex.new
     CONFIG_MUTEX = Mutex.new
     STATEMENT_MUTEX = Mutex.new
+    REACTOR_MUTEX = Mutex.new
 
     DEFAULT_CONFIGURATION = {
         hosts: %w(localhost),
@@ -48,6 +49,18 @@ module CassandraModel
       cluster.keyspace(config[:keyspace])
     end
 
+    def unlogged_batch_reactor
+      reactor(:@unlogged_reactor, SingleTokenUnloggedBatch)
+    end
+
+    def logged_batch_reactor
+      reactor(:@logged_reactor, SingleTokenLoggedBatch)
+    end
+
+    def counter_batch_reactor
+      reactor(:@counter_reactor, SingleTokenCounterBatch)
+    end
+
     def statement(query)
       statement_cache[query] || begin
         STATEMENT_MUTEX.synchronize { statement_cache[query] ||= session.prepare(query) }
@@ -57,6 +70,12 @@ module CassandraModel
     private
 
     attr_reader :statement_cache
+
+    def reactor(name, type)
+      safe_getset_variable(REACTOR_MUTEX, name) do
+        BatchReactor.new(cluster, session, type, config[:batch_reactor] || {})
+      end
+    end
 
     def safe_getset_variable(mutex, name, &block)
       result = instance_variable_get(name)

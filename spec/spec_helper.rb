@@ -32,6 +32,7 @@ RSpec.configure do |config|
   require_relative '../lib/cassandra_model'
 
   config.include ConnectionHelper
+  config.include BatchHelper
 
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest

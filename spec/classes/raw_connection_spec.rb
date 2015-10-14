@@ -166,7 +166,7 @@ module CassandraModel
       end
 
       context 'with authentication' do
-        let(:config) { { username: 'Greate User Tony Bobas', password: 'BackBone' } }
+        let(:config) { {username: 'Greate User Tony Bobas', password: 'BackBone'} }
         before { raw_connection.config = config }
 
         it { is_expected.to eq(connection_cluster) }
@@ -213,6 +213,38 @@ module CassandraModel
         raw_connection.statement(query)
       end
     end
+
+    shared_examples_for 'a batch reactor' do |method, type|
+      let(:batch_options) { {} }
+      let(:batch_config) { {batch_reactor: batch_options} }
+
+      before do
+        raw_connection.config = batch_config
+        mock_reactor(cluster, type, batch_options)
+      end
+
+      it 'should return the BatchReactor for this cluster connection' do
+        expect(raw_connection.public_send(method)).to eq(global_reactor)
+      end
+
+      it 'should re-use the same reactor' do
+        raw_connection.public_send(method)
+        expect(BatchReactor).not_to receive(:new)
+        raw_connection.public_send(method)
+      end
+
+      context 'with a max batch size configured' do
+        let(:batch_options) { {max_batch_size: 25} }
+
+        it 'should return the BatchReactor for this cluster connection with the configured options' do
+          expect(raw_connection.public_send(method)).to eq(global_reactor)
+        end
+      end
+    end
+
+    describe('#unlogged_batch_reactor') { it_behaves_like 'a batch reactor', :unlogged_batch_reactor, SingleTokenUnloggedBatch }
+    describe('#logged_batch_reactor') { it_behaves_like 'a batch reactor', :logged_batch_reactor, SingleTokenLoggedBatch }
+    describe('#counter_batch_reactor') { it_behaves_like 'a batch reactor', :counter_batch_reactor, SingleTokenCounterBatch }
 
   end
 end
