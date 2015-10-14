@@ -7,7 +7,13 @@ module CassandraModel
       where_clause = where_clause(row_key)
       counter_clause = counter_clause(options)
       statement = increment_statement(counter_clause, where_clause)
-      session.execute_async(statement, *options.values, *row_key_attributes, write_query_options).on_failure do |error|
+
+      future = if batch_reactor
+                 execute_async_in_batch(statement, options.values + row_key_attributes)
+               else
+                 session.execute_async(statement, *options.values, *row_key_attributes, write_query_options)
+               end
+      future.on_failure do |error|
         Logging.logger.error("Error incrementing #{self.class}: #{error}")
       end.then { self }
     end
@@ -59,6 +65,10 @@ module CassandraModel
                              counter_columns
                            end
         super(clause, options.merge(select: selected_columns))
+      end
+
+      def save_in_batch
+        table_config.batch_type = :counter
       end
     end
   end

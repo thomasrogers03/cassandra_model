@@ -124,6 +124,27 @@ module CassandraModel
         CounterRecord.new(partition: 'Partition Key').increment_async!(counter: 1)
       end
 
+      context 'when configured to use a batch' do
+        let(:attributes) { {partition: 'Partition Key'} }
+        let(:batch_klass) { SingleTokenCounterBatch }
+        let(:batch) { double(:batch) }
+        let(:bound_statement) { double(:bound_statement) }
+
+        subject { CounterRecord }
+
+        before do
+          allow(statement).to receive(:bind).with(1, 'Partition Key').and_return(bound_statement)
+          mock_reactor(cluster, batch_klass, {})
+          allow(global_reactor).to receive(:perform_within_batch).with(bound_statement).and_yield(batch).and_return(Cassandra::Future.value(['OK']))
+          subject.save_in_batch
+        end
+
+        it 'should add the record to the batch' do
+          expect(batch).to receive(:add).with(bound_statement)
+          subject.new(attributes).increment_async!(counter: 1)
+        end
+      end
+
       context 'when a consistency is specified' do
         let(:consistency) { :quorum }
 

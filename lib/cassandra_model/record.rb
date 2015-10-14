@@ -223,6 +223,8 @@ module CassandraModel
         table.connection.logged_batch_reactor
       elsif self.class.batch_type == :unlogged
         table.connection.unlogged_batch_reactor
+      elsif self.class.batch_type == :counter
+        table.connection.counter_batch_reactor
       end
     end
 
