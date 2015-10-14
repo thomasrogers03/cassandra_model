@@ -169,7 +169,12 @@ module CassandraModel
       attributes = internal_attributes
       column_values = table.primary_key.map { |column| attributes[column] }
 
-      session.execute_async(statement, *new_attributes.values, *column_values, write_query_options).then do
+      future = if batch_reactor
+                 execute_async_in_batch(statement, new_attributes.values + column_values)
+               else
+                 session.execute_async(statement, *new_attributes.values, *column_values, write_query_options)
+               end
+      future.then do
         self.attributes.merge!(new_attributes)
         self
       end

@@ -557,12 +557,11 @@ module CassandraModel
       end
     end
 
-    shared_examples_for 'a query running in a batch' do |method|
+    shared_examples_for 'a query running in a batch' do |method, args, statement_args|
       let(:batch_type) { :logged }
       let(:batch_klass) { SingleTokenLoggedBatch }
       let(:batch) { double(:batch) }
       let(:bound_statement) { double(:bound_statement) }
-      let(:statement_args) { ['Partition Key'] }
 
       before do
         allow(statement).to receive(:bind).with(*statement_args).and_return(bound_statement)
@@ -573,7 +572,7 @@ module CassandraModel
 
       it 'should add the record to the batch' do
         expect(batch).to receive(:add).with(bound_statement)
-        Record.new(attributes).public_send(method)
+        Record.new(attributes).public_send(method, *args)
       end
 
       context 'with a different reactor type' do
@@ -582,7 +581,7 @@ module CassandraModel
 
         it 'should add the record to the batch' do
           expect(batch).to receive(:add).with(bound_statement)
-          Record.new(attributes).public_send(method)
+          Record.new(attributes).public_send(method, *args)
         end
       end
     end
@@ -662,7 +661,7 @@ module CassandraModel
       end
 
       context 'when configured to use a batch' do
-        it_behaves_like 'a query running in a batch', :save_async
+        it_behaves_like 'a query running in a batch', :save_async, [], ['Partition Key']
       end
 
       context 'when a consistency is specified' do
@@ -808,10 +807,7 @@ module CassandraModel
       end
 
       context 'when configured to use a batch' do
-        let(:clustering_columns) { [] }
-        let(:attributes) { {partition: 'Partition Key'} }
-
-        it_behaves_like 'a query running in a batch', :delete_async
+        it_behaves_like 'a query running in a batch', :delete_async, [], ['Partition Key', 'Cluster Key']
       end
 
       context 'when a consistency is specified' do
@@ -910,6 +906,10 @@ module CassandraModel
       it 'should update the record in the database' do
         expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', {})
         Record.new(attributes).update_async(new_attributes)
+      end
+
+      context 'when configured to use a batch' do
+        it_behaves_like 'a query running in a batch', :update_async, [meta_data: 'Some Data'], ['Some Data', 'Partition Key', 'Cluster Key']
       end
 
       context 'when a consistency is specified' do
