@@ -55,8 +55,8 @@ module CassandraModel
         expect(host_buffers).to match_array([[0], [1], [2]])
       end
 
-      it 'should return a Cassandra::Future' do
-        expect(subject.perform_within_batch(0) {}).to be_a_kind_of(Cassandra::Future)
+      it 'should return a Ione::Future -> Cassandra::Future wrapper' do
+        expect(subject.perform_within_batch(0) {}).to be_a_kind_of(BatchReactor::Future)
       end
 
       describe 'batch execution' do

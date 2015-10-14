@@ -11,11 +11,8 @@ module CassandraModel
     end
 
     def perform_within_batch(statement)
-      promise = Cassandra::Future.promise
-      super(statement).on_complete do |value, error|
-        error ? promise.break(error) : promise.fulfill(value)
-      end
-      promise.future
+      ione_future = super(statement)
+      Future.new(ione_future)
     end
 
     private
