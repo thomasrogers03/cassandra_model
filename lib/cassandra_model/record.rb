@@ -36,6 +36,8 @@ module CassandraModel
         :async_deferred_column_writers,
 
         :composite_defaults,
+
+        :batch_type,
     )
 
     def initialize(attributes, options = {validate: true})
@@ -188,8 +190,25 @@ module CassandraModel
     end
 
     def save_row_async(options)
-      session.execute_async(statement(query_for_save(options)), *column_values, write_query_options).on_failure do |error|
+      statement = statement(query_for_save(options))
+      future = if batch_reactor
+                 bound_statement = statement.bind(*column_values)
+                 batch_reactor.perform_within_batch(bound_statement) do |batch|
+                   batch.add(bound_statement)
+                 end
+               else
+                 session.execute_async(statement, *column_values, write_query_options)
+               end
+      future.on_failure do |error|
         Logging.logger.error("Error saving #{self.class}: #{error}")
+      end
+    end
+
+    def batch_reactor
+      if self.class.batch_type == :logged
+        table.connection.logged_batch_reactor
+      elsif self.class.batch_type == :unlogged
+        table.connection.unlogged_batch_reactor
       end
     end
 
@@ -246,6 +265,14 @@ module CassandraModel
           table_name = table_config.table_name || generate_table_name
           TableRedux.new(table_config.connection_name, table_name)
         end
+      end
+
+      def save_in_batch(type)
+        table_config.batch_type = type
+      end
+
+      def batch_type
+        table_config.batch_type
       end
 
       def columns

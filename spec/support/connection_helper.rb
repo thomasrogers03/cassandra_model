@@ -3,11 +3,28 @@ module ConnectionHelper
 
   MockColumn = Struct.new(:name, :type)
 
+  class MockBoundStatement
+    attr_reader :query, :args
+
+    def initialize(query, args)
+      @query = query
+      @args = args
+    end
+
+    def inspect
+      "<Prepared Statement::{#{query}}[#{args.map(&:inspect) * ','}]>"
+    end
+  end
+
   class MockStatement
     attr_reader :query
 
     def initialize(query)
       @query = query
+    end
+
+    def bind(*args)
+      MockBoundStatement.new(query, args)
     end
 
     def inspect

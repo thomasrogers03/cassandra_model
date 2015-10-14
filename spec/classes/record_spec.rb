@@ -631,6 +631,36 @@ module CassandraModel
         Record.new(attributes).save_async
       end
 
+      context 'when configured to use a batch' do
+        let(:batch_type) { :logged }
+        let(:batch_klass) { SingleTokenLoggedBatch }
+        let(:batch) { double(:batch) }
+        let(:bound_statement) { double(:bound_statement) }
+        let(:statement_args) { ['Partition Key'] }
+
+        before do
+          allow(statement).to receive(:bind).with(*statement_args).and_return(bound_statement)
+          mock_reactor(cluster, batch_klass, {})
+          allow(global_reactor).to receive(:perform_within_batch).with(bound_statement).and_yield(batch).and_return(Cassandra::Future.value(['OK']))
+          Record.save_in_batch batch_type
+        end
+
+        it 'should add the record to the batch' do
+          expect(batch).to receive(:add).with(bound_statement)
+          Record.new(attributes).save_async
+        end
+
+        context 'with a different reactor type' do
+          let(:batch_type) { :unlogged }
+          let(:batch_klass) { SingleTokenUnloggedBatch }
+
+          it 'should add the record to the batch' do
+            expect(batch).to receive(:add).with(bound_statement)
+            Record.new(attributes).save_async
+          end
+        end
+      end
+
       context 'when a consistency is specified' do
         let(:consistency) { :quorum }
 
