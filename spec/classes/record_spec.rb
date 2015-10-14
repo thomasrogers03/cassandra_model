@@ -632,6 +632,7 @@ module CassandraModel
       end
 
       context 'when configured to use a batch' do
+        subject { Record }
         it_behaves_like 'a query running in a batch', :save_async, [], ['Partition Key']
       end
 
@@ -778,6 +779,7 @@ module CassandraModel
       end
 
       context 'when configured to use a batch' do
+        subject { Record }
         it_behaves_like 'a query running in a batch', :delete_async, [], ['Partition Key', 'Cluster Key']
       end
 
@@ -880,6 +882,7 @@ module CassandraModel
       end
 
       context 'when configured to use a batch' do
+        subject { Record }
         it_behaves_like 'a query running in a batch', :update_async, [meta_data: 'Some Data'], ['Some Data', 'Partition Key', 'Cluster Key']
       end
 

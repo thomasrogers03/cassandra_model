@@ -24,12 +24,12 @@ module CassandraModel
       allow(statement).to receive(:bind).with(*statement_args).and_return(bound_statement)
       mock_reactor(cluster, batch_klass, {})
       allow(global_reactor).to receive(:perform_within_batch).with(bound_statement).and_yield(batch).and_return(Cassandra::Future.value(['OK']))
-      Record.save_in_batch batch_type
+      subject.save_in_batch batch_type
     end
 
     it 'should add the record to the batch' do
       expect(batch).to receive(:add).with(bound_statement)
-      Record.new(attributes).public_send(method, *args)
+      subject.new(attributes).public_send(method, *args)
     end
 
     context 'with a different reactor type' do
@@ -38,7 +38,7 @@ module CassandraModel
 
       it 'should add the record to the batch' do
         expect(batch).to receive(:add).with(bound_statement)
-        Record.new(attributes).public_send(method, *args)
+        subject.new(attributes).public_send(method, *args)
       end
     end
   end
