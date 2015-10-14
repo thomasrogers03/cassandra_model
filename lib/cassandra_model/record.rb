@@ -192,15 +192,19 @@ module CassandraModel
     def save_row_async(options)
       statement = statement(query_for_save(options))
       future = if batch_reactor
-                 bound_statement = statement.bind(*column_values)
-                 batch_reactor.perform_within_batch(bound_statement) do |batch|
-                   batch.add(bound_statement)
-                 end
+                 save_row_in_batch(statement)
                else
                  session.execute_async(statement, *column_values, write_query_options)
                end
       future.on_failure do |error|
         Logging.logger.error("Error saving #{self.class}: #{error}")
+      end
+    end
+
+    def save_row_in_batch(statement)
+      bound_statement = statement.bind(*column_values)
+      batch_reactor.perform_within_batch(bound_statement) do |batch|
+        batch.add(bound_statement)
       end
     end
 
