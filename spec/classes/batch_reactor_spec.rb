@@ -21,7 +21,7 @@ module CassandraModel
                      elsif statement_keyspace == 'no_replication'
                        nil
                      else
-                       (statement ** 2)
+                       (statement * statement)
                      end
         if host_index
           [hosts[host_index % hosts.count]]
