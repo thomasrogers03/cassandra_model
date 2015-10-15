@@ -1,30 +1,5 @@
 require 'rspec'
 
-#module Cassandra
-#  class Future
-#    class Ione < Struct.new(:future)
-#      extend Forwardable
-#
-#      def_delegators :future, :on_failure, :on_complete, :then, :get
-#      def_delegator :future, :on_value, :on_success
-#
-#      def add_listener(*_)
-#        raise NotImplementedError
-#      end
-#
-#      def promise
-#        raise NotImplementedError
-#      end
-#
-#      def join
-#        get
-#        self
-#      end
-#
-#    end
-#  end
-#end
-
 module CassandraModel
   class BatchReactor
     describe Future do
@@ -51,6 +26,10 @@ module CassandraModel
               expect(resolved_error).to eq(error)
             end
           end
+
+          it 'should return the future' do
+            expect(subject.on_failure {}).to eq(subject)
+          end
         end
 
         describe '#on_failure' do
@@ -60,6 +39,10 @@ module CassandraModel
             resolved_error = nil; subject.on_failure { |error| resolved_error = error }
             expect(resolved_error).to eq(error)
           end
+
+          it 'should return the future' do
+            expect(subject.on_failure {}).to eq(subject)
+          end
         end
 
         describe '#on_success' do
@@ -67,14 +50,24 @@ module CassandraModel
             resolved_value = nil; subject.on_success { |value| resolved_value = value }
             expect(resolved_value).to eq(value)
           end
+
+          it 'should return the future' do
+            expect(subject.on_failure {}).to eq(subject)
+          end
         end
 
         it 'should delegate #get' do
           expect(subject.get).to eq(56)
         end
 
-        it 'should delegate #then' do
-          expect(subject.then { |value| value +1 }.get).to eq(57)
+        describe '#then' do
+          it 'should delegate #then' do
+            expect(subject.then { |value| value +1 }.get).to eq(57)
+          end
+
+          it 'should return a BatchReactor::Future' do
+            expect(subject.then {}).to be_a_kind_of(Future)
+          end
         end
 
         describe '#join' do
