@@ -1,7 +1,8 @@
 module BatchHelper
   extend RSpec::Core::SharedContext
 
-  let(:global_reactor) { double(:reactor) }
+  let(:reactor_started_future) { double(:future, get: nil) }
+  let(:global_reactor) { double(:reactor, started_future: reactor_started_future, start: reactor_started_future) }
 
   def mock_reactor(cluster, type, options)
     allow(CassandraModel::BatchReactor).to receive(:new).with(cluster, cluster.connect, type, options).and_return(global_reactor)

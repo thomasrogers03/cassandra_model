@@ -227,6 +227,11 @@ module CassandraModel
         expect(raw_connection.public_send(method)).to eq(global_reactor)
       end
 
+      it 'should start the reactor' do
+        expect(global_reactor.started_future).to receive(:get)
+        raw_connection.public_send(method)
+      end
+
       it 'should re-use the same reactor' do
         raw_connection.public_send(method)
         expect(BatchReactor).not_to receive(:new)
@@ -310,7 +315,8 @@ module CassandraModel
 
     def mock_shutdown_reactor(cluster, type)
       stopped_future = double(:future, get: nil)
-      double(:reactor, stopped_future: stopped_future, stop: stopped_future).tap do |reactor|
+      started_future = double(:future, get: nil)
+      double(:reactor, stopped_future: stopped_future, stop: stopped_future, start: started_future).tap do |reactor|
         allow(CassandraModel::BatchReactor).to receive(:new).with(cluster, cluster.connect, type, {}).and_return(reactor)
       end
     end

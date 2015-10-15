@@ -81,7 +81,9 @@ module CassandraModel
 
     def reactor(name, type)
       safe_getset_variable(REACTOR_MUTEX, name) do
-        BatchReactor.new(cluster, session, type, config[:batch_reactor] || {})
+        BatchReactor.new(cluster, session, type, config[:batch_reactor] || {}).tap do |reactor|
+          reactor.start.get
+        end
       end
     end
 
