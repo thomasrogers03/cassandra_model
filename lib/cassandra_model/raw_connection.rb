@@ -68,11 +68,11 @@ module CassandraModel
     end
 
     def shutdown
-      @session.close if @session
-      @cluster.close if @cluster
       @unlogged_reactor.stop.get if @unlogged_reactor
       @logged_reactor.stop.get if @logged_reactor
       @counter_reactor.stop.get if @counter_reactor
+      @session.close if @session
+      @cluster.close if @cluster
     end
 
     private
