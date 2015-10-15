@@ -14,7 +14,7 @@ module CassandraModel
       end
 
       def clear
-        @@cache.values.map(&:cluster).map(&:close)
+        @@cache.values.map(&:shutdown)
         @@cache.clear
       end
     end
