@@ -67,6 +67,14 @@ module CassandraModel
       end
     end
 
+    def shutdown
+      @session.close if @session
+      @cluster.close if @cluster
+      @unlogged_reactor.stop.get if @unlogged_reactor
+      @logged_reactor.stop.get if @logged_reactor
+      @counter_reactor.stop.get if @counter_reactor
+    end
+
     private
 
     attr_reader :statement_cache

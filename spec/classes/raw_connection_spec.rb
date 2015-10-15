@@ -246,5 +246,74 @@ module CassandraModel
     describe('#logged_batch_reactor') { it_behaves_like 'a batch reactor', :logged_batch_reactor, SingleTokenLoggedBatch }
     describe('#counter_batch_reactor') { it_behaves_like 'a batch reactor', :counter_batch_reactor, SingleTokenCounterBatch }
 
+    describe '#shutdown' do
+      let(:session) { double(:cluster, close: nil) }
+      let(:cluster) { double(:cluster, connect: session, close: nil) }
+      let!(:unlogged_batch_reactor) { mock_shutdown_reactor(cluster, SingleTokenUnloggedBatch) }
+      let!(:logged_batch_reactor) { mock_shutdown_reactor(cluster, SingleTokenLoggedBatch) }
+      let!(:counter_batch_reactor) { mock_shutdown_reactor(cluster, SingleTokenCounterBatch) }
+
+      before do
+        allow(Cassandra).to receive(:cluster).and_return(cluster)
+      end
+
+      context 'with a cluster' do
+        before { raw_connection.cluster }
+
+        it 'should close the cluster connection' do
+          expect(cluster).to receive(:close)
+          raw_connection.shutdown
+        end
+
+        context 'with a session' do
+          before { raw_connection.session }
+
+          it 'should close the cluster after closing the session' do
+            expect(session).to receive(:close).ordered
+            expect(cluster).to receive(:close).ordered
+            raw_connection.shutdown
+          end
+        end
+      end
+
+      it 'should not close the cluster connection if it had never connected' do
+        expect(cluster).not_to receive(:close)
+        raw_connection.shutdown
+      end
+
+      shared_examples_for 'shutting down a reactor' do |name, type|
+        let!(:reactor) { mock_shutdown_reactor(cluster, type) }
+
+        context "with a #{type} reactor" do
+          before { raw_connection.public_send(name) }
+
+          it 'should shutdown the reactor' do
+            expect(reactor.stopped_future).to receive(:get)
+            raw_connection.shutdown
+          end
+        end
+
+        it 'should not shutdown a reactor that was never started' do
+          expect(reactor.stopped_future).not_to receive(:get)
+          raw_connection.shutdown
+        end
+
+      end
+
+      it_behaves_like 'shutting down a reactor', :unlogged_batch_reactor, SingleTokenUnloggedBatch
+      it_behaves_like 'shutting down a reactor', :logged_batch_reactor, SingleTokenLoggedBatch
+      it_behaves_like 'shutting down a reactor', :counter_batch_reactor, SingleTokenCounterBatch
+
+    end
+
+    private
+
+    def mock_shutdown_reactor(cluster, type)
+      stopped_future = double(:future, get: nil)
+      double(:reactor, stopped_future: stopped_future, stop: stopped_future).tap do |reactor|
+        allow(CassandraModel::BatchReactor).to receive(:new).with(cluster, cluster.connect, type, {}).and_return(reactor)
+      end
+    end
+
   end
 end
