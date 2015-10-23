@@ -13,6 +13,16 @@ module CassandraModel
 
     before { mock_simple_table(table_name, partition_key, clustering_columns, remaining_columns) }
 
+    # for time slicing
+    around { |example| subject.in_context({}) { example.run } }
+
+    describe '#in_context' do
+      it 'should be the table' do
+        table = subject.in_context({}) { |table| table }
+        is_expected.to eq(table)
+      end
+    end
+
     describe '#name' do
       its(:name) { is_expected.to eq('records') }
 

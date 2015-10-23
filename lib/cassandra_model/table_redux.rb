@@ -9,6 +9,11 @@ module CassandraModel
       @connection_name = connection_name
     end
 
+    #noinspection RubyUnusedLocalVariable
+    def in_context(time)
+      yield self
+    end
+
     def connection
       ConnectionCache[@connection_name]
     end
