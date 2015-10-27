@@ -72,16 +72,24 @@ module CassandraModel
     end
 
     def shutdown
+      @shutdown = true
       REACTOR_MUTEX.synchronize do
         @unlogged_reactor.stop.get if @unlogged_reactor
+        @unlogged_reactor = nil
+
         @logged_reactor.stop.get if @logged_reactor
+        @logged_reactor = nil
+
         @counter_reactor.stop.get if @counter_reactor
+        @counter_reactor = nil
       end
       SESSION_MUTEX.synchronize do
         @session.close if @session
+        @session = nil
       end
       CLUSTER_MUTEX.synchronize do
         @cluster.close if @cluster
+        @cluster = nil
       end
     end
 
@@ -124,6 +132,8 @@ module CassandraModel
       return result if result
 
       mutex.synchronize do
+        raise Cassandra::Errors::InvalidError.new('Connection invalidated!', 'Dummy') if !!@shutdown
+
         result = instance_variable_get(name)
         return result if result
 

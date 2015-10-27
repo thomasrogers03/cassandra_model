@@ -361,6 +361,21 @@ module CassandraModel
       it_behaves_like 'shutting down a reactor', :logged_batch_reactor, SingleTokenLoggedBatch
       it_behaves_like 'shutting down a reactor', :counter_batch_reactor, SingleTokenCounterBatch
 
+      shared_examples_for 'a re-use attempt' do |method|
+        before { raw_connection.shutdown }
+
+        describe "calling ##{method} after shutdown" do
+          it 'should raise an error' do
+            expect { raw_connection.public_send(method) }.to raise_error(Cassandra::Errors::InvalidError, 'Connection invalidated!')
+          end
+        end
+      end
+
+      it_behaves_like 'a re-use attempt', :cluster
+      it_behaves_like 'a re-use attempt', :session
+      it_behaves_like 'a re-use attempt', :unlogged_batch_reactor
+      it_behaves_like 'a re-use attempt', :logged_batch_reactor
+      it_behaves_like 'a re-use attempt', :counter_batch_reactor
     end
 
     private
