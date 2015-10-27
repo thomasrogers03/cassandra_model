@@ -135,6 +135,12 @@ module CassandraModel
         it { is_expected.to eq("CREATE TABLE #{definition.name_in_cassandra} (title text, series int, episode int, body text, PRIMARY KEY ((title), series, episode))") }
       end
 
+      context 'with no clustering columns' do
+        let(:clustering_columns) { {} }
+
+        it { is_expected.to eq("CREATE TABLE #{definition.name_in_cassandra} (title text, body text, PRIMARY KEY (title))") }
+      end
+
       context 'when requested to ignore the table id' do
         subject { TableDefinition.new(options).to_cql(no_id: true) }
 

@@ -24,7 +24,7 @@ module CassandraModel
       exists = if options[:check_exists]
                  'IF NOT EXISTS '
                end
-      "CREATE TABLE #{exists}#{table_name} (#{columns}, PRIMARY KEY (#{primary_key})"
+      "CREATE TABLE #{exists}#{table_name} (#{columns}, PRIMARY KEY #{primary_key})"
     end
 
     def table_id
@@ -62,7 +62,11 @@ module CassandraModel
     end
 
     def primary_key
-      "(#{@partition_key * ', '}), #{@clustering_columns * ', '})"
+      if @clustering_columns.present?
+        "((#{@partition_key * ', '}), #{@clustering_columns * ', '})"
+      else
+        "(#{@partition_key * ', '})"
+      end
     end
   end
 end
