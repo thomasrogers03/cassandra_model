@@ -9,6 +9,10 @@ module CassandraModel
     DEFAULT_CONFIGURATION = {
         hosts: %w(localhost),
         keyspace: 'default_keyspace',
+        keyspace_options: {
+            class: 'SimpleStrategy',
+            replication_factor: 1
+        },
         port: '9042',
         consistency: :one,
         connection_timeout: 10,
@@ -46,7 +50,17 @@ module CassandraModel
     end
 
     def keyspace
-      cluster.keyspace(config[:keyspace])
+      cluster.keyspace(keyspace_name) || begin
+        keyspace_options = config[:keyspace_options].map do |key, value|
+          value = "'#{value}'" if value.is_a?(String)
+          "'#{key}' : #{value}"
+        end * ', '
+        keyspace_options = "{ #{keyspace_options} }"
+        query = "CREATE KEYSPACE IF NOT EXISTS #{keyspace_name} WITH REPLICATION = #{keyspace_options};"
+        cluster.connect.execute(query)
+        sleep 0.1 until (keyspace = cluster.keyspace(keyspace_name))
+        keyspace
+      end
     end
 
     def unlogged_batch_reactor
@@ -78,6 +92,10 @@ module CassandraModel
     private
 
     attr_reader :statement_cache
+
+    def keyspace_name
+      config[:keyspace]
+    end
 
     def reactor(name, type)
       safe_getset_variable(REACTOR_MUTEX, name) do

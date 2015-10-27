@@ -11,6 +11,10 @@ module CassandraModel
         {
             hosts: %w(localhost),
             keyspace: 'default_keyspace',
+            keyspace_options: {
+                class: 'SimpleStrategy',
+                replication_factor: 1
+            },
             port: '9042',
             consistency: :one,
             connection_timeout: 10,
@@ -27,6 +31,10 @@ module CassandraModel
           {
               hosts: %w(behemoth),
               keyspace: 'keyspace',
+              keyspace_options: {
+                  class: 'SimpleStrategy',
+                  replication_factor: 1
+              },
               port: '7777',
               consistency: :all,
               connection_timeout: 60,
@@ -59,6 +67,10 @@ module CassandraModel
             {
                 hosts: %w(behemoth),
                 keyspace: 'keyspace',
+                keyspace_options: {
+                    class: 'SimpleStrategy',
+                    replication_factor: 1
+                },
                 port: '7777',
                 consistency: :quorum,
                 connection_timeout: 60,
@@ -96,6 +108,10 @@ module CassandraModel
           {
               hosts: %w(me),
               keyspace: 'new_keyspace',
+              keyspace_options: {
+                  class: 'SimpleStrategy',
+                  replication_factor: 1
+              },
               port: '9999',
               consistency: :all,
               connection_timeout: 60,
@@ -194,8 +210,44 @@ module CassandraModel
     end
 
     describe '#keyspace' do
+      let(:session) { double(:connection) }
+
       it 'should be the keyspace object used to connect to the cluster' do
         expect(raw_connection.keyspace).to eq(keyspace)
+      end
+
+      context 'when the keyspace does not yet exist' do
+        let(:cql) do
+          "CREATE KEYSPACE IF NOT EXISTS default_keyspace WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };"
+        end
+
+        before do
+          allow(raw_connection).to receive(:sleep)
+          allow(cluster).to receive(:connect).with(no_args).and_return(session)
+          allow(cluster).to receive(:keyspace).and_return(nil)
+          allow(session).to receive(:execute).with(cql) do
+            allow(cluster).to receive(:keyspace).and_return(nil, nil, nil, keyspace)
+          end
+        end
+
+        it 'should create the keyspace with the default options' do
+          expect(raw_connection.keyspace).to eq(keyspace)
+        end
+
+        context 'with different keyspace options' do
+          let(:keyspace_options) { {class: 'NetworkTopologyStrategy', dc1: 3, dc2: 4} }
+          let(:keyspace_name) { 'my_keyspace' }
+          let(:config) { {keyspace: keyspace_name, keyspace_options: keyspace_options} }
+          let(:cql) do
+            "CREATE KEYSPACE IF NOT EXISTS my_keyspace WITH REPLICATION = { 'class' : 'NetworkTopologyStrategy', 'dc1' : 3, 'dc2' : 4 };"
+          end
+
+          before { raw_connection.config = config }
+
+          it 'should create the keyspace with the specified options' do
+            expect(raw_connection.keyspace).to eq(keyspace)
+          end
+        end
       end
     end
 
