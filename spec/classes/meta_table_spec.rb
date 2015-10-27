@@ -123,6 +123,19 @@ module CassandraModel
           end
         end
 
+        context 'when creating the table raises an error' do
+          before { allow(connection).to receive(:execute).and_raise('Could not create table!') }
+
+          it 'should remove the created TableDescriptor' do
+            expect(descriptor).to receive(:delete)
+            subject.public_send(method) rescue nil
+          end
+
+          it 'should re-raise the error' do
+            expect { subject.public_send(method) }.to raise_error
+          end
+        end
+
         describe 'consistency' do
           let(:bad_keyspace) { double(:keyspace, table: nil) }
 

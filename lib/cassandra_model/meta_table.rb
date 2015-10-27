@@ -37,7 +37,14 @@ module CassandraModel
 
     def create_table
       descriptor = TableDescriptor.create(@table_definition)
-      connection.session.execute(create_table_cql) if descriptor.valid
+      if descriptor.valid
+        begin
+          connection.session.execute(create_table_cql)
+        rescue
+          descriptor.delete
+          raise
+        end
+      end
       100.times do
         sleep 0.100
         break if keyspace.table(name_in_cassandra)
