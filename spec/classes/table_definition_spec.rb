@@ -140,6 +140,12 @@ module CassandraModel
 
         it { is_expected.to eq('CREATE TABLE books (title text, series int, body text, PRIMARY KEY ((title), series))') }
       end
+
+      context 'when we want to check whether the table already exists' do
+        subject { TableDefinition.new(options).to_cql(check_exists: true) }
+
+        it { is_expected.to eq("CREATE TABLE IF NOT EXISTS #{definition.name_in_cassandra} (title text, series int, body text, PRIMARY KEY ((title), series))") }
+      end
     end
 
   end

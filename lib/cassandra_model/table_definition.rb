@@ -21,7 +21,10 @@ module CassandraModel
 
     def to_cql(options = {})
       table_name = options[:no_id] ? name : name_in_cassandra
-      "CREATE TABLE #{table_name} (#{columns}, PRIMARY KEY (#{primary_key})"
+      exists = if options[:check_exists]
+                 'IF NOT EXISTS '
+               end
+      "CREATE TABLE #{exists}#{table_name} (#{columns}, PRIMARY KEY (#{primary_key})"
     end
 
     def table_id
