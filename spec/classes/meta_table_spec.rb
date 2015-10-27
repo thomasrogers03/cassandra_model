@@ -91,7 +91,7 @@ module CassandraModel
 
     describe '#reset_local_schema!' do
       it 'should indicate that this functionality is not implemented' do
-        expect{subject.reset_local_schema!}.to raise_error(Cassandra::Errors::ClientError, 'Schema changes are not supported for meta tables')
+        expect { subject.reset_local_schema! }.to raise_error(Cassandra::Errors::ClientError, 'Schema changes are not supported for meta tables')
       end
     end
 
@@ -105,10 +105,11 @@ module CassandraModel
 
     shared_examples_for 'a method requiring the table to exist' do |method|
       describe "#{method}" do
+        let(:cql) { definition.to_cql(check_exists: true) }
 
         context 'when the table does not yet exist' do
           it 'should create the table' do
-            expect(connection).to receive(:execute).with(definition.to_cql)
+            expect(connection).to receive(:execute).with(cql)
             subject.public_send(method)
           end
         end
@@ -117,15 +118,13 @@ module CassandraModel
           let(:valid) { false }
 
           it 'should create the table' do
-            expect(connection).not_to receive(:execute).with(definition.to_cql)
+            expect(connection).not_to receive(:execute).with(cql)
             subject.public_send(method)
           end
         end
 
         describe 'consistency' do
           let(:bad_keyspace) { double(:keyspace, table: nil) }
-
-          #before { TableDescriptor.columns = nil }
 
           it 'should wait until the schema says the table exists' do
             allow(cluster).to receive(:keyspace).and_return(bad_keyspace, bad_keyspace, keyspace)
