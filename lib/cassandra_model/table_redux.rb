@@ -2,12 +2,15 @@ module CassandraModel
   class TableRedux
     extend Forwardable
 
-    attr_reader :connection
     attr_reader :name
 
     def initialize(connection_name = nil, table_name)
       @name = table_name.to_s
-      @connection = ConnectionCache[connection_name]
+      @connection_name = connection_name
+    end
+
+    def connection
+      ConnectionCache[@connection_name]
     end
 
     def allow_truncation!
@@ -16,7 +19,7 @@ module CassandraModel
 
     def truncate!
       raise "Truncation not enabled for table '#{name}'" unless @allow_truncation
-      @connection.session.execute("TRUNCATE #{name}")
+      connection.session.execute("TRUNCATE #{name}")
     end
 
     def reset_local_schema!
@@ -44,7 +47,7 @@ module CassandraModel
     private
 
     def table
-      @connection.keyspace.table(name)
+      connection.keyspace.table(name)
     end
   end
 end

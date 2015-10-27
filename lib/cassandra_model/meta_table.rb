@@ -2,7 +2,7 @@ module CassandraModel
   class MetaTable < TableRedux
     def initialize(connection_name = nil, table_definition)
       @table_definition = table_definition
-      @connection = ConnectionCache[connection_name]
+      @connection_name = connection_name
     end
 
     def reset_local_schema!
