@@ -6,6 +6,8 @@ module CassandraModel
     extend CassandraModel::QueryHelper
     extend CassandraModel::MetaColumns
 
+    EMPTY_RESULT = [].freeze
+
     attr_reader :attributes, :valid
 
     Attributes = Struct.new(
@@ -215,6 +217,7 @@ module CassandraModel
       bound_statement = statement.bind(*column_values)
       batch_reactor.perform_within_batch(bound_statement) do |batch|
         batch.add(bound_statement)
+        EMPTY_RESULT
       end
     end
 
