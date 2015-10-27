@@ -50,17 +50,7 @@ module CassandraModel
     end
 
     def keyspace
-      cluster.keyspace(keyspace_name) || begin
-        keyspace_options = config[:keyspace_options].map do |key, value|
-          value = "'#{value}'" if value.is_a?(String)
-          "'#{key}' : #{value}"
-        end * ', '
-        keyspace_options = "{ #{keyspace_options} }"
-        query = "CREATE KEYSPACE IF NOT EXISTS #{keyspace_name} WITH REPLICATION = #{keyspace_options};"
-        cluster.connect.execute(query)
-        sleep 0.1 until (keyspace = cluster.keyspace(keyspace_name))
-        keyspace
-      end
+      cluster.keyspace(keyspace_name) || create_keyspace
     end
 
     def unlogged_batch_reactor
@@ -92,6 +82,24 @@ module CassandraModel
     private
 
     attr_reader :statement_cache
+
+    def create_keyspace
+      cluster.connect.execute(create_keyspace_query)
+      sleep 0.1 until (keyspace = cluster.keyspace(keyspace_name))
+      keyspace
+    end
+
+    def create_keyspace_query
+      "CREATE KEYSPACE IF NOT EXISTS #{keyspace_name} WITH REPLICATION = #{keyspace_options};"
+    end
+
+    def keyspace_options
+      keyspace_options = config[:keyspace_options].map do |key, value|
+        value = "'#{value}'" if value.is_a?(String)
+        "'#{key}' : #{value}"
+      end * ', '
+      "{ #{keyspace_options} }"
+    end
 
     def keyspace_name
       config[:keyspace]
