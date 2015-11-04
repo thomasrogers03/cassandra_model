@@ -65,7 +65,7 @@ module CassandraModel
       if @clustering_columns.present?
         "((#{@partition_key * ', '}), #{@clustering_columns * ', '})"
       else
-        "(#{@partition_key * ', '})"
+        "((#{@partition_key * ', '}))"
       end
     end
   end
