@@ -158,6 +158,15 @@ module CassandraModel
         MockRecordStatic.request_async(model: 'AABBCCDD', series: '91A', price: 9.99)
       end
 
+      context 'when restricting the clustering column by a non-equal restriction' do
+        let(:query) { 'SELECT * FROM mock_records WHERE rk_model = ? AND rk_series = ? AND ck_price > ?' }
+
+        it 'should map the clustering column properly' do
+          expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 9.99, {})
+          MockRecordStatic.request_async(model: 'AABBCCDD', series: '91A', :price.gt => 9.99)
+        end
+      end
+
       context 'when a composite column is part of the remaining columns' do
         let(:partition_key) { [:rk_model, :rk_series] }
         let(:clustering_columns) { [:ck_series] }

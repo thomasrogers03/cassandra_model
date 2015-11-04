@@ -95,7 +95,8 @@ module CassandraModel
 
     def where_params(clause)
       updated_clause = clause.inject({}) do |memo, (key, value)|
-        memo.merge!((composite_pk_map[key] || composite_ck_map[key] || key) => value)
+        updated_key = key_for_where_params(key)
+        memo.merge!(updated_key => value)
       end
 
       missing_keys = Set.new(partition_key - updated_clause.keys)
@@ -103,6 +104,19 @@ module CassandraModel
       updated_clause.merge!(default_clause) if default_clause
 
       super(updated_clause)
+    end
+
+    def key_for_where_params(key)
+      key.is_a?(ThomasUtils::KeyComparer) ? mapped_key_comparer(key) : mapped_key(key)
+    end
+
+    def mapped_key_comparer(key)
+      mapped_key = mapped_key(key.key)
+      key.new_key(mapped_key)
+    end
+
+    def mapped_key(key)
+      composite_pk_map[key] || composite_ck_map[key] || key
     end
 
     def row_composite_default(row)
