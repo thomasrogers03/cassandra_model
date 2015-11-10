@@ -47,6 +47,7 @@ module CassandraModel
           when Integer then retype_to(:int)
           when Float then retype_to(:double)
           when Time then retype_to(:timestamp)
+          when Cassandra::Uuid then retype_to(:uuid)
         end
       end
 
@@ -69,6 +70,7 @@ module CassandraModel
           when :int then default_to(0)
           when :double then default_to(0.0)
           when :timestamp then default_to(Time.at(0))
+          when :uuid then default_to(Cassandra::Uuid.new(0))
         end
       end
 

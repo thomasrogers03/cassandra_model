@@ -157,6 +157,13 @@ module CassandraModel
             expect(subject.partition_key).to eq(price: :timestamp)
           end
         end
+
+        context 'with a uuid' do
+          it 'should infer the type from the default value' do
+            subject.knows_about(:id).defaults(:id).to(Cassandra::Uuid.new(0))
+            expect(subject.partition_key).to eq(id: :uuid)
+          end
+        end
       end
 
       context 'when mixing #knows_about and #retype' do
@@ -176,6 +183,13 @@ module CassandraModel
           it 'should infer the type from the default value' do
             subject.knows_about(:price).change_type_of(:price).to(:timestamp)
             expect(subject.column_defaults).to eq(price: Time.at(0))
+          end
+        end
+
+        context 'with a uuid' do
+          it 'should infer the type from the default value' do
+            subject.knows_about(:id).change_type_of(:id).to(:uuid)
+            expect(subject.column_defaults).to eq(id: Cassandra::Uuid.new(0))
           end
         end
       end
