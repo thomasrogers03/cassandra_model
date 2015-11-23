@@ -5,11 +5,11 @@ class MockPage
   attr_reader :next_page_async, :execution_info
   def_delegators :@results, :each, :empty?
 
-  def initialize(last_page, next_page_async, results)
+  def initialize(last_page, next_page_async, results, execution_info = nil)
     @last_page = last_page
     @next_page_async = next_page_async
     @results = results
-    @execution_info = SecureRandom.uuid
+    @execution_info = execution_info || SecureRandom.uuid
   end
 
   def last_page?
