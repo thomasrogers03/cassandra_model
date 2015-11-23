@@ -48,6 +48,16 @@ module CassandraModel
       @record_klass.new(@params.merge(attributes))
     end
 
+    def first_or_new_async(attributes)
+      first_async.then do |result|
+        result || new(attributes)
+      end
+    end
+
+    def first_or_new(attributes)
+      first_or_new_async(attributes).get
+    end
+
     def check_exists
       @options.merge!(check_exists: true)
       self

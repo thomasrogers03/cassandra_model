@@ -151,6 +151,48 @@ module CassandraModel
       end
     end
 
+    describe '#first_or_new_async' do
+      let(:results) { [] }
+      let(:record_attributes) do
+        {partition: 'Partition', clustering: 'Clustering'}
+      end
+
+      before do
+        allow(record).to receive(:new) do |attributes|
+          Record.new(attributes)
+        end
+      end
+
+      subject { QueryBuilder.new(record).where(record_attributes).first_or_new_async({}).get }
+
+      it 'should create a new instance of the record' do
+        is_expected.to eq(Record.new(record_attributes))
+      end
+
+      context 'when the record already exists' do
+        let(:result_attributes) { record_attributes.merge(meta_data: 'Here I am') }
+        let(:first_result) { MockQueryResult.new(result_attributes) }
+        let(:results) { [first_result] }
+
+        it 'should return the existing record' do
+          expect(subject.attributes).to eq(result_attributes)
+        end
+      end
+    end
+
+    describe '#first_or_new' do
+      let(:attributes) { {partition: 'Key'} }
+      let(:future_result) { Cassandra::Future.value(:new_record) }
+
+      subject { QueryBuilder.new(record).first_or_new(attributes) }
+
+      before do
+        allow_any_instance_of(QueryBuilder).to receive(:first_or_new_async).with(attributes).and_return(future_result)
+      end
+
+      it { is_expected.to eq(:new_record) }
+    end
+
     describe '#pluck' do
       let(:first_result) { MockQueryResult.new(column1: 'hello', column2: 'world', column3: 'good bye!') }
       let(:results) { [first_result] }
