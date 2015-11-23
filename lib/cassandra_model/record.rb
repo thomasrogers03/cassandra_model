@@ -6,8 +6,6 @@ module CassandraModel
     extend CassandraModel::QueryHelper
     extend CassandraModel::MetaColumns
 
-    EMPTY_RESULT = [].freeze
-
     attr_reader :attributes, :valid, :execution_info
 
     Attributes = Struct.new(
@@ -150,10 +148,14 @@ module CassandraModel
             promise.break(e)
           end
         end
-        promise.future.then { save_row_async(options) }.then { self }
+        promise.future.then { save_row_async(options) }.then do |result|
+          @execution_info = result.execution_info
+          self
+        end
       else
         save_row_async(options).then do |result|
           invalidate! if save_rejected?(result)
+          @execution_info = result.execution_info
           self
         end
       end
@@ -218,7 +220,7 @@ module CassandraModel
       bound_statement = statement.bind(*column_values)
       batch_reactor.perform_within_batch(bound_statement) do |batch|
         batch.add(bound_statement)
-        EMPTY_RESULT
+        batch
       end
     end
 

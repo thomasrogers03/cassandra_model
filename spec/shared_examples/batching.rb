@@ -52,7 +52,8 @@ module CassandraModel
   shared_examples_for 'a query running in a batch' do |method, args, statement_args|
     let(:batch_type) { :logged }
     let(:batch_klass) { SingleTokenLoggedBatch }
-    let(:batch) { double(:batch) }
+    let(:query_result) { MockPage.new(true, nil, []) }
+    let(:batch) { double(:batch, first: query_result.first, execution_info: query_result.execution_info) }
     let(:bound_statement) { double(:bound_statement) }
 
     before do

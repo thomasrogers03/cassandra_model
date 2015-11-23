@@ -579,10 +579,18 @@ module CassandraModel
       let(:attributes) { {partition: 'Partition Key'} }
       let(:existence_check) { nil }
       let(:query) { "INSERT INTO table (#{columns.join(', ')}) VALUES (#{(%w(?) * columns.size).join(', ')})#{existence_check}" }
-      let(:page_results) { [] }
+      let(:query_results) { [] }
+      let(:page_results) { MockPage.new(true, nil, query_results) }
+      let(:execution_info) { page_results.execution_info }
       let(:future_result) { page_results }
       let(:future_error) { nil }
-      let(:results) { MockFuture.new(result: page_results, error: future_error) }
+      let(:results) do
+        if future_error
+          Cassandra::Future.error(StandardError.new(future_error))
+        else
+          Cassandra::Future.value(page_results)
+        end
+      end
 
       before do
         Record.table_name = table_name
@@ -592,6 +600,12 @@ module CassandraModel
       it 'should save the record to the database' do
         expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
         Record.new(attributes).save_async
+      end
+
+      it 'should assign the execution_info for this record' do
+        record = Record.new(attributes)
+        record.save_async
+        expect(record.execution_info).to eq(execution_info)
       end
 
       context 'when the Record class has deferred columns' do
@@ -617,6 +631,19 @@ module CassandraModel
             block.call
           end.and_return(MockFuture.new(record))
           record.save_async
+        end
+
+        describe 'saving the execution info' do
+          before do
+            allow(Record).to receive(:save_deferred_columns).with(record).and_return([])
+            allow(Record).to receive(:save_async_deferred_columns).with(record).and_return([])
+          end
+
+          it 'should assign the execution_info for this record' do
+            record = Record.new(attributes)
+            record.save_async
+            expect(record.execution_info).to eq(execution_info)
+          end
         end
 
         context 'when the block raises an error' do
@@ -720,7 +747,7 @@ module CassandraModel
         end
 
         context 'when the record already exists' do
-          let(:page_results) { [{'[applied]' => false}] }
+          let(:query_results) { [{'[applied]' => false}] }
 
           it 'should invalidate the record if it already exists' do
             expect(Record.new(attributes).save_async(check_exists: true).get.valid).to eq(false)
