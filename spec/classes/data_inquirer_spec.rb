@@ -52,44 +52,7 @@ module CassandraModel
       end
     end
 
-    describe '#guess_data_types!' do
-      let(:column_name) { :title }
-
-      before do
-        subject.guess_data_types!
-        subject.knows_about(column_name)
-      end
-
-      its(:partition_key) { is_expected.to eq(title: :text) }
-
-      shared_examples_for 'a data type determine by a postfix' do |postfix, type|
-        context "when the column name ends in _#{postfix}" do
-          let(:column_name) { :"created_#{postfix}" }
-          its(:partition_key) { is_expected.to eq(column_name => type) }
-
-          context 'with a different column' do
-            let(:column_name) { :"updated_#{postfix}" }
-            its(:partition_key) { is_expected.to eq(column_name => type) }
-          end
-        end
-      end
-
-      it_behaves_like 'a data type determine by a postfix', :at, :timestamp
-      it_behaves_like 'a data type determine by a postfix', :at_id, :timeuuid
-      it_behaves_like 'a data type determine by a postfix', :id, :uuid
-      it_behaves_like 'a data type determine by a postfix', :price, :double
-      it_behaves_like 'a data type determine by a postfix', :average, :double
-      it_behaves_like 'a data type determine by a postfix', :stddev, :double
-      it_behaves_like 'a data type determine by a postfix', :year, :int
-      it_behaves_like 'a data type determine by a postfix', :day, :int
-      it_behaves_like 'a data type determine by a postfix', :month, :int
-      it_behaves_like 'a data type determine by a postfix', :index, :int
-      it_behaves_like 'a data type determine by a postfix', :count, :int
-      it_behaves_like 'a data type determine by a postfix', :total, :int
-      it_behaves_like 'a data type determine by a postfix', :map, 'map<string, string>'
-      it_behaves_like 'a data type determine by a postfix', :data, :blob
-
-    end
+    it_behaves_like 'a data set guessing a type', :partition_key, :int
 
     describe '#shards_queries' do
       it 'should mark the inquirer as sharding the requests for data' do
