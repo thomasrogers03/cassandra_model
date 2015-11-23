@@ -185,9 +185,10 @@ module CassandraModel
       end
     end
 
-    def write_query_options
-      {}.tap do |options|
-        options[:consistency] = write_consistency if write_consistency
+    def write_query_options(options = {})
+      {}.tap do |new_option|
+        new_option[:consistency] = write_consistency if write_consistency
+        new_option[:trace] = true if options[:trace]
       end
     end
 
@@ -209,7 +210,7 @@ module CassandraModel
       future = if batch_reactor
                  execute_async_in_batch(statement, column_values)
                else
-                 session.execute_async(statement, *column_values, write_query_options)
+                 session.execute_async(statement, *column_values, write_query_options(options))
                end
       future.on_failure do |error|
         Logging.logger.error("Error saving #{self.class}: #{error}")

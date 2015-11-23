@@ -602,6 +602,13 @@ module CassandraModel
         Record.new(attributes).save_async
       end
 
+      context 'with tracing specified' do
+        it 'should execute the query with tracing enabled' do
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', trace: true).and_return(results)
+          Record.new(attributes).save_async(trace: true)
+        end
+      end
+
       it 'should assign the execution_info for this record' do
         record = Record.new(attributes)
         record.save_async
@@ -657,7 +664,6 @@ module CassandraModel
         end
 
         context 'when specifying explicitly not to save deferred columns' do
-
           it 'should not save them' do
             expect(Record).not_to receive(:save_deferred_columns)
             expect(Record).not_to receive(:save_async_deferred_columns)
