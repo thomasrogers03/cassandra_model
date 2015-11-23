@@ -62,25 +62,21 @@ module CassandraModel
 
       its(:partition_key) { is_expected.to eq(title: :text) }
 
-      context 'when the column name ends in _at' do
-        let(:column_name) { :created_at }
-        its(:partition_key) { is_expected.to eq(created_at: :timestamp) }
+      shared_examples_for 'a data type determine by a postfix' do |postfix, type|
+        context "when the column name ends in _#{postfix}" do
+          let(:column_name) { :"created_#{postfix}" }
+          its(:partition_key) { is_expected.to eq(column_name => type) }
 
-        context 'with a different column' do
-          let(:column_name) { :updated_at }
-          its(:partition_key) { is_expected.to eq(updated_at: :timestamp) }
+          context 'with a different column' do
+            let(:column_name) { :"updated_#{postfix}" }
+            its(:partition_key) { is_expected.to eq(column_name => type) }
+          end
         end
       end
 
-      context 'when the column name ends in _id' do
-        let(:column_name) { :object_id }
-        its(:partition_key) { is_expected.to eq(object_id: :uuid) }
+      it_behaves_like 'a data type determine by a postfix', :at, :timestamp
+      it_behaves_like 'a data type determine by a postfix', :id, :uuid
 
-        context 'with a different column' do
-          let(:column_name) { :update_id }
-          its(:partition_key) { is_expected.to eq(update_id: :uuid) }
-        end
-      end
     end
 
     describe '#shards_queries' do
