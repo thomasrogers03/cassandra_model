@@ -45,7 +45,7 @@ module CassandraModel
     end
 
     def new(attributes)
-      @record_klass.new(attributes)
+      @record_klass.new(@params.merge(attributes))
     end
 
     def check_exists

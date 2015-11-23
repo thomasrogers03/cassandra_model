@@ -125,6 +125,14 @@ module CassandraModel
           expect(subject.new(record_attributes)).to eq(Record.new(record_attributes))
         end
       end
+
+      context 'with attributes specified through the where clause' do
+        subject { QueryBuilder.new(record).where(record_attributes) }
+
+        it 'should create an instance of the record with those attributes' do
+          expect(subject.new({})).to eq(Record.new(record_attributes))
+        end
+      end
     end
 
     describe '#check_exists' do
