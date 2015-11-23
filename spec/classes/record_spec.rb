@@ -589,6 +589,11 @@ module CassandraModel
         allow(connection).to receive(:execute_async).and_return(results)
       end
 
+      it 'should save the record to the database' do
+        expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
+        Record.new(attributes).save_async
+      end
+
       context 'when the Record class has deferred columns' do
         let(:record) { Record.new(attributes) }
         let(:save_block) { ->(attributes, value) {} }
@@ -640,11 +645,6 @@ module CassandraModel
         it 'should raise an error' do
           expect { Record.new(attributes).save_async }.to raise_error('Cannot save invalidated record!')
         end
-      end
-
-      it 'should save the record to the database' do
-        expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
-        Record.new(attributes).save_async
       end
 
       context 'when configured to use a batch' do
