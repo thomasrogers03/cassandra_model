@@ -75,7 +75,19 @@ module CassandraModel
       end
 
       it_behaves_like 'a data type determine by a postfix', :at, :timestamp
+      it_behaves_like 'a data type determine by a postfix', :at_id, :timeuuid
       it_behaves_like 'a data type determine by a postfix', :id, :uuid
+      it_behaves_like 'a data type determine by a postfix', :price, :double
+      it_behaves_like 'a data type determine by a postfix', :average, :double
+      it_behaves_like 'a data type determine by a postfix', :stddev, :double
+      it_behaves_like 'a data type determine by a postfix', :year, :int
+      it_behaves_like 'a data type determine by a postfix', :day, :int
+      it_behaves_like 'a data type determine by a postfix', :month, :int
+      it_behaves_like 'a data type determine by a postfix', :index, :int
+      it_behaves_like 'a data type determine by a postfix', :count, :int
+      it_behaves_like 'a data type determine by a postfix', :total, :int
+      it_behaves_like 'a data type determine by a postfix', :map, 'map<string, string>'
+      it_behaves_like 'a data type determine by a postfix', :data, :blob
 
     end
 

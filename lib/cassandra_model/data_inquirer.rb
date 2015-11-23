@@ -111,8 +111,18 @@ module CassandraModel
       def postfix_type
         if column =~ /_at$/
           :timestamp
+        elsif column =~ /_at_id$/
+          :timeuuid
         elsif column =~ /_id$/
           :uuid
+        elsif column =~ /_(price|average|stddev)$/
+          :double
+        elsif column =~ /_(year|day|month|index|total|count)$/
+          :int
+        elsif column =~ /_data/
+          :blob
+        elsif column =~ /_map$/
+          'map<string, string>'
         end
       end
     end
