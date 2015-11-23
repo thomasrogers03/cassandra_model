@@ -8,9 +8,17 @@ module CassandraModel
       @known_keys = []
     end
 
+    def guess_data_types!
+      @guess_data_types = true
+    end
+
     def knows_about(*columns)
       columns.each do |column|
-        partition_key[column]
+        if @guess_data_types
+          guess_data_type(column)
+        else
+          partition_key[column]
+        end
         column_defaults[column]
       end
       @known_keys << columns
@@ -44,10 +52,14 @@ module CassandraModel
         default_to(value)
 
         case value
-          when Integer then retype_to(:int)
-          when Float then retype_to(:double)
-          when Time then retype_to(:timestamp)
-          when Cassandra::Uuid then retype_to(:uuid)
+          when Integer then
+            retype_to(:int)
+          when Float then
+            retype_to(:double)
+          when Time then
+            retype_to(:timestamp)
+          when Cassandra::Uuid then
+            retype_to(:uuid)
         end
       end
 
@@ -67,10 +79,14 @@ module CassandraModel
         retype_to(type)
 
         case type
-          when :int then default_to(0)
-          when :double then default_to(0.0)
-          when :timestamp then default_to(Time.at(0))
-          when :uuid then default_to(Cassandra::Uuid.new(0))
+          when :int then
+            default_to(0)
+          when :double then
+            default_to(0.0)
+          when :timestamp then
+            default_to(Time.at(0))
+          when :uuid then
+            default_to(Cassandra::Uuid.new(0))
         end
       end
 
@@ -83,6 +99,26 @@ module CassandraModel
       def default_to(value)
         ColumnDefault.new(column, inquirer).default_to(value)
       end
+    end
+
+    class DataTypeGuess < Struct.new(:column)
+      def guessed_type
+        postfix_type || :text
+      end
+
+      private
+
+      def postfix_type
+        if column =~ /_at$/
+          :timestamp
+        elsif column =~ /_id$/
+          :uuid
+        end
+      end
+    end
+
+    def guess_data_type(column)
+      partition_key[column] = DataTypeGuess.new(column).guessed_type
     end
 
   end

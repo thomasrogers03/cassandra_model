@@ -24,14 +24,14 @@ module CassandraModel
       end
 
       context 'with different columns' do
-        before { subject.knows_about(:title, :series) }
+        before { subject.knows_about(:title, :series_at) }
 
         it 'should define the partition key' do
-          expect(subject.partition_key).to eq(title: :text, series: :text)
+          expect(subject.partition_key).to eq(title: :text, series_at: :text)
         end
 
         it 'should define default values for the specified columns' do
-          expect(subject.column_defaults).to eq(title: '', series: '')
+          expect(subject.column_defaults).to eq(title: '', series_at: '')
         end
       end
 
@@ -48,6 +48,37 @@ module CassandraModel
             subject.knows_about(:author, :title)
             expect(subject.composite_rows).to eq([[:author], [:series]])
           end
+        end
+      end
+    end
+
+    describe '#guess_data_types!' do
+      let(:column_name) { :title }
+
+      before do
+        subject.guess_data_types!
+        subject.knows_about(column_name)
+      end
+
+      its(:partition_key) { is_expected.to eq(title: :text) }
+
+      context 'when the column name ends in _at' do
+        let(:column_name) { :created_at }
+        its(:partition_key) { is_expected.to eq(created_at: :timestamp) }
+
+        context 'with a different column' do
+          let(:column_name) { :updated_at }
+          its(:partition_key) { is_expected.to eq(updated_at: :timestamp) }
+        end
+      end
+
+      context 'when the column name ends in _id' do
+        let(:column_name) { :object_id }
+        its(:partition_key) { is_expected.to eq(object_id: :uuid) }
+
+        context 'with a different column' do
+          let(:column_name) { :update_id }
+          its(:partition_key) { is_expected.to eq(update_id: :uuid) }
         end
       end
     end
