@@ -283,6 +283,13 @@ module CassandraModel
         end
       end
 
+      context 'when tracing is specified' do
+        it 'should forward tracing to the underlying query execution' do
+          expect(connection).to receive(:execute_async).with(statement, trace: true).and_return(results)
+          Record.request_async(clause, trace: true)
+        end
+      end
+
       context 'when restricting by multiple values' do
         let(:clause) { {partition: ['Partition Key', 'Other Partition Key']} }
         let(:where_clause) { ' WHERE partition IN (?, ?)' }

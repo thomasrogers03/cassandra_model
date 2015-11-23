@@ -330,12 +330,14 @@ module CassandraModel
 
       def request_async(clause, options = {})
         page_size = options[:page_size]
+        trace = options[:trace]
         request_query, invalidated_result, where_values = request_meta(clause, options)
         statement = statement(request_query)
 
         query_options = {}
         query_options[:page_size] = page_size if page_size
         query_options[:consistency] = read_consistency if read_consistency
+        query_options[:trace] = trace if trace
 
         future = session.execute_async(statement, *where_values, query_options)
         if options[:limit] == 1
