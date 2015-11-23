@@ -12,6 +12,41 @@ module CassandraModel
 
       its(:partition_key) { is_expected.to eq(partition_key) }
     end
+
+    context 'when the batch has been executed' do
+      let(:results) { [] }
+      let(:result_page) { MockPage.new(true, nil, results) }
+
+      before { subject.result = result_page }
+
+      describe '#execution_info' do
+        its(:execution_info) { is_expected.to eq(result_page.execution_info) }
+      end
+
+      describe '#empty?' do
+        its(:empty?) { is_expected.to eq(result_page.empty?) }
+
+        context 'with some results' do
+          let(:results) { ['[applied]' => false] }
+
+          its(:empty?) { is_expected.to eq(result_page.empty?) }
+        end
+      end
+
+      describe 'enumerability' do
+        it 'should delegate to the underlying result' do
+          expect(subject.first).to be_nil
+        end
+
+        context 'with some results' do
+          let(:results) { ['[applied]' => false] }
+
+          it 'should delegate to the underlying result' do
+            expect(subject.first['[applied]']).to eq(false)
+          end
+        end
+      end
+    end
   end
 
   shared_examples_for 'a query running in a batch' do |method, args, statement_args|
