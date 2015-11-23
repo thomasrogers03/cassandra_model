@@ -98,6 +98,11 @@ module CassandraModel
       self
     end
 
+    def trace(trace)
+      @options[:trace] = trace
+      self
+    end
+
     def paginate(page_size)
       @options[:page_size] = page_size
       self

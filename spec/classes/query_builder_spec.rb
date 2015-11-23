@@ -331,6 +331,15 @@ module CassandraModel
       it_behaves_like 'an option query', :limit, :limit, :request, :get
     end
 
+    describe '#trace' do
+      let(:params) { false }
+
+      it_behaves_like 'a method returning the builder', :trace
+
+      it_behaves_like 'an option query', :trace, :trace, :request_async, :async
+      it_behaves_like 'an option query', :trace, :trace, :request, :get
+    end
+
     describe '#paginate' do
       let(:params) { 5000 }
 
