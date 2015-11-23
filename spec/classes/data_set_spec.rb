@@ -11,8 +11,8 @@ module CassandraModel
 
       context 'with different columns' do
         it 'should define the columns of data within the set' do
-          subject.knows_about(:name, :apartment)
-          expect(subject.columns).to eq(name: :text, apartment: :text)
+          subject.knows_about(:name, :apartment_at)
+          expect(subject.columns).to eq(name: :text, apartment_at: :text)
         end
       end
 
@@ -52,6 +52,8 @@ module CassandraModel
         end
       end
     end
+
+    it_behaves_like 'a data set guessing a type', :columns, :counter
 
     describe '#counts' do
       it 'should define a counter column' do

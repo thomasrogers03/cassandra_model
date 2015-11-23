@@ -1,5 +1,7 @@
 module CassandraModel
   class DataSet
+    include TypeGuessing
+
     attr_reader :columns, :clustering_columns, :data_rotation
 
     def initialize
@@ -9,7 +11,13 @@ module CassandraModel
     end
 
     def knows_about(*columns)
-      columns.each { |column| @columns[column] }
+      columns.each do |column|
+        if @guess_data_types
+          guess_data_type(column)
+        else
+          self.columns[column]
+        end
+      end
     end
 
     def counts(*columns)
@@ -66,6 +74,10 @@ module CassandraModel
       def define_table_slicing
         data_set.data_rotation[:slices] = slices
       end
+    end
+
+    def guess_data_type(column)
+      columns[column] = guessed_data_type(column, :counter)
     end
 
   end

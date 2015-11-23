@@ -1,15 +1,13 @@
 module CassandraModel
   class DataInquirer
+    include TypeGuessing
+
     attr_reader :partition_key, :column_defaults, :is_sharding
 
     def initialize
       @partition_key = Hash.new { |hash, key| hash[key] = :text }
       @column_defaults = Hash.new { |hash, key| hash[key] = '' }
       @known_keys = []
-    end
-
-    def guess_data_types!
-      @guess_data_types = true
     end
 
     def knows_about(*columns)
@@ -101,34 +99,8 @@ module CassandraModel
       end
     end
 
-    class DataTypeGuess < Struct.new(:column)
-      def guessed_type
-        postfix_type || :text
-      end
-
-      private
-
-      def postfix_type
-        if column =~ /_at$/
-          :timestamp
-        elsif column =~ /_at_id$/
-          :timeuuid
-        elsif column =~ /_id$/
-          :uuid
-        elsif column =~ /_(price|average|stddev)$/
-          :double
-        elsif column =~ /_(year|day|month|index|total|count)$/
-          :int
-        elsif column =~ /_data/
-          :blob
-        elsif column =~ /_map$/
-          'map<string, string>'
-        end
-      end
-    end
-
     def guess_data_type(column)
-      partition_key[column] = DataTypeGuess.new(column).guessed_type
+      partition_key[column] = guessed_data_type(column, :int)
     end
 
   end
