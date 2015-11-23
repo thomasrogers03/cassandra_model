@@ -25,7 +25,7 @@ module CassandraModel
     def batch_callback(_)
       batch = @batch_klass.new
       yield batch
-      @session.execute_async(batch)
+      @session.execute_async(batch).on_success { |result| batch.result = result }
     end
 
   end

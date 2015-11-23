@@ -2,15 +2,19 @@ require 'rspec'
 
 module CassandraModel
   describe BatchReactor do
+    class MockBatch < Array
+      attr_accessor :result
+    end
 
     let(:hosts) { [:host1, :host2, :host3] }
-    let(:host_buffers) { hosts.map { [] } }
+    let(:host_buffers) { hosts.map { MockBatch.new } }
     let(:cluster) { double(:cluster, hosts: hosts) }
     let(:session) { double(:session, keyspace: keyspace) }
     let(:execution_result) { [] }
     let(:keyspace) { 'test' }
     let(:max_batch_size) { 10 }
     let(:batch_klass) { SingleTokenUnloggedBatch }
+    let(:query_result) { MockPage.new(true, nil, []) }
 
     subject { BatchReactor.new(cluster, session, batch_klass, max_batch_size: max_batch_size) }
 
@@ -32,7 +36,7 @@ module CassandraModel
       allow(batch_klass).to receive(:new).and_return(*host_buffers)
       allow(session).to receive(:execute_async) do |batch|
         execution_result << batch
-        Cassandra::Future.value(true)
+        Cassandra::Future.value(query_result)
       end
       subject.start.get
     end
@@ -65,6 +69,13 @@ module CassandraModel
 
         it 'should execute the batch on the provided session' do
           expect(execution_result).to eq([[0]])
+        end
+
+        describe 'batch results' do
+          it 'should save the query result to the batch' do
+            batch = subject.perform_within_batch(0) { |batch| batch }.get
+            expect(batch.result).to eq(query_result)
+          end
         end
 
         context 'when the batch fails' do
