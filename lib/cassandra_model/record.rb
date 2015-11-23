@@ -422,7 +422,7 @@ module CassandraModel
       end
 
       def paginator_result_future(future, invalidated_result)
-        ResultPaginator.new(future) { |row| record_from_result(row, nil, invalidated_result) }
+        ResultPaginator.new(future) { |row, execution_info| record_from_result(row, execution_info, invalidated_result) }
       end
 
       def single_result_row_future(future, invalidated_result)

@@ -249,7 +249,7 @@ module CassandraModel
         expect(Record.request_async(clause, limit: 1).get.execution_info).to eq(execution_info)
       end
 
-      xit 'should save the execution info from the query result when querying for multiple record' do
+      it 'should save the execution info from the query result when querying for multiple record' do
         expect(Record.request_async(clause).get.first.execution_info).to eq(execution_info)
       end
 
