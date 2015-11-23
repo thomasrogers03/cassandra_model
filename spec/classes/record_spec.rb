@@ -232,6 +232,7 @@ module CassandraModel
       let(:page_results) { ['partition' => 'Partition Key'] }
       let(:result_page) { MockPage.new(true, MockFuture.new([]), page_results) }
       let(:results) { MockFuture.new(result_page) }
+      let(:execution_info) { result_page.execution_info }
       let(:record) { Record.new(partition: 'Partition Key') }
       let(:remaining_columns) { [:time_stamp] }
 
@@ -242,6 +243,14 @@ module CassandraModel
 
       it 'should create a Record instance for each returned result' do
         expect(Record.request_async(clause).get.first).to eq(record)
+      end
+
+      it 'should save the execution info from the query result when querying for one record' do
+        expect(Record.request_async(clause, limit: 1).get.execution_info).to eq(execution_info)
+      end
+
+      xit 'should save the execution info from the query result when querying for multiple record' do
+        expect(Record.request_async(clause).get.first.execution_info).to eq(execution_info)
       end
 
       context 'when the restriction key is a KeyComparer' do

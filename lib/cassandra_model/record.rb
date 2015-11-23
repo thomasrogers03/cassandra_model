@@ -8,7 +8,7 @@ module CassandraModel
 
     EMPTY_RESULT = [].freeze
 
-    attr_reader :attributes, :valid
+    attr_reader :attributes, :valid, :execution_info
 
     Attributes = Struct.new(
         :table,
@@ -45,6 +45,7 @@ module CassandraModel
     def initialize(attributes, options = {validate: true})
       ensure_attributes_accessible!
       validate_attributes!(attributes) if options[:validate]
+      @execution_info = options[:execution_info]
       @valid = true
       @attributes = attributes
       self.class.after_initialize(self)
@@ -421,12 +422,12 @@ module CassandraModel
       end
 
       def paginator_result_future(future, invalidated_result)
-        ResultPaginator.new(future) { |row| record_from_result(row, invalidated_result) }
+        ResultPaginator.new(future) { |row| record_from_result(row, nil, invalidated_result) }
       end
 
       def single_result_row_future(future, invalidated_result)
         future.then do |rows|
-          record_from_result(rows.first, invalidated_result) if rows.first
+          record_from_result(rows.first, rows.execution_info, invalidated_result) if rows.first
         end
       end
 
@@ -477,9 +478,9 @@ module CassandraModel
         "#{key} IN (#{(%w(?) * value.count).join(', ')})"
       end
 
-      def record_from_result(row, invalidate_result)
+      def record_from_result(row, execution_info, invalidate_result)
         attributes = row_attributes(row)
-        new(attributes).tap { |result| result.invalidate! if invalidate_result }
+        new(attributes, execution_info: execution_info).tap { |result| result.invalidate! if invalidate_result }
       end
 
       def row_attributes(row)
