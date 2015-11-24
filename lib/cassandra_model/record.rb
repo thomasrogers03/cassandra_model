@@ -85,7 +85,7 @@ module CassandraModel
     alias :to_s :inspect
 
     def ==(rhs)
-      rhs.respond_to?(:attributes) && @attributes.slice(*columns) == rhs.attributes.slice(*columns)
+      rhs.respond_to?(:attributes) && @attributes == rhs.attributes
     end
 
     private
