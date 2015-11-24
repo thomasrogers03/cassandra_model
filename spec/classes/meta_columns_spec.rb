@@ -4,7 +4,7 @@ module CassandraModel
   describe MetaColumns do
 
     class MockRecord
-      extend MetaColumns
+      include MetaColumns
 
       attr_reader :attributes
 

@@ -1,5 +1,43 @@
 module CassandraModel
   module MetaColumns
+
+    def self.included(base)
+      base.extend MetaColumnsStatic
+    end
+
+    def deferred_getset(name, on_load)
+      if instance_variable_defined?(defered_column_name(name))
+        deferred_get(name)
+      else
+        deferred_set_with_callback(name, on_load)
+      end
+    end
+
+    def deferred_get(name)
+      instance_variable_get(defered_column_name(name))
+    end
+
+    def async_deferred_set(name)
+      future = @deferred_futures[name]
+      result = (future.get if future)
+      deferred_set(name, result)
+    end
+
+    def deferred_set_with_callback(name, on_load)
+      result = on_load.call(@attributes)
+      deferred_set(name, result)
+    end
+
+    def deferred_set(name, value)
+      instance_variable_set(defered_column_name(name), value)
+    end
+
+    def defered_column_name(name)
+      "@deferred_#{name}"
+    end
+  end
+
+  module MetaColumnsStatic
     extend Forwardable
 
     #attr_reader :deferred_column_writers, :async_deferred_column_writers
@@ -84,7 +122,7 @@ module CassandraModel
 
     def create_attr_writer(name)
       define_method(:"#{name}=") do |value|
-        @attributes[name] = value
+        deferred_set(name, value)
       end
     end
 
@@ -92,13 +130,7 @@ module CassandraModel
       on_load = options[:on_load]
       raise 'No on_load method provided' unless on_load
 
-      define_method(name) do
-        if @attributes.include?(name)
-          @attributes[name]
-        else
-          @attributes[name] = on_load.call(@attributes)
-        end
-      end
+      define_method(name) { deferred_getset(name, on_load) }
     end
 
     def async_create_attr_reader(name, options)
@@ -109,16 +141,8 @@ module CassandraModel
       table_config.async_deferred_column_readers[name] = on_load
 
       define_method(name) do
-        if @attributes.include?(name)
-          @attributes[name]
-        else
-          future = @deferred_futures[name]
-          @attributes[name] = if future
-                                future.get
-                              end
-        end
+        deferred_get(name) || async_deferred_set(name)
       end
     end
-
   end
 end

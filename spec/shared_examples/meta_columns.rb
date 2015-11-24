@@ -17,8 +17,8 @@ module CassandraModel
         end
 
         it 'should record the column name' do
+
           subject.send(method, :data, on_load: on_load)
-expect(subject.deferred_columns)
         end
 
         it 'should define a method to overwrite the value' do

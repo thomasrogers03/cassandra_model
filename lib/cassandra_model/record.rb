@@ -4,7 +4,7 @@ require_relative 'meta_columns'
 module CassandraModel
   class Record
     extend CassandraModel::QueryHelper
-    extend CassandraModel::MetaColumns
+    include CassandraModel::MetaColumns
 
     attr_reader :attributes, :valid, :execution_info
 
