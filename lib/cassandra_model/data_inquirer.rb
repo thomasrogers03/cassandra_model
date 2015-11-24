@@ -12,11 +12,8 @@ module CassandraModel
 
     def knows_about(*columns)
       columns.each do |column|
-        if @guess_data_types
-          guess_data_type(column)
-        else
-          partition_key[column]
-        end
+        partition_key[column]
+        guess_data_type(column) if @guess_data_types
         column_defaults[column]
       end
       @known_keys << columns
@@ -100,7 +97,8 @@ module CassandraModel
     end
 
     def guess_data_type(column)
-      partition_key[column] = guessed_data_type(column, :int)
+      type = guessed_data_type(column, :int)
+      change_type_of(column).to(type)
     end
 
   end
