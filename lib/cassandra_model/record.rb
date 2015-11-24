@@ -46,8 +46,8 @@ module CassandraModel
       validate_attributes!(attributes) if options[:validate]
       @execution_info = options[:execution_info]
       @valid = true
-      @attributes = attributes
-      self.class.after_initialize(self)
+      @attributes = attributes.dup
+      after_initialize
     end
 
     def save_async(options = {})
@@ -120,10 +120,6 @@ module CassandraModel
         column = column.key if column.is_a?(ThomasUtils::KeyIndexer)
         raise "Invalid column '#{column}' specified" unless valid_columns.include?(column)
       end
-    end
-
-    def deferred_columns
-      self.class.deferred_columns
     end
 
     def internal_delete_async

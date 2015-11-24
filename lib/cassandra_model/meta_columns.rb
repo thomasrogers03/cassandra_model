@@ -5,6 +5,20 @@ module CassandraModel
       base.extend MetaColumnsStatic
     end
 
+    private
+
+    def deferred_columns
+      self.class.deferred_columns
+    end
+
+    def after_initialize
+      self.class.after_initialize(self)
+      deferred_columns.each do |column|
+        column_value = @attributes.delete(column)
+        send("#{column}=", column_value) if column_value
+      end
+    end
+
     def deferred_getset(name, on_load)
       if instance_variable_defined?(defered_column_name(name))
         deferred_get(name)

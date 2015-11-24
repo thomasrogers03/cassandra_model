@@ -102,14 +102,23 @@ module CassandraModel
 
         describe 'working with deferred columns' do
           let(:data) { SecureRandom.uuid }
+          let(:new_attributes) { {saved_data: data} }
 
-          subject { Record.new(saved_data: data) }
+          subject { Record.new(new_attributes) }
 
           before do
+            Record.send(:remove_method, :saved_data) if Record.instance_methods(false).include?(:saved_data)
+            Record.send(:remove_method, :saved_data=) if Record.instance_methods(false).include?(:saved_data=)
             Record.deferred_column :saved_data, on_load: ->(_) { data }
           end
 
           its(:saved_data) { is_expected.to eq(data) }
+          its(:attributes) { is_expected.not_to include(:saved_data) }
+
+          it 'should leave the input attributes alone' do
+            subject
+            expect(new_attributes).to include(:saved_data)
+          end
         end
       end
     end
