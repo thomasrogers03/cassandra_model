@@ -30,6 +30,7 @@ module CassandraModel
 
         :before_save_callbacks,
 
+        :deferred_columns,
         :deferred_column_readers,
         :deferred_column_writers,
         :async_deferred_column_readers,

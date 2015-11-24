@@ -7,6 +7,7 @@ module CassandraModel
 
     def deferred_column(name, options)
       name = name.to_sym
+      deferred_columns << name
 
       create_attr_accessor(name, options)
       create_save_method(name, options)
@@ -14,6 +15,8 @@ module CassandraModel
 
     def async_deferred_column(name, options)
       name = name.to_sym
+      deferred_columns << name
+
       async_create_attr_accessor(name, options)
       async_create_save_method(name, options)
     end
@@ -33,6 +36,10 @@ module CassandraModel
 
     def save_async_deferred_columns(record)
       do_save_async_deferred_columns(record) if table_config.async_deferred_column_writers
+    end
+
+    def deferred_columns
+      table_config.deferred_columns ||= []
     end
 
     private
