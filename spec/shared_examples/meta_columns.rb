@@ -6,7 +6,14 @@ module CassandraModel
         MockFuture.new("#{attributes[:partition]} World")
       end
     end
-    let(:attributes) { { partition: 'Hello' } }
+    let(:attributes) { {partition: 'Hello'} }
+
+    after do
+      subject.deferred_columns.each do |name|
+        Record.send(:remove_method, :"#{name}") if Record.instance_methods(false).include?(:"#{name}")
+        Record.send(:remove_method, :"#{name}=") if Record.instance_methods(false).include?(:"#{name}=")
+      end
+    end
 
     shared_examples_for 'a method defining meta columns' do |method|
       describe ".#{method}" do
