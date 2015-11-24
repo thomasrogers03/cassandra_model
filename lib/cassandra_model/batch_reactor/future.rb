@@ -19,11 +19,14 @@ module CassandraModel
         @future = ione_future
       end
 
-      def promise
-        raise NotImplementedError
+      def add_listener(listener)
+        @future.on_complete do |value, error|
+          error ? listener.failure(error) :  listener.success(value)
+        end
+        self
       end
 
-      def add_listener(*_)
+      def promise
         raise NotImplementedError
       end
 

@@ -85,9 +85,31 @@ module CassandraModel
 
       end
 
+      describe '#add_listener' do
+        let(:listener) { double(:listener, success: nil, failure: nil) }
+
+        it 'should return itself' do
+          expect(subject.add_listener(listener)).to eq(subject)
+        end
+
+        it 'should call #success on the listener with the value' do
+          expect(listener).to receive(:success).with(value)
+          subject.add_listener(listener)
+        end
+
+        context 'with an error' do
+          let(:error) { StandardError.new('It died...') }
+
+          it 'should call #failure on the listener with the error' do
+            expect(listener).to receive(:failure).with(error)
+            subject.add_listener(listener)
+          end
+        end
+
+      end
+
       describe 'methods not implemented' do
         it { expect { subject.promise }.to raise_error(NotImplementedError) }
-        it { expect { subject.add_listener(double(:listener)) }.to raise_error(NotImplementedError) }
         it { expect { subject.fallback {} }.to raise_error(NotImplementedError) }
       end
 
