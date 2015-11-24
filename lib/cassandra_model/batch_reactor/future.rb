@@ -1,6 +1,6 @@
 module CassandraModel
   class BatchReactor
-    class Future
+    class Future < Cassandra::Future
       extend Forwardable
 
       def self.define_handler(internal_name, external_name = internal_name)

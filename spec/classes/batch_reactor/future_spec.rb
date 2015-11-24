@@ -10,6 +10,8 @@ module CassandraModel
 
       subject { Future.new(future) }
 
+      it { is_expected.to be_a_kind_of(Cassandra::Future) }
+
       describe 'delegating Cassandra::Future methods to an Ione::Future' do
 
         describe '#on_complete' do
