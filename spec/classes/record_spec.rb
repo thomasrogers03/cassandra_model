@@ -26,12 +26,15 @@ module CassandraModel
     end
 
     context 'when mixing in query methods' do
+      let(:base_results) { MockPage.new(true, nil, ['OK']) }
+      let(:base_future) { MockFuture.new(base_results) }
+
       subject { Record }
 
       before do
         Record.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
         Record.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) { MockFuture.new(nil) }
-        allow(connection).to receive(:execute_async).and_return(MockFuture.new('OK'))
+        allow(connection).to receive(:execute_async).and_return(base_future)
       end
 
       it_behaves_like 'a query helper'
@@ -596,13 +599,7 @@ module CassandraModel
       let(:execution_info) { page_results.execution_info }
       let(:future_result) { page_results }
       let(:future_error) { nil }
-      let(:results) do
-        if future_error
-          Cassandra::Future.error(StandardError.new(future_error))
-        else
-          Cassandra::Future.value(page_results)
-        end
-      end
+      let(:results) { MockFuture.new(error: future_error, result: page_results) }
 
       before do
         Record.table_name = table_name

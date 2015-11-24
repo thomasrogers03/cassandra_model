@@ -1,4 +1,4 @@
-class MockFuture
+class MockFuture < Cassandra::Future
   def initialize(result_or_options)
     if result_or_options.is_a?(Hash) &&
         (result_or_options.include?(:result) || result_or_options.include?(:error))
@@ -7,6 +7,11 @@ class MockFuture
     else
       @result = result_or_options
     end
+  end
+
+  def add_listener(listener)
+    @error ? listener.failure(@error) : listener.success(@result)
+    self
   end
 
   def join
@@ -39,6 +44,10 @@ class MockFuture
   end
 
   def get
-    @result
+    if @error
+      raise @error
+    else
+      @result
+    end
   end
 end
