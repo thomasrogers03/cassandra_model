@@ -85,7 +85,7 @@ module CassandraModel
     alias :to_s :inspect
 
     def ==(rhs)
-      @attributes == rhs.attributes
+      rhs.respond_to?(:attributes) && @attributes.slice(*columns) == rhs.attributes.slice(*columns)
     end
 
     private
@@ -115,10 +115,15 @@ module CassandraModel
     end
 
     def validate_attributes!(attributes)
+      valid_columns = columns + deferred_columns
       attributes.keys.each do |column|
         column = column.key if column.is_a?(ThomasUtils::KeyIndexer)
-        raise "Invalid column '#{column}' specified" unless columns.include?(column)
+        raise "Invalid column '#{column}' specified" unless valid_columns.include?(column)
       end
+    end
+
+    def deferred_columns
+      self.class.deferred_columns
     end
 
     def internal_delete_async

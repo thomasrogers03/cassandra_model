@@ -96,6 +96,18 @@ module CassandraModel
           record = Record.new({}, validate: false)
           expect { record.partition = 'bob' }.not_to raise_error
         end
+
+        describe 'working with deferred columns' do
+          let(:data) { SecureRandom.uuid }
+
+          subject { Record.new(saved_data: data) }
+
+          before do
+            Record.deferred_column :saved_data, on_load: ->(_) { data }
+          end
+
+          its(:saved_data) { is_expected.to eq(data) }
+        end
       end
     end
 
@@ -1086,6 +1098,23 @@ module CassandraModel
 
       it 'should be false when the attributes do not match' do
         expect(Record.new(partition: 'Partition Key')).not_to eq(Record.new(partition: 'Different Key'))
+      end
+
+      context 'when comparing a non Record' do
+        it 'should return false' do
+          expect(Record.new({})).not_to eq('Record')
+        end
+      end
+
+      describe 'working with deferred columns' do
+        let(:lhs) { Record.new(partition: 'Partition Key', data: SecureRandom.uuid) }
+        let(:rhs) { Record.new(partition: 'Partition Key', data: SecureRandom.uuid) }
+
+        before { Record.deferred_column :data, on_load: ->(_) {} }
+
+        it 'should not include deferred columns when comparing' do
+          expect(lhs).to eq(rhs)
+        end
       end
     end
   end
