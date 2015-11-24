@@ -157,6 +157,8 @@ module CassandraModel
         {partition: 'Partition', clustering: 'Clustering'}
       end
 
+      before { mock_simple_table(:records, [:partition], [:clustering], [:meta_data]) }
+
       before do
         allow(record).to receive(:new) do |attributes|
           Record.new(attributes)

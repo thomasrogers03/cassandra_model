@@ -2,12 +2,15 @@ require 'rspec'
 
 module CassandraModel
   describe BatchReactor do
+    BATCH_MUTEX = Mutex.new
+
     class MockBatch < Array
       attr_accessor :result
     end
 
     let(:hosts) { [:host1, :host2, :host3] }
     let(:host_buffers) { hosts.map { MockBatch.new } }
+    let(:host_buffer_new_index) { [0] }
     let(:cluster) { double(:cluster, hosts: hosts) }
     let(:session) { double(:session, keyspace: keyspace) }
     let(:execution_result) { [] }
@@ -33,7 +36,15 @@ module CassandraModel
           []
         end
       end
-      allow(batch_klass).to receive(:new).and_return(*host_buffers)
+      allow(batch_klass).to receive(:new) do
+        # need when using real Reactors
+        BATCH_MUTEX.synchronize do
+          index = host_buffer_new_index[0]
+          host = host_buffers[index % host_buffers.count]
+          host_buffer_new_index[0] += 1
+          host
+        end
+      end
       allow(session).to receive(:execute_async) do |batch|
         execution_result << batch
         Cassandra::Future.value(query_result)
