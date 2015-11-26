@@ -753,10 +753,18 @@ module CassandraModel
 
       context 'when an error occurs' do
         let(:future_error) { 'IOError: Connection Closed' }
+        let(:record_instance) { Record.new(attributes) }
+
+        before { allow(Logging.logger).to receive(:error) }
 
         it 'should log the error' do
           expect(Logging.logger).to receive(:error).with('Error saving CassandraModel::Record: IOError: Connection Closed')
-          Record.new(attributes).save_async
+          record_instance.save_async
+        end
+
+        it 'should execute the save record failed callback' do
+          expect(GlobalCallbacks).to receive(:call).with(:save_record_failed, record_instance, future_error)
+          record_instance.save_async
         end
 
         context 'with a different error' do
@@ -764,14 +772,16 @@ module CassandraModel
 
           it 'should log the error' do
             expect(Logging.logger).to receive(:error).with('Error saving CassandraModel::Record: Error, received only 2 responses')
-            Record.new(attributes).save_async
+            record_instance.save_async
           end
         end
 
         context 'with a different model' do
+          let(:record_instance) { ImageData.new(attributes) }
+
           it 'should log the error' do
             expect(Logging.logger).to receive(:error).with('Error saving CassandraModel::ImageData: IOError: Connection Closed')
-            ImageData.new(attributes).save_async
+            record_instance.save_async
           end
         end
       end
