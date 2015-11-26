@@ -608,23 +608,43 @@ module CassandraModel
       end
     end
 
-    describe '#partition_key' do
+    describe 'columns defining a primary key' do
       let(:partition_key) { [:pk1] }
       let(:clustering_columns) { [:ck1] }
       let(:remaining_columns) { [:field] }
       let(:attributes) { {pk1: 'Some pk', ck1: 'Some ck', field: 'data'} }
-      let(:record) { Record.new(attributes) }
 
-      it 'should return the slice of attributes representing the partition key' do
-        expect(record.partition_key).to eq(pk1: 'Some pk')
-      end
-
-      context 'with a different table' do
-        let(:partition_key) { [:part1, :part2] }
-        let(:attributes) { {part1: 'Bag', part2: 'Large', ck1: 'Some ck', field: 'data'} }
+      describe '#partition_key' do
+        let(:record) { Record.new(attributes) }
 
         it 'should return the slice of attributes representing the partition key' do
-          expect(record.partition_key).to eq(part1: 'Bag', part2: 'Large')
+          expect(record.partition_key).to eq(pk1: 'Some pk')
+        end
+
+        context 'with a different table' do
+          let(:partition_key) { [:part1, :part2] }
+          let(:attributes) { {part1: 'Bag', part2: 'Large', ck1: 'Some ck', field: 'data'} }
+
+          it 'should return the slice of attributes representing the partition key' do
+            expect(record.partition_key).to eq(part1: 'Bag', part2: 'Large')
+          end
+        end
+      end
+
+      describe '#clustering_columns' do
+        let(:record) { Record.new(attributes) }
+
+        it 'should return the slice of attributes representing the partition key' do
+          expect(record.clustering_columns).to eq(ck1: 'Some ck')
+        end
+
+        context 'with a different table' do
+          let(:clustering_columns) { [:clust1, :clust2] }
+          let(:attributes) { {pk1: 'Bag', clust1: 'Brick', clust2: 'Wall', field: 'data'} }
+
+          it 'should return the slice of attributes representing the partition key' do
+            expect(record.clustering_columns).to eq(clust1: 'Brick', clust2: 'Wall')
+          end
         end
       end
     end

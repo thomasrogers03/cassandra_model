@@ -86,6 +86,10 @@ module CassandraModel
       attributes.slice(*self.class.partition_key)
     end
 
+    def clustering_columns
+      attributes.slice(*self.class.clustering_columns)
+    end
+
     def inspect
       %Q{#<#{self.class.to_s}#{inspected_validation} #{inspected_attributes}>}
     end
