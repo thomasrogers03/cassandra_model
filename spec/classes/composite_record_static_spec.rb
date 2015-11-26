@@ -65,6 +65,17 @@ module CassandraModel
         end
       end
 
+      describe '.primary_key' do
+        subject { MockRecordStatic.primary_key}
+
+        it { is_expected.to eq([:model, :series]) }
+
+        context 'with a different set of columns' do
+          let(:partition_key) { [:rk_model_data, :rk_series_number, :rk_colour] }
+          let(:clustering_columns) { [:ck_min_price, :max_price] }
+          it { is_expected.to eq([:model_data, :series_number, :colour, :min_price, :max_price]) }
+        end
+      end
     end
 
     shared_examples_for 'a composite column map' do |method, prefix|

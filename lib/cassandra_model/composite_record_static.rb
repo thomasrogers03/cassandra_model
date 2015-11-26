@@ -12,6 +12,14 @@ module CassandraModel
       internal_clustering_columns.map { |column| trimmed_column(column, /^ck_/, composite_ck_map) || column }
     end
 
+    def primary_key
+      (internal_partition_key + internal_clustering_columns).map do |column|
+        trimmed_column(column, /^rk_/, composite_pk_map) ||
+            trimmed_column(column, /^ck_/, composite_ck_map) ||
+            column
+      end.uniq
+    end
+
     def columns
       table_data.composite_columns ||= composite_columns.each { |column| define_attribute(column) }
     end
