@@ -631,6 +631,12 @@ module CassandraModel
         Record.new(attributes).save_async
       end
 
+      it 'should call the associated global callback' do
+        record = Record.new(attributes)
+        expect(GlobalCallbacks).to receive(:call).with(:record_saved, record)
+        record.save_async
+      end
+
       context 'with tracing specified' do
         it 'should execute the query with tracing enabled' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', trace: true).and_return(results)
@@ -679,6 +685,12 @@ module CassandraModel
             record = Record.new(attributes)
             record.save_async
             expect(record.execution_info).to eq(execution_info)
+          end
+
+          it 'should call the associated global callback' do
+            record = Record.new(attributes)
+            expect(GlobalCallbacks).to receive(:call).with(:record_saved, record)
+            record.save_async
           end
         end
 

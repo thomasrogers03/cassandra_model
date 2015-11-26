@@ -156,12 +156,14 @@ module CassandraModel
         end
         promise.future.then { save_row_async(options) }.then do |result|
           @execution_info = result.execution_info
+          GlobalCallbacks.call(:record_saved, self)
           self
         end
       else
         save_row_async(options).then do |result|
           invalidate! if save_rejected?(result)
           @execution_info = result.execution_info
+          GlobalCallbacks.call(:record_saved, self)
           self
         end
       end
