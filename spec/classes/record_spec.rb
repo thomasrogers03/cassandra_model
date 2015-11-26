@@ -100,6 +100,10 @@ module CassandraModel
           expect { record.partition = 'bob' }.not_to raise_error
         end
 
+        it 'can initialize without any paramters' do
+          expect(Record.new.attributes).to eq({})
+        end
+
         describe 'working with deferred columns' do
           let(:data) { SecureRandom.uuid }
           let(:new_attributes) { {saved_data: data} }

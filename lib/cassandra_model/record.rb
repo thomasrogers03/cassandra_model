@@ -41,7 +41,7 @@ module CassandraModel
         :batch_type,
     )
 
-    def initialize(attributes, options = {validate: true})
+    def initialize(attributes = {}, options = {validate: true})
       ensure_attributes_accessible!
       validate_attributes!(attributes) if options[:validate]
       @execution_info = options[:execution_info]
