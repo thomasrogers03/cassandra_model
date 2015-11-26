@@ -69,6 +69,7 @@ module CassandraModel
     def save(options = {})
       save_async(options).get
     end
+    alias :save! :save
 
     def delete
       delete_async.get
