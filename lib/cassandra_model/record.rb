@@ -82,6 +82,10 @@ module CassandraModel
       update_async(new_attributes).get
     end
 
+    def partition_key
+      attributes.slice(*self.class.partition_key)
+    end
+
     def inspect
       %Q{#<#{self.class.to_s}#{inspected_validation} #{inspected_attributes}>}
     end

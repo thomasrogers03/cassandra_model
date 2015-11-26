@@ -93,6 +93,11 @@ module CassandraModel
           Record.send(:remove_method, :partition=) if Record.instance_methods(false).include?(:partition=)
         end
 
+        it 'should be a valid record initially' do
+          record = Record.new(partition: 'Partition Key')
+          expect(record.valid).to eq(true)
+        end
+
         it 'should ensure that the getters are defined' do
           record = Record.new({}, validate: false)
           expect { record.partition }.not_to raise_error
@@ -585,11 +590,6 @@ module CassandraModel
     end
 
     describe '#attributes' do
-      it 'should be a valid record initially' do
-        record = Record.new(partition: 'Partition Key')
-        expect(record.valid).to eq(true)
-      end
-
       it 'should return the attributes of the created Record' do
         record = Record.new(partition: 'Partition Key')
         expect(record.attributes).to eq(partition: 'Partition Key')
@@ -604,6 +604,27 @@ module CassandraModel
           it 'should not raise an error' do
             expect { Record.new({fake_column: 'Partition Key'}, validate: false) }.not_to raise_error
           end
+        end
+      end
+    end
+
+    describe '#partition_key' do
+      let(:partition_key) { [:pk1] }
+      let(:clustering_columns) { [:ck1] }
+      let(:remaining_columns) { [:field] }
+      let(:attributes) { {pk1: 'Some pk', ck1: 'Some ck', field: 'data'} }
+      let(:record) { Record.new(attributes) }
+
+      it 'should return the slice of attributes representing the partition key' do
+        expect(record.partition_key).to eq(pk1: 'Some pk')
+      end
+
+      context 'with a different table' do
+        let(:partition_key) { [:part1, :part2] }
+        let(:attributes) { {part1: 'Bag', part2: 'Large', ck1: 'Some ck', field: 'data'} }
+
+        it 'should return the slice of attributes representing the partition key' do
+          expect(record.partition_key).to eq(part1: 'Bag', part2: 'Large')
         end
       end
     end
