@@ -90,6 +90,10 @@ module CassandraModel
       attributes.slice(*self.class.clustering_columns)
     end
 
+    def primary_key
+      attributes.slice(*self.class.primary_key)
+    end
+
     def inspect
       %Q{#<#{self.class.to_s}#{inspected_validation} #{inspected_attributes}>}
     end
@@ -287,7 +291,7 @@ module CassandraModel
     class << self
       extend Forwardable
 
-      def_delegators :table, :partition_key, :clustering_columns
+      def_delegators :table, :partition_key, :clustering_columns, :primary_key
       def_delegator :table, :name, :table_name
       def_delegator :table, :columns, :internal_columns
       def_delegators :table_config, :write_consistency, :read_consistency, :write_consistency=, :read_consistency=
