@@ -8,6 +8,10 @@ module CassandraModel
       internal_partition_key.map { |column| trimmed_column(column, /^rk_/, composite_pk_map) || column }
     end
 
+    def clustering_columns
+      internal_clustering_columns.map { |column| trimmed_column(column, /^ck_/, composite_ck_map) || column }
+    end
+
     def columns
       table_data.composite_columns ||= composite_columns.each { |column| define_attribute(column) }
     end

@@ -54,6 +54,17 @@ module CassandraModel
         end
       end
 
+      describe '.clustering_columns' do
+        subject { MockRecordStatic.clustering_columns}
+
+        it { is_expected.to eq([:model]) }
+
+        context 'with a different set of columns' do
+          let(:clustering_columns) { [:ck_min_price, :max_price] }
+          it { is_expected.to eq([:min_price, :max_price]) }
+        end
+      end
+
     end
 
     shared_examples_for 'a composite column map' do |method, prefix|
