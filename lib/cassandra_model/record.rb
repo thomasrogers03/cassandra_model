@@ -20,6 +20,10 @@ module CassandraModel
         :composite_pk_map,
         :composite_ck_map,
 
+        :composite_partition_key,
+        :composite_clustering_columns,
+        :composite_primary_key,
+
         :composite_shard_key,
     ) # Using this instead of OpenStruct, as there seems to be a bug in JRuby that causes this to get mangled over time
     ConfigureableAttributes = Struct.new(

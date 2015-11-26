@@ -5,15 +5,15 @@ module CassandraModel
     def_delegator :table_config, :composite_defaults=
 
     def partition_key
-      internal_partition_key.map { |column| trimmed_column(column, /^rk_/, composite_pk_map) || column }
+      table_data.composite_partition_key ||= internal_partition_key.map { |column| trimmed_column(column, /^rk_/, composite_pk_map) || column }
     end
 
     def clustering_columns
-      internal_clustering_columns.map { |column| trimmed_column(column, /^ck_/, composite_ck_map) || column }
+      table_data.composite_clustering_columns ||= internal_clustering_columns.map { |column| trimmed_column(column, /^ck_/, composite_ck_map) || column }
     end
 
     def primary_key
-      (internal_partition_key + internal_clustering_columns).map do |column|
+      table_data.composite_primary_key ||= (internal_partition_key + internal_clustering_columns).map do |column|
         trimmed_column(column, /^rk_/, composite_pk_map) ||
             trimmed_column(column, /^ck_/, composite_ck_map) ||
             column
