@@ -18,28 +18,42 @@ module CassandraModel
       mock_simple_table(:mock_records, partition_key, clustering_columns, remaining_columns)
     end
 
-    describe '.columns' do
+    describe 'column name methods' do
       let(:partition_key) { [:rk_model, :series] }
       let(:clustering_columns) { [:ck_model] }
 
-      it 'should reduce the columns starting with rk_ or ck_ to base columns' do
-        expect(MockRecordStatic.columns).to eq([:model, :series, :meta_data])
-      end
-
-      it 'should create methods for the reduced columns, rather than the internal ones' do
-        record = MockRecordStatic.new({})
-        record.model = 'KKBBCD'
-        expect(record.model).to eq('KKBBCD')
-      end
-
-      context 'with a different set of columns' do
-        let(:partition_key) { [:rk_model, :rk_series, :rk_colour] }
-        let(:clustering_columns) { [:ck_price, :ck_model] }
-
+      describe '.columns' do
         it 'should reduce the columns starting with rk_ or ck_ to base columns' do
-          expect(MockRecordStatic.columns).to eq([:model, :series, :colour, :price, :meta_data])
+          expect(MockRecordStatic.columns).to eq([:model, :series, :meta_data])
+        end
+
+        it 'should create methods for the reduced columns, rather than the internal ones' do
+          record = MockRecordStatic.new({})
+          record.model = 'KKBBCD'
+          expect(record.model).to eq('KKBBCD')
+        end
+
+        context 'with a different set of columns' do
+          let(:partition_key) { [:rk_model, :rk_series, :rk_colour] }
+          let(:clustering_columns) { [:ck_price, :ck_model] }
+
+          it 'should reduce the columns starting with rk_ or ck_ to base columns' do
+            expect(MockRecordStatic.columns).to eq([:model, :series, :colour, :price, :meta_data])
+          end
         end
       end
+
+      describe '.partition_key' do
+        subject { MockRecordStatic.partition_key }
+
+        it { is_expected.to eq([:model, :series]) }
+
+        context 'with a different set of columns' do
+          let(:partition_key) { [:rk_model_data, :rk_series_number, :rk_colour] }
+          it { is_expected.to eq([:model_data, :series_number, :colour]) }
+        end
+      end
+
     end
 
     shared_examples_for 'a composite column map' do |method, prefix|

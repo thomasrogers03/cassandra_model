@@ -4,6 +4,10 @@ module CassandraModel
 
     def_delegator :table_config, :composite_defaults=
 
+    def partition_key
+      internal_partition_key.map { |column| trimmed_column(column, /^rk_/, composite_pk_map) || column }
+    end
+
     def columns
       table_data.composite_columns ||= composite_columns.each { |column| define_attribute(column) }
     end
