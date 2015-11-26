@@ -7,9 +7,14 @@ module CassandraModel
     subject { Record.new(attributes, validate: false) }
 
     before { mock_simple_table(:records, [], [], []) }
+    after { Record.reset! }
 
     describe '#as_json' do
       its(:as_json) { is_expected.to eq(attributes) }
+
+      it 'should support taking in a parameter' do
+        expect { subject.as_json(some: :options) }.not_to raise_error
+      end
 
       context 'with different attributes' do
         let(:attributes) { {partition: 'Key', clustering: 'Columns', some: 'Field'} }
@@ -17,8 +22,19 @@ module CassandraModel
         its(:as_json) { is_expected.to eq(attributes) }
       end
 
-      it 'should support taking in a parameter' do
-        expect { subject.as_json(some: :options) }.not_to raise_error
+      context 'when configured to only return certain columns' do
+        let(:attributes) { {partition: 'Key', clustering: 'Columns', some: 'Field'} }
+        let(:display_columns) { [:partition] }
+
+        before { Record.display_attributes(*display_columns) }
+
+        its(:as_json) { is_expected.to eq(partition: 'Key') }
+
+        context 'with a different slice' do
+          let(:display_columns) { [:clustering, :some] }
+
+          its(:as_json) { is_expected.to eq(clustering: 'Columns', some: 'Field') }
+        end
       end
     end
   end

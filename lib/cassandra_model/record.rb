@@ -40,6 +40,8 @@ module CassandraModel
         :composite_defaults,
 
         :batch_type,
+
+        :display_attributes,
     )
 
     def initialize(attributes = {}, options = {validate: true})
