@@ -17,17 +17,25 @@ module CassandraModel
 
     def as_json(*_)
       if displayable_attributes
-        if displayable_attributes.is_a?(Hash)
-          attributes.slice(*displayable_attributes.keys).inject({}) { |memo, (key, value)| memo.merge!(displayable_attributes[key] => value) }
-        else
-          attributes.slice(*displayable_attributes)
-        end
+        displayable_attributes.is_a?(Hash) ? mapped_as_json : sliced_displayable_attributes
       else
         attributes
       end
     end
 
     private
+
+    def mapped_as_json
+      sliced_displayable_attributes.inject({}) { |memo, (key, value)| memo.merge!(displayable_attributes[key] => value) }
+    end
+
+    def sliced_displayable_attributes
+      attributes.slice(*displayable_attributes_slice)
+    end
+
+    def displayable_attributes_slice
+      displayable_attributes.is_a?(Hash) ? displayable_attributes.keys : displayable_attributes
+    end
 
     def displayable_attributes
       self.class.displayable_attributes
