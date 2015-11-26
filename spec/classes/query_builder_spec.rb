@@ -110,10 +110,8 @@ module CassandraModel
         {partition: 'Partition', clustering: 'Clustering', meta_data: 'Fake'}
       end
 
-      before do
-        Record.reset!
-        mock_simple_table(:records, [:partition], [:clustering], [:meta_data])
-      end
+      before { mock_simple_table(:records, [:partition], [:clustering], [:meta_data]) }
+      after { Record.reset! }
 
       it 'should create an instance of the record' do
         expect(subject.new(record_attributes)).to eq(Record.new(record_attributes))

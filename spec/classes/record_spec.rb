@@ -19,10 +19,13 @@ module CassandraModel
         result = block.call
         double(:future, value: result)
       end
-      Record.reset!
-      ImageData.reset!
       mock_simple_table(table_name, partition_key, clustering_columns, remaining_columns)
       mock_simple_table(:image_data, partition_key, clustering_columns, remaining_columns)
+    end
+
+    after do
+      Record.reset!
+      ImageData.reset!
     end
 
     context 'when mixing in query methods' do
@@ -85,7 +88,7 @@ module CassandraModel
       end
 
       describe 'record initialization' do
-        before do
+        after do
           Record.send(:remove_method, :partition) if Record.instance_methods(false).include?(:partition)
           Record.send(:remove_method, :partition=) if Record.instance_methods(false).include?(:partition=)
         end
@@ -110,10 +113,11 @@ module CassandraModel
 
           subject { Record.new(new_attributes) }
 
-          before do
+          before { Record.deferred_column :saved_data, on_load: ->(_) { data } }
+
+          after do
             Record.send(:remove_method, :saved_data) if Record.instance_methods(false).include?(:saved_data)
             Record.send(:remove_method, :saved_data=) if Record.instance_methods(false).include?(:saved_data=)
-            Record.deferred_column :saved_data, on_load: ->(_) { data }
           end
 
           its(:saved_data) { is_expected.to eq(data) }
