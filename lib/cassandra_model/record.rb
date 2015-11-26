@@ -5,6 +5,7 @@ module CassandraModel
   class Record
     extend CassandraModel::QueryHelper
     include CassandraModel::MetaColumns
+    include CassandraModel::DisplayableAttributes
 
     attr_reader :attributes, :valid, :execution_info
 
