@@ -99,7 +99,7 @@ module CassandraModel
         memo.merge!(updated_key => value)
       end
 
-      missing_keys = Set.new(partition_key - updated_clause.keys)
+      missing_keys = Set.new(internal_partition_key - updated_clause.keys)
       default_clause = composite_defaults.find { |row| (missing_keys ^ row.keys).empty? }
       updated_clause.merge!(default_clause) if default_clause
 
