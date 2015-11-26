@@ -518,7 +518,7 @@ module CassandraModel
       end
     end
 
-    describe '.create' do
+    shared_examples_for 'a method creating a record' do |method|
       let(:attributes) { {partition: 'Partition Key'} }
       let(:record) { Record.new(attributes) }
       let(:future_record) { MockFuture.new(record) }
@@ -529,17 +529,20 @@ module CassandraModel
       end
 
       it 'should resolve the future returned by .create_async' do
-        expect(Record.create(attributes)).to eq(record)
+        expect(Record.public_send(method, attributes)).to eq(record)
       end
 
       context 'when options are provided' do
         let(:options) { {check_exists: true} }
 
         it 'should resolve the future returned by .create_async' do
-          expect(Record.create(attributes, options)).to eq(record)
+          expect(Record.public_send(method, attributes, options)).to eq(record)
         end
       end
     end
+
+    describe('.create') { it_behaves_like 'a method creating a record', :create }
+    describe('.create!') { it_behaves_like 'a method creating a record', :create! }
 
     describe '.request' do
       let(:clause) { {} }
@@ -821,7 +824,7 @@ module CassandraModel
     end
 
     describe('#save') { it_behaves_like 'a method saving a record', :save }
-    describe('#save') { it_behaves_like 'a method saving a record', :save! }
+    describe('#save!') { it_behaves_like 'a method saving a record', :save! }
 
     describe '#invalidate!' do
       it 'should invalidate the Record' do

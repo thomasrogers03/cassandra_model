@@ -333,6 +333,7 @@ module CassandraModel
       def create(attributes, options = {})
         create_async(attributes, options).get
       end
+      alias :create! :create
 
       def request_async(clause, options = {})
         page_size = options[:page_size]
