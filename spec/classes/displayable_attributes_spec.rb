@@ -35,6 +35,18 @@ module CassandraModel
 
           its(:as_json) { is_expected.to eq(clustering: 'Columns', some: 'Field') }
         end
+
+        context 'when the display attributes represent a column name map' do
+          let(:display_columns) { [{partition: 'Partition Key'}] }
+
+          its(:as_json) { is_expected.to eq('Partition Key' => 'Key') }
+
+          context 'with a different map' do
+            let(:display_columns) { [{partition: 'Part', some: 'Description'}] }
+
+            its(:as_json) { is_expected.to eq('Part' => 'Key', 'Description' => 'Field') }
+          end
+        end
       end
     end
   end

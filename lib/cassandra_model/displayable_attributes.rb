@@ -1,7 +1,8 @@
 module CassandraModel
   module DisplayableAttributesStatic
     def display_attributes(*columns)
-      table_config.display_attributes = columns
+      map = (columns.first if columns.first.is_a?(Hash))
+      table_config.display_attributes = map ? map : columns
     end
 
     def displayable_attributes
@@ -15,7 +16,15 @@ module CassandraModel
     end
 
     def as_json(*_)
-      displayable_attributes ? attributes.slice(*displayable_attributes) : attributes
+      if displayable_attributes
+        if displayable_attributes.is_a?(Hash)
+          attributes.slice(*displayable_attributes.keys).inject({}) { |memo, (key, value)| memo.merge!(displayable_attributes[key] => value) }
+        else
+          attributes.slice(*displayable_attributes)
+        end
+      else
+        attributes
+      end
     end
 
     private
