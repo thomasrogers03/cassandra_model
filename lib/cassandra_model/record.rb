@@ -72,6 +72,7 @@ module CassandraModel
     def save(options = {})
       save_async(options).get
     end
+
     alias :save! :save
 
     def delete
@@ -291,10 +292,16 @@ module CassandraModel
     class << self
       extend Forwardable
 
-      def_delegators :table, :partition_key, :clustering_columns, :primary_key
+      def_delegator :table, :partition_key, :internal_partition_key
+      def_delegator :table, :clustering_columns, :internal_clustering_columns
+      def_delegator :table, :primary_key, :internal_primary_key
       def_delegator :table, :name, :table_name
       def_delegator :table, :columns, :internal_columns
       def_delegators :table_config, :write_consistency, :read_consistency, :write_consistency=, :read_consistency=
+
+      alias :partition_key :internal_partition_key
+      alias :clustering_columns :internal_clustering_columns
+      alias :primary_key :internal_primary_key
 
       def table_name=(value)
         table_config.table_name = value
@@ -355,6 +362,7 @@ module CassandraModel
       def create(attributes, options = {})
         create_async(attributes, options).get
       end
+
       alias :create! :create
 
       def request_async(clause, options = {})
