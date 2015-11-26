@@ -44,5 +44,23 @@ module CassandraModel
       end
     end
 
+    describe 'dynamic callbacks' do
+      let(:helper) { double(:callback) }
+
+      it 'should allow us to define callbacks using on_callback' do
+        GlobalCallbacks.on_save { |data| helper.save(data) }
+        expect(helper).to receive(:save).with(:data)
+        GlobalCallbacks.call(:save, :data)
+      end
+
+      context 'with a different callback' do
+        it 'should allow us to define callbacks using on_callback' do
+          GlobalCallbacks.on_error { |record, error| helper.fail(record, error) }
+          expect(helper).to receive(:fail).with(:record, :error)
+          GlobalCallbacks.call(:error, :record, :error)
+        end
+      end
+    end
+
   end
 end

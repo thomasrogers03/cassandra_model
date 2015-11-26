@@ -13,6 +13,17 @@ module CassandraModel
         end
       end
 
+      def method_missing(method, *args, &block)
+        if method =~ /^on_/
+          listener = Object.new.tap do |callback|
+            callback.define_singleton_method(method) { |*callback_args| block.call(*callback_args) }
+          end
+          add_listener listener
+        else
+          super(method, *args, &block)
+        end
+      end
+
       private
 
       def callback_name(callback)
