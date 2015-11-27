@@ -49,5 +49,17 @@ module CassandraModel
       end
     end
 
+    describe '#after' do
+      let(:partition_key) { {part: 'Partition Key'} }
+      let(:clustering_columns) { {cluster1: 'Cluster This', cluster2: 'Cluster That'} }
+      let(:cluster_comparer) { {clustering_columns.keys.gt => clustering_columns.values} }
+      let(:record) { double(:record, partition_key: partition_key, clustering_columns: clustering_columns) }
+
+      it 'should query for the records whose partition key is the same and clustering columns are greater than the current ones' do
+        expect(query_builder).to receive(:where).with(partition_key.merge(cluster_comparer))
+        subject.after(record)
+      end
+    end
+
   end
 end

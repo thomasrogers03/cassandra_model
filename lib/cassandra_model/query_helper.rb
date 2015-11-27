@@ -23,5 +23,12 @@ module CassandraModel
       where({})
     end
 
+    def after(record)
+      partition_key = record.partition_key
+      clustering_columns = record.clustering_columns
+      cluster_comparer = {clustering_columns.keys.gt => clustering_columns.values}
+      where(partition_key.merge(cluster_comparer))
+    end
+
   end
 end
