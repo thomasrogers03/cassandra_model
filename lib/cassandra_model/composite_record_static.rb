@@ -127,12 +127,16 @@ module CassandraModel
     end
 
     def mapped_key_comparer(key)
-      mapped_key = mapped_key(key.key)
+      mapped_key = mapped_ck(key.key)
       key.new_key(mapped_key)
     end
 
     def mapped_key(key)
-      composite_pk_map[key] || composite_ck_map[key] || key
+      composite_pk_map[key] || mapped_ck(key)
+    end
+
+    def mapped_ck(key)
+      composite_ck_map[key] || key
     end
 
     def row_composite_default(row)

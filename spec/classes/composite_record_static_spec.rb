@@ -55,7 +55,7 @@ module CassandraModel
       end
 
       describe '.clustering_columns' do
-        subject { MockRecordStatic.clustering_columns}
+        subject { MockRecordStatic.clustering_columns }
 
         it { is_expected.to eq([:model]) }
 
@@ -66,7 +66,7 @@ module CassandraModel
       end
 
       describe '.primary_key' do
-        subject { MockRecordStatic.primary_key}
+        subject { MockRecordStatic.primary_key }
 
         it { is_expected.to eq([:model, :series]) }
 
@@ -200,6 +200,19 @@ module CassandraModel
         it 'should map the clustering column properly' do
           expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 9.99, {})
           MockRecordStatic.request_async(model: 'AABBCCDD', series: '91A', :price.gt => 9.99)
+        end
+
+        context 'when the clustering column is part of the partition key' do
+          let(:defaults) { [{model: ''}, {series: ''}] }
+          let(:truth_table) { [[:model], [:series]] }
+          let(:partition_key) { [:rk_model, :rk_series] }
+          let(:clustering_columns) { [:ck_series] }
+          let(:query) { 'SELECT * FROM mock_records WHERE rk_model = ? AND ck_series > ? AND rk_series = ?' }
+
+          it 'should not compare on the partition key' do
+            expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', '', {})
+            MockRecordStatic.request_async(model: 'AABBCCDD', :series.gt => '91A')
+          end
         end
       end
 
