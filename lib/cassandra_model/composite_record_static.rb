@@ -127,7 +127,7 @@ module CassandraModel
     end
 
     def mapped_key_comparer(key)
-      mapped_key = mapped_ck(key.key)
+      mapped_key = key.key.is_a?(Array) ? key.key.map { |part| mapped_ck(part) } : mapped_ck(key.key)
       key.new_key(mapped_key)
     end
 

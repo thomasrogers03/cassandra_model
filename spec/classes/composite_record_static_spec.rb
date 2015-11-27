@@ -202,6 +202,16 @@ module CassandraModel
           MockRecordStatic.request_async(model: 'AABBCCDD', series: '91A', :price.gt => 9.99)
         end
 
+        context 'when the KeyComparer represents an array of columns' do
+          let(:clustering_columns) { [:ck_price, :ck_version] }
+          let(:query) { 'SELECT * FROM mock_records WHERE rk_model = ? AND rk_series = ? AND (ck_price,ck_version) > (?, ?)' }
+
+          it 'should map the clustering column properly' do
+            expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 9.99, '003', {})
+            MockRecordStatic.request_async(model: 'AABBCCDD', series: '91A', [:price, :version].gt => [9.99, '003'])
+          end
+        end
+
         context 'when the clustering column is part of the partition key' do
           let(:defaults) { [{model: ''}, {series: ''}] }
           let(:truth_table) { [[:model], [:series]] }

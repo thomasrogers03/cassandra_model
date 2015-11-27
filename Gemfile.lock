@@ -7,7 +7,7 @@ GIT
 
 GIT
   remote: https://github.com/thomasrogers03/thomas_utils.git
-  revision: a747af144dadfecddfdc0f92ffa3b0e2305b2ac1
+  revision: 990130f6cc52022152ef5b5d3ba5475f42c28e83
   specs:
     thomas_utils (0.1.13)
 
