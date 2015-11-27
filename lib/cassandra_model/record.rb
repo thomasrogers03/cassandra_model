@@ -505,7 +505,7 @@ module CassandraModel
       def where_clause(clause)
         restriction = clause.map do |key, value|
           if key.is_a?(ThomasUtils::KeyComparer)
-            "#{key} ?"
+            value.is_a?(Array) ? "#{key} (#{array_value_param_splat(value)})" : "#{key} ?"
           else
             value.is_a?(Array) ? multi_value_restriction(key, value) : single_value_restriction(key)
           end
@@ -518,7 +518,11 @@ module CassandraModel
       end
 
       def multi_value_restriction(key, value)
-        "#{key} IN (#{(%w(?) * value.count).join(', ')})"
+        "#{key} IN (#{array_value_param_splat(value)})"
+      end
+
+      def array_value_param_splat(value)
+        (%w(?) * value.count) * ', '
       end
 
       def record_from_result(row, execution_info, invalidate_result)

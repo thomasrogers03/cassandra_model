@@ -298,6 +298,17 @@ module CassandraModel
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
           Record.request_async(clause)
         end
+
+        context 'when the KeyComparer maps to an array' do
+          let(:clustering_columns) { [:price, :model] }
+          let(:clause) { {[:price, :model].gt => [999.98, 'ATF50']} }
+          let(:where_clause) { ' WHERE (price,model) > (?, ?)' }
+
+          it 'should query using all params' do
+            expect(connection).to receive(:execute_async).with(statement, 999.98, 'ATF50', {}).and_return(results)
+            Record.request_async(clause)
+          end
+        end
       end
 
       context 'with a read consistency configured' do
