@@ -24,16 +24,19 @@ module CassandraModel
     end
 
     def after(record)
-      partition_key = record.partition_key
-      clustering_columns = record.clustering_columns
-      cluster_comparer = {clustering_columns.keys.gt => clustering_columns.values}
-      where(partition_key.merge(cluster_comparer))
+      next_cluster(:gt, record)
     end
 
     def before(record)
+      next_cluster(:lt, record)
+    end
+
+    private
+
+    def next_cluster(operator, record)
       partition_key = record.partition_key
       clustering_columns = record.clustering_columns
-      cluster_comparer = {clustering_columns.keys.lt => clustering_columns.values}
+      cluster_comparer = {clustering_columns.keys.public_send(operator) => clustering_columns.values}
       where(partition_key.merge(cluster_comparer))
     end
 
