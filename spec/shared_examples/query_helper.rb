@@ -49,17 +49,22 @@ module CassandraModel
       end
     end
 
-    describe '#after' do
-      let(:partition_key) { {part: 'Partition Key'} }
-      let(:clustering_columns) { {cluster1: 'Cluster This', cluster2: 'Cluster That'} }
-      let(:cluster_comparer) { {clustering_columns.keys.gt => clustering_columns.values} }
-      let(:record) { double(:record, partition_key: partition_key, clustering_columns: clustering_columns) }
+    shared_examples_for 'a cluster paginating query method' do |method, operator|
+      describe "##{method}" do
+        let(:partition_key) { {part: 'Partition Key'} }
+        let(:clustering_columns) { {cluster1: 'Cluster This', cluster2: 'Cluster That'} }
+        let(:cluster_comparer) { {clustering_columns.keys.public_send(operator) => clustering_columns.values} }
+        let(:record) { double(:record, partition_key: partition_key, clustering_columns: clustering_columns) }
 
-      it 'should query for the records whose partition key is the same and clustering columns are greater than the current ones' do
-        expect(query_builder).to receive(:where).with(partition_key.merge(cluster_comparer))
-        subject.after(record)
+        it 'should query for the records whose partition key is the same and clustering columns are greater than the current ones' do
+          expect(query_builder).to receive(:where).with(partition_key.merge(cluster_comparer))
+          subject.public_send(method, record)
+        end
       end
     end
+
+    it_behaves_like 'a cluster paginating query method', :after, :gt
+    it_behaves_like 'a cluster paginating query method', :before, :lt
 
   end
 end
