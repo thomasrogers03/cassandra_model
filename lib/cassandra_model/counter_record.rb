@@ -2,16 +2,14 @@ module CassandraModel
   class CounterRecord < Record
 
     def increment_async!(options)
-      row_key = partition_key + clustering_columns
-      row_key_attributes = row_key_attributes(row_key)
-      where_clause = where_clause(row_key)
       counter_clause = counter_clause(options)
+      row_key = internal_primary_key.values
       statement = increment_statement(counter_clause, where_clause)
 
       future = if batch_reactor
-                 execute_async_in_batch(statement, options.values + row_key_attributes)
+                 execute_async_in_batch(statement, options.values + row_key)
                else
-                 session.execute_async(statement, *options.values, *row_key_attributes, write_query_options)
+                 session.execute_async(statement, *options.values, *row_key, write_query_options)
                end
       future.on_failure do |error|
         Logging.logger.error("Error incrementing #{self.class}: #{error}")
@@ -28,8 +26,8 @@ module CassandraModel
 
     private
 
-    def row_key_attributes(row_key)
-      row_key.map { |key| internal_attributes[key] }
+    def internal_primary_key
+      internal_attributes.slice(*self.class.internal_primary_key)
     end
 
     def increment_statement(counter_clause, where_clause)
@@ -41,16 +39,8 @@ module CassandraModel
       options.keys.map { |column| "#{column} = #{column} + ?" }.join(', ')
     end
 
-    def where_clause(row_key)
-      row_key.map { |key| "#{key} = ?" }.join(' AND ')
-    end
-
-    def clustering_columns
-      self.class.clustering_columns
-    end
-
-    def partition_key
-      self.class.partition_key
+    def where_clause
+      self.class.internal_primary_key.map { |key| "#{key} = ?" }.join(' AND ')
     end
 
     class << self

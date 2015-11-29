@@ -12,9 +12,8 @@ module CassandraModel
     subject { CounterRecord.new({}) }
 
     before do
-      allow(CounterRecord).to receive(:partition_key).and_return(partition_key)
-      allow(CounterRecord).to receive(:clustering_columns).and_return(clustering_columns)
-      allow(CounterRecord).to receive(:columns).and_return(columns)
+      mock_simple_table(:counter_records, partition_key, clustering_columns, counter_columns)
+      mock_simple_table(:image_counters, partition_key, clustering_columns, counter_columns)
       CounterRecord.reset!
       ImageCounter.reset!
     end
@@ -28,9 +27,7 @@ module CassandraModel
 
       it 'should cache the counter columns' do
         CounterRecord.counter_columns
-        expect(CounterRecord).not_to receive(:partition_key)
-        expect(CounterRecord).not_to receive(:clustering_columns)
-        expect(CounterRecord).not_to receive(:columns)
+        expect(CounterRecord).not_to receive(:table)
         CounterRecord.counter_columns
       end
 
