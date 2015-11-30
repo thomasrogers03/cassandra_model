@@ -14,6 +14,7 @@ module CassandraModel
     before do
       mock_simple_table(:counter_records, partition_key, clustering_columns, counter_columns)
       mock_simple_table(:image_counters, partition_key, clustering_columns, counter_columns)
+      allow(Logging.logger).to receive(:error)
       CounterRecord.reset!
       ImageCounter.reset!
     end
@@ -52,6 +53,7 @@ module CassandraModel
       let(:counter_columns) { [:counter, :additional_counter] }
       let(:future_error) { nil }
       let(:results) { MockFuture.new(result: [], error: future_error) }
+      let(:attributes) { {partition: 'Partition Key'} }
 
       before do
         allow(CounterRecord).to receive(:statement).with(query).and_return(statement)
@@ -60,7 +62,13 @@ module CassandraModel
 
       it 'should increment the specified counter by the specified amount' do
         expect(connection).to receive(:execute_async).with(statement, 1, 'Partition Key', {})
-        CounterRecord.new(partition: 'Partition Key').increment_async!(counter: 1)
+        CounterRecord.new(attributes).increment_async!(counter: 1)
+      end
+
+      it 'should call the associated global callback' do
+        record = CounterRecord.new(attributes)
+        expect(GlobalCallbacks).to receive(:call).with(:record_saved, record)
+        record.increment_async!(counter: 1)
       end
 
       context 'when configured to use a batch' do
@@ -111,10 +119,16 @@ module CassandraModel
 
       context 'when an error occurs' do
         let(:future_error) { 'IOError: Connection Closed' }
+        let(:record) { CounterRecord.new(partition: 'Partition Key') }
 
         it 'should log the error' do
           expect(Logging.logger).to receive(:error).with('Error incrementing CassandraModel::CounterRecord: IOError: Connection Closed')
-          CounterRecord.new(partition: 'Partition Key').increment_async!(counter: 1)
+          record.increment_async!(counter: 1)
+        end
+
+        it 'should execute the save record failed callback' do
+          expect(GlobalCallbacks).to receive(:call).with(:save_record_failed, record, future_error)
+          record.increment_async!(counter: 1)
         end
 
         context 'with a different error' do

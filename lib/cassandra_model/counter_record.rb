@@ -11,8 +11,10 @@ module CassandraModel
                else
                  session.execute_async(statement, *options.values, *row_key, write_query_options)
                end
+      future.on_success { execute_callback(:record_saved) }
       future.on_failure do |error|
         Logging.logger.error("Error incrementing #{self.class}: #{error}")
+        execute_callback(:save_record_failed, error)
       end.then { self }
     end
 
