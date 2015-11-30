@@ -53,7 +53,7 @@ module CassandraModel
       validate_attributes!(attributes) if options[:validate]
       @execution_info = options[:execution_info]
       @valid = true
-      @attributes = attributes.dup
+      @attributes = attributes.deep_dup
       after_initialize
     end
 

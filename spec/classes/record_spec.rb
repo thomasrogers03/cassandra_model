@@ -98,6 +98,21 @@ module CassandraModel
           expect(record.valid).to eq(true)
         end
 
+        describe 'inputs' do
+          let(:attributes) { {part: 'Partition', ck: 'Clustering'} }
+          let!(:record) { Record.new(attributes, validate: false) }
+
+          it 'should not modify the passed in attributes hash' do
+            attributes.delete(:part)
+            expect(record.attributes).to include(:part)
+          end
+
+          it 'should also not modify underlying attributes' do
+            attributes[:part][0..-1] = 'noititraP'
+            expect(record.attributes[:part]).to eq('Partition')
+          end
+        end
+
         it 'should ensure that the getters are defined' do
           record = Record.new({}, validate: false)
           expect { record.partition }.not_to raise_error
