@@ -4,7 +4,7 @@ module CassandraModel
     def increment_async!(options)
       counter_clause = counter_clause(options)
       row_key = internal_primary_key.values
-      statement = increment_statement(counter_clause, where_clause)
+      statement = increment_statement(counter_clause)
 
       future = if batch_reactor
                  execute_async_in_batch(statement, options.values + row_key)
@@ -30,8 +30,8 @@ module CassandraModel
       internal_attributes.slice(*self.class.internal_primary_key)
     end
 
-    def increment_statement(counter_clause, where_clause)
-      query = "UPDATE #{self.class.table_name} SET #{counter_clause} WHERE #{where_clause}"
+    def increment_statement(counter_clause)
+      query = "UPDATE #{self.class.table_name} SET #{counter_clause} WHERE #{update_restriction}"
       statement(query)
     end
 
@@ -39,22 +39,13 @@ module CassandraModel
       options.keys.map { |column| "#{column} = #{column} + ?" }.join(', ')
     end
 
-    def where_clause
+    def update_restriction
       self.class.internal_primary_key.map { |key| "#{key} = ?" }.join(' AND ')
     end
 
     class << self
       def counter_columns
         table_data.counter_columns ||= columns - (partition_key + clustering_columns)
-      end
-
-      def request_async(clause, options = {})
-        selected_columns = if options[:select]
-                             options[:select] | counter_columns
-                           else
-                             counter_columns
-                           end
-        super(clause, options.merge(select: selected_columns))
       end
 
       def save_in_batch

@@ -40,64 +40,6 @@ module CassandraModel
       end
     end
 
-    describe '.request_async' do
-      let(:attributes) { {cluster: 6} }
-      let(:page_results) { ['partition' => 'Partition Key'] }
-      let(:result_page) { MockPage.new(true, MockFuture.new([]), [attributes]) }
-      let(:results) { MockFuture.new(result_page) }
-      let(:query_result) { [QueryResult.new(attributes)] }
-      let(:query) { "SELECT #{counter_columns.join(', ')} FROM counter_records#{where_clause}" }
-      let!(:statement) { mock_prepare(query) }
-      let(:where_clause) { nil }
-      let(:restriction) { [] }
-
-      before do
-        allow(connection).to receive(:execute_async).with(statement, *restriction, {}).and_return(results)
-      end
-
-      it 'should select only the counter columns' do
-        expect(CounterRecord.request_async({}).get).to eq(query_result)
-      end
-
-      context 'with different counter columns' do
-        let(:counter_columns) { [:different_counter, :extra_counter] }
-
-        it 'should select only the counter columns' do
-          expect(CounterRecord.request_async({}).get).to eq(query_result)
-        end
-      end
-
-      context 'when options are provided' do
-        it 'should pass the options to the underlying request' do
-          expect(Record).to receive(:request_async).with({}, hash_including(limit: 10))
-          CounterRecord.request_async({}, limit: 10)
-        end
-
-        context 'when selecting additional columns' do
-          it 'should include those columns along with the count' do
-            expect(Record).to receive(:request_async).with({}, hash_including(select: partition_key + counter_columns))
-            CounterRecord.request_async({}, select: partition_key)
-          end
-        end
-
-        context 'when selecting the counter column' do
-          it 'should only specify to select it once' do
-            expect(Record).to receive(:request_async).with({}, hash_including(select: counter_columns))
-            CounterRecord.request_async({}, select: counter_columns)
-          end
-        end
-      end
-
-      context 'with different restrictions' do
-        let(:where_clause) { ' WHERE partition = ? AND cluster = ?' }
-        let(:restriction) { ['Partition Key', 'Cluster Key'] }
-
-        it 'should select only the counter columns for the queried keys' do
-          expect(CounterRecord.request_async(partition: 'Partition Key', cluster: 'Cluster Key').get).to eq(query_result)
-        end
-      end
-    end
-
     describe '#increment_async!' do
       let(:row_key) { partition_key + clustering_columns }
       let(:where_clause) { row_key.map { |key| "#{key} = ?" }.join(' AND ') }
