@@ -15,9 +15,10 @@ PATH
   remote: .
   specs:
     cassandra_model (0.9.3)
-      activesupport (>= 4.0)
+      activesupport (~> 4.0)
+      batch_reactor (~> 0.0.1)
       cassandra-driver (~> 1.1)
-      thomas_utils (>= 0.1.13)
+      thomas_utils (~> 0.1.13)
 
 GEM
   remote: https://rubygems.org/
