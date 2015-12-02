@@ -19,6 +19,8 @@ module CassandraModel
         timeout: 10
     }.freeze
 
+    include ConcurrencyHelper
+
     def initialize(config_name = nil)
       @config_name = config_name
       @statement_cache = {}
@@ -124,20 +126,6 @@ module CassandraModel
         BatchReactor.new(cluster, session, type, config[:batch_reactor] || {}).tap do |reactor|
           reactor.start.get
         end
-      end
-    end
-
-    def safe_getset_variable(mutex, name, &block)
-      result = instance_variable_get(name)
-      return result if result
-
-      mutex.synchronize do
-        raise Cassandra::Errors::InvalidError.new('Connection invalidated!', 'Dummy') if !!@shutdown
-
-        result = instance_variable_get(name)
-        return result if result
-
-        instance_variable_set(name, block.call)
       end
     end
 

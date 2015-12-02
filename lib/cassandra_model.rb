@@ -19,6 +19,7 @@ require 'cassandra'
 require 'active_support/all'
 require 'active_support/core_ext/class/attribute_accessors'
 
+require 'cassandra_model/concurrency_helper'
 require 'cassandra_model/logging'
 require 'cassandra_model/global_callbacks'
 require 'cassandra_model/single_token_batch'
