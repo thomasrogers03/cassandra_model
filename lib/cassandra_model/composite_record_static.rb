@@ -1,5 +1,8 @@
 module CassandraModel
   module CompositeRecordStatic
+    PK_MUTEX = Mutex.new
+    CK_MUTEX = Mutex.new
+
     extend Forwardable
 
     def_delegator :table_config, :composite_defaults=
@@ -26,16 +29,24 @@ module CassandraModel
 
     def composite_pk_map
       unless table_data.composite_pk_map
-        table_data.composite_pk_map = {}
-        columns
+        PK_MUTEX.synchronize do
+          return table_data.composite_pk_map if table_data.composite_pk_map
+
+          table_data.composite_pk_map = {}
+          columns
+        end
       end
       table_data.composite_pk_map
     end
 
     def composite_ck_map
       unless table_data.composite_ck_map
-        table_data.composite_ck_map = {}
-        columns
+        CK_MUTEX.synchronize do
+          return table_data.composite_ck_map if table_data.composite_ck_map
+
+          table_data.composite_ck_map = {}
+          columns
+        end
       end
       table_data.composite_ck_map
     end
