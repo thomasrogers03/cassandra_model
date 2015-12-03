@@ -18,8 +18,9 @@ module CassandraModel
     let(:first_table) { double(:table, table_methods.merge(name: 'table 1')) }
     let(:second_table) { double(:table, table_methods.merge(name: 'table 2')) }
     let(:third_table) { double(:table, table_methods.merge(name: 'table 3')) }
+    let(:list_of_rotating_tables) { [first_table, second_table, third_table] }
     let(:rotating_schedule) { 1.week }
-    let(:rotating_table) { RotatingTable.new([first_table, second_table, third_table], rotating_schedule) }
+    let(:rotating_table) { RotatingTable.new(list_of_rotating_tables, rotating_schedule) }
 
     subject { rotating_table }
 
@@ -213,5 +214,13 @@ module CassandraModel
     end
 
     it_behaves_like 'debugging a table'
+
+    describe '#debug' do
+      subject { rotating_table.debug }
+
+      its(:rotating_tables) { is_expected.to eq(list_of_rotating_tables) }
+      its(:first_table) { is_expected.to eq(first_table) }
+      its(:rotating_schedule) { is_expected.to eq(rotating_schedule) }
+    end
   end
 end

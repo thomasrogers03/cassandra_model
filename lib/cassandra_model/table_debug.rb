@@ -3,6 +3,8 @@ module CassandraModel
     Debug = Struct.new(
         :name,
         :table,
+        :rotating_tables,
+        :first_table,
         :connection_name,
         :connection,
         :partition_key,
@@ -10,12 +12,16 @@ module CassandraModel
         :primary_key,
         :columns,
         :allows_truncation?,
+        :rotating_schedule,
     )
 
     def debug
+      first_table = (@tables.first if @tables)
       Debug.new(
           name,
           table,
+          @tables,
+          first_table,
           @connection_name,
           connection,
           partition_key,
@@ -23,6 +29,7 @@ module CassandraModel
           primary_key,
           columns,
           !!@allow_truncation,
+          @schedule,
       )
     end
   end
