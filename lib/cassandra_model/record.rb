@@ -235,11 +235,8 @@ module CassandraModel
       statement = statement(query_for_save(options))
       save_column_values = column_values
 
-      save_attributes = internal_attributes
-      missing_primary_columns = self.class.internal_primary_key.select { |value| save_attributes[value].nil? }
-      if missing_primary_columns.present?
-        return Cassandra::Future.error(Cassandra::Errors::InvalidError.new("Invalid null value for primary key parts #{missing_primary_columns.map(&:to_s).map(&:inspect) * ', '}", statement))
-      end
+      validation_error = validate_primary_key(statement)
+      return validation_error if validation_error
 
       future = if batch_reactor
                  execute_async_in_batch(statement, save_column_values)
@@ -250,6 +247,26 @@ module CassandraModel
         Logging.logger.error("Error saving #{self.class}: #{error}")
         execute_callback(:save_record_failed, error, statement, save_column_values)
       end
+    end
+
+    def validate_primary_key(statement)
+      missing_primary_columns = invalid_primary_key_parts
+      if missing_primary_columns.present?
+        Cassandra::Future.error(invalid_key_error(missing_primary_columns, statement))
+      end
+    end
+
+    def invalid_key_error(missing_primary_columns, statement)
+      Cassandra::Errors::InvalidError.new(missing_key_message(missing_primary_columns), statement)
+    end
+
+    def missing_key_message(missing_primary_columns)
+      "Invalid null value for primary key parts #{missing_primary_columns.map(&:to_s).map(&:inspect) * ', '}"
+    end
+
+    def invalid_primary_key_parts
+      save_attributes = internal_attributes
+      self.class.internal_primary_key.select { |value| save_attributes[value].nil? }
     end
 
     def execute_callback(callback, *extra_params)
