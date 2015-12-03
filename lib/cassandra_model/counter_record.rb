@@ -5,11 +5,12 @@ module CassandraModel
       counter_clause = counter_clause(options)
       row_key = internal_primary_key.values
       statement = increment_statement(counter_clause)
+      column_values = options.values + row_key
 
       future = if batch_reactor
-                 execute_async_in_batch(statement, options.values + row_key)
+                 execute_async_in_batch(statement, column_values)
                else
-                 session.execute_async(statement, *options.values, *row_key, write_query_options)
+                 session.execute_async(statement, *column_values, write_query_options)
                end
       future.on_success { execute_callback(:record_saved) }
       future.on_failure do |error|
