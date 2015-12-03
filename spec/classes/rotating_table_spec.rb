@@ -11,6 +11,8 @@ module CassandraModel
        clustering_columns: clustering_columns,
        primary_key: partition_key + clustering_columns,
        columns: columns,
+       allow_truncation!: nil,
+       connection: double(:connection),
        :truncate! => nil}
     end
     let(:first_table) { double(:table, table_methods.merge(name: 'table 1')) }
@@ -210,5 +212,6 @@ module CassandraModel
       end
     end
 
+    it_behaves_like 'debugging a table'
   end
 end

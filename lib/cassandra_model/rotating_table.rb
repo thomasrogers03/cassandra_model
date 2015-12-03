@@ -1,6 +1,7 @@
 module CassandraModel
   class RotatingTable
     extend Forwardable
+    include TableDebug
 
     def_delegators :first_table, :primary_key, :partition_key, :clustering_columns, :columns
     def_delegators :table, :connection, :name, :truncate!
@@ -14,6 +15,7 @@ module CassandraModel
     end
 
     def allow_truncation!
+      @allow_truncation = true
       tables.each(&:allow_truncation!)
     end
 
