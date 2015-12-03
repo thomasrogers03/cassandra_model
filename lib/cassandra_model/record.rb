@@ -235,7 +235,7 @@ module CassandraModel
       statement = statement(query_for_save(options))
       save_column_values = column_values
 
-      validation_error = validate_primary_key(statement)
+      validation_error = validate_primary_key!(statement, save_column_values)
       return validation_error if validation_error
 
       future = if batch_reactor
@@ -249,10 +249,12 @@ module CassandraModel
       end
     end
 
-    def validate_primary_key(statement)
+    def validate_primary_key!(statement, save_column_values)
       missing_primary_columns = invalid_primary_key_parts
       if missing_primary_columns.present?
-        Cassandra::Future.error(invalid_key_error(missing_primary_columns, statement))
+        error = invalid_key_error(missing_primary_columns, statement)
+        execute_callback(:save_record_failed, error, statement, save_column_values)
+        Cassandra::Future.error(error)
       end
     end
 

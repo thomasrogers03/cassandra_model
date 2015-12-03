@@ -836,16 +836,21 @@ module CassandraModel
         let(:partition_key) { [:part1, :part2] }
         let(:clustering_columns) { [:ck1, :ck2] }
         let(:remaining_columns) { [] }
+        let(:attributes) { {part1: 'Part 1', ck2: 'Does not matter'} }
         let(:record_instance) { Record.new(attributes) }
+        let(:column_values) { (partition_key + clustering_columns + remaining_columns).map { |key| attributes[key] } }
         let(:record_saved_future) { record_instance.save_async }
         let(:error_message) { 'Invalid null value for primary key parts "part2", "ck1"' }
 
         subject { record_saved_future.get }
 
-        let(:attributes) { {part1: 'Part 1', ck2: 'Does not matter'} }
-
         it 'should raise an Cassandra::Invalid error' do
           expect { subject }.to raise_error(Cassandra::Errors::InvalidError, error_message)
+        end
+
+        it 'should call the associated global callback' do
+          expect(GlobalCallbacks).to receive(:call).with(:save_record_failed, record_instance, a_kind_of(Cassandra::Errors::InvalidError), statement, column_values)
+          subject rescue nil
         end
       end
 
