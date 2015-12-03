@@ -835,6 +835,7 @@ module CassandraModel
       context 'when an error occurs' do
         let(:future_error) { 'IOError: Connection Closed' }
         let(:record_instance) { Record.new(attributes) }
+        let(:column_values) { record_instance.attributes.values }
 
         before { allow(Logging.logger).to receive(:error) }
 
@@ -844,7 +845,7 @@ module CassandraModel
         end
 
         it 'should execute the save record failed callback' do
-          expect(GlobalCallbacks).to receive(:call).with(:save_record_failed, record_instance, future_error)
+          expect(GlobalCallbacks).to receive(:call).with(:save_record_failed, record_instance, future_error, statement, column_values)
           record_instance.save_async
         end
 

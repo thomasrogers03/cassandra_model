@@ -241,7 +241,7 @@ module CassandraModel
                end
       future.on_failure do |error|
         Logging.logger.error("Error saving #{self.class}: #{error}")
-        execute_callback(:save_record_failed, error)
+        execute_callback(:save_record_failed, error, statement, save_column_values)
       end
     end
 
