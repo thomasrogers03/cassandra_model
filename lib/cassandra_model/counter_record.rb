@@ -7,6 +7,9 @@ module CassandraModel
       statement = increment_statement(counter_clause)
       column_values = options.values + row_key
 
+      validation_error = validate_primary_key!(statement, column_values)
+      return validation_error if validation_error
+
       future = if batch_reactor
                  execute_async_in_batch(statement, column_values)
                else
@@ -30,7 +33,7 @@ module CassandraModel
     private
 
     def internal_primary_key
-      internal_attributes.slice(*self.class.internal_primary_key)
+      self.class.internal_primary_key.inject({}) { |memo, key| memo.merge!(key => internal_attributes[key]) }
     end
 
     def increment_statement(counter_clause)

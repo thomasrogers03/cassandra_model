@@ -120,6 +120,28 @@ module CassandraModel
         CounterRecord.new(partition: 'Partition Key').increment_async!(counter: 1)
       end
 
+      context 'when part of the primary key is missing' do
+        let(:partition_key) { [:part1, :part2] }
+        let(:clustering_columns) { [:ck1, :ck2] }
+        let(:remaining_columns) { [:counter] }
+        let(:attributes) { {part1: 'Part 1', ck2: 'Does not matter', counter: 13} }
+        let(:record_instance) { CounterRecord.new(attributes) }
+        let(:column_values) { (remaining_columns + partition_key + clustering_columns).map { |key| attributes[key] } }
+        let(:record_saved_future) { record_instance.increment_async!(counter: 13)}
+        let(:error_message) { 'Invalid null value for primary key parts "part2", "ck1"' }
+
+        subject { record_saved_future.get }
+
+        it 'should raise an Cassandra::Invalid error' do
+          expect { subject }.to raise_error(Cassandra::Errors::InvalidError, error_message)
+        end
+
+        it 'should call the associated global callback' do
+          expect(GlobalCallbacks).to receive(:call).with(:save_record_failed, record_instance, a_kind_of(Cassandra::Errors::InvalidError), statement, column_values)
+          subject rescue nil
+        end
+      end
+
       context 'when an error occurs' do
         let(:future_error) { 'IOError: Connection Closed' }
         let(:record) { CounterRecord.new(partition: 'Partition Key') }
