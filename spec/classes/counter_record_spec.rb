@@ -123,6 +123,7 @@ module CassandraModel
       context 'when an error occurs' do
         let(:future_error) { 'IOError: Connection Closed' }
         let(:record) { CounterRecord.new(partition: 'Partition Key') }
+        let(:column_values) { [1, *record.attributes.values] }
 
         it 'should log the error' do
           expect(Logging.logger).to receive(:error).with('Error incrementing CassandraModel::CounterRecord: IOError: Connection Closed')
@@ -130,7 +131,7 @@ module CassandraModel
         end
 
         it 'should execute the save record failed callback' do
-          expect(GlobalCallbacks).to receive(:call).with(:save_record_failed, record, future_error)
+          expect(GlobalCallbacks).to receive(:call).with(:save_record_failed, record, future_error, statement, column_values)
           record.increment_async!(counter: 1)
         end
 
