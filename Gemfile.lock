@@ -16,7 +16,7 @@ GIT
 PATH
   remote: .
   specs:
-    cassandra_model (0.9.4)
+    cassandra_model (0.9.5)
       activesupport (~> 4.0)
       batch_reactor (~> 0.0.1)
       cassandra-driver (~> 1.1)

@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'cassandra_model'
-  s.version = '0.9.4'
+  s.version = '0.9.5'
   s.license = 'Apache License 2.0'
   s.summary = 'Cassandra data modelling framework for Ruby'
   s.description = %q{Cassandra data modelling framework for Ruby that makes
