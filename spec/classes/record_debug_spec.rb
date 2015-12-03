@@ -16,9 +16,10 @@ module CassandraModel
     let(:partition_key) { [:part] }
     let(:clustering_columns) { [:ck] }
     let(:fields) { [:field1] }
+    let(:columns) { partition_key + clustering_columns + fields }
 
     before do
-      mock_simple_table(:records, partition_key, clustering_columns, fields)
+      mock_simple_table(:records, partition_key, clustering_columns, columns)
       allow(record).to receive(:internal_attributes).and_return(internal_attributes)
     end
 

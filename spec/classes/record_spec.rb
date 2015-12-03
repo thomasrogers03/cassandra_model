@@ -1048,6 +1048,7 @@ module CassandraModel
       let(:partition_key) { [:partition] }
       let(:clustering_columns) { [:cluster] }
       let(:remaining_columns) { [:meta_data, :misc_data] }
+      let(:columns) { partition_key + clustering_columns + remaining_columns }
       let(:attributes) { {partition: 'Partition Key', cluster: 'Cluster Key'} }
       let(:table_name) { :table }
       let(:where_clause) { (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ') }
@@ -1058,7 +1059,10 @@ module CassandraModel
       before do
         Record.table_name = table_name
         allow(connection).to receive(:execute_async).and_return(results)
+        mock_simple_table(:records, partition_key, clustering_columns, columns)
       end
+
+      after { Record.reset! }
 
       it 'should update the record in the database' do
         expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', {})

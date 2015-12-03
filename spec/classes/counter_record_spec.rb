@@ -15,6 +15,9 @@ module CassandraModel
       mock_simple_table(:counter_records, partition_key, clustering_columns, counter_columns)
       mock_simple_table(:image_counters, partition_key, clustering_columns, counter_columns)
       allow(Logging.logger).to receive(:error)
+    end
+
+    after do
       CounterRecord.reset!
       ImageCounter.reset!
     end
