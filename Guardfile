@@ -14,6 +14,9 @@ guard :rspec, cmd: 'bundle exec rspec' do
   watch(%r{^lib/(.+)\.rb$}) { |m| "spec/lib/#{m[1]}_spec.rb" }
   watch(%r{^lib/cassandra_model\.rb$}) { "spec" }
   watch(%r{^lib/cassandra_model/(.+)\.rb}) { |m| "spec/classes/#{m[1]}_spec.rb" }
+  watch(%r{^lib/cassandra_model/table_debug\.rb}) { |_| 'spec/classes/table_redux_spec.rb' }
+  watch(%r{^lib/cassandra_model/table_debug\.rb}) { |_| 'spec/classes/meta_spec.rb' }
+  watch(%r{^lib/cassandra_model/table_debug\.rb}) { |_| 'spec/classes/rotating_table_spec.rb' }
   watch('spec/spec_helper.rb') { "spec" }
   watch(%r{^spec/shared_examples/(.+)\.rb}) { "spec" }
   watch(%r{^spec/helpers/(.+)\.rb}) { "spec" }

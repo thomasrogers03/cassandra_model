@@ -1,6 +1,7 @@
 module CassandraModel
   class TableRedux
     extend Forwardable
+    include TableDebug
 
     attr_reader :name
 
