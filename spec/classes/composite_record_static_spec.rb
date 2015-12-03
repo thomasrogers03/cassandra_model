@@ -4,18 +4,34 @@ module CassandraModel
   describe CompositeRecordStatic do
     class MockRecordStatic < CassandraModel::Record
       extend CompositeRecordStatic
+
+      def validate_attributes!(attributes)
+      end
+
+      def attribute(column)
+        attributes[column] ||
+            attributes[self.class.composite_ck_map[column]] ||
+            attributes[self.class.composite_pk_map[column]]
+      end
+
+      def internal_attributes
+        internal_columns.inject({}) do |memo, column|
+          memo.merge(column => attribute(column))
+        end
+      end
     end
 
     let(:partition_key) { [:rk_model, :rk_series] }
     let(:clustering_columns) { [:ck_price, :ck_model] }
     let(:remaining_columns) { [:meta_data] }
+    let(:columns) { partition_key + clustering_columns + remaining_columns}
     let(:query) { '' }
     let!(:statement) { mock_prepare(query) }
 
     before do
       MockRecordStatic.reset!
       MockRecordStatic.table_name = :mock_records
-      mock_simple_table(:mock_records, partition_key, clustering_columns, remaining_columns)
+      mock_simple_table(:mock_records, partition_key, clustering_columns, columns)
     end
 
     describe 'column name methods' do

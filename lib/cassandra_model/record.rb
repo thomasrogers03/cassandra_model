@@ -234,6 +234,13 @@ module CassandraModel
     def save_row_async(options)
       statement = statement(query_for_save(options))
       save_column_values = column_values
+
+      save_attributes = internal_attributes
+      missing_primary_columns = self.class.internal_primary_key.select { |value| save_attributes[value].nil? }
+      if missing_primary_columns.present?
+        return Cassandra::Future.error(Cassandra::Errors::InvalidError.new("Invalid null value for primary key parts #{missing_primary_columns.map(&:to_s).map(&:inspect) * ', '}", statement))
+      end
+
       future = if batch_reactor
                  execute_async_in_batch(statement, save_column_values)
                else

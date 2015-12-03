@@ -9,7 +9,8 @@ module CassandraModel
       let(:shard_md5) { Digest::MD5.hexdigest(shard_data.to_s) }
       let(:shard_hash) { shard_md5.unpack('L').first }
       let(:shard_proc) { ->(hash) { hash } }
-      let(:record) { klass.new(data_set_name: 'data1', shard_column => shard_data).tap(&:save) }
+      let(:extra_attributes) { {} }
+      let(:record) { klass.new(extra_attributes.merge(data_set_name: 'data1', shard_column => shard_data)).tap(&:save) }
 
       describe 'sharding with a hashing column' do
         describe 'sharding with a modulus' do
@@ -42,6 +43,7 @@ module CassandraModel
 
           context 'when the shard is not the last part of the partition key' do
             let(:partition_key) { [:shard, :data_set_name] }
+            let(:extra_attributes) { {shard: 0} }
 
             it 'should still use the last column as the shard' do
               expect(record.data_set_name).to eq(shard_hash % max_shard)
@@ -77,6 +79,7 @@ module CassandraModel
 
           context 'when the shard is not the last part of the partition key' do
             let(:partition_key) { [:shard, :data_set_name] }
+            let(:extra_attributes) { {shard: 0} }
 
             it 'should still use the last column as the shard' do
               expect(record.data_set_name).to eq(shard_hash)
@@ -87,6 +90,7 @@ module CassandraModel
 
       describe 'sharding manually' do
         let(:shard_proc) { ->(instance) { 5 } }
+        let(:extra_attributes) { {sharding_column => 0} }
 
         before { klass.shard(&shard_proc) }
 
@@ -104,6 +108,7 @@ module CassandraModel
 
         context 'when the shard is not the last part of the partition key' do
           let(:partition_key) { [:shard, :data_set_name] }
+          let(:extra_attributes) { {shard: 0} }
 
           it 'should still use the last column as the shard' do
             expect(record.data_set_name).to eq(5)

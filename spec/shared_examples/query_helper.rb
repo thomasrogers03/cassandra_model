@@ -51,13 +51,13 @@ module CassandraModel
 
     shared_examples_for 'a cluster paginating query method' do |method, operator|
       describe "##{method}" do
-        let(:partition_key) { {part: 'Partition Key'} }
-        let(:clustering_columns) { {cluster1: 'Cluster This', cluster2: 'Cluster That'} }
-        let(:cluster_comparer) { {clustering_columns.keys.public_send(operator) => clustering_columns.values} }
-        let(:record) { double(:record, partition_key: partition_key, clustering_columns: clustering_columns) }
+        let(:record_partition_key) { {part: 'Partition Key'} }
+        let(:record_clustering_columns) { {cluster1: 'Cluster This', cluster2: 'Cluster That'} }
+        let(:cluster_comparer) { {record_clustering_columns.keys.public_send(operator) => record_clustering_columns.values} }
+        let(:record) { double(:record, partition_key: record_partition_key, clustering_columns: record_clustering_columns) }
 
         it 'should query for the records whose partition key is the same and clustering columns are greater than the current ones' do
-          expect(query_builder).to receive(:where).with(partition_key.merge(cluster_comparer))
+          expect(query_builder).to receive(:where).with(record_partition_key.merge(cluster_comparer))
           subject.public_send(method, record)
         end
       end

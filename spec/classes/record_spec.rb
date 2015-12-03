@@ -19,8 +19,8 @@ module CassandraModel
         result = block.call
         double(:future, value: result)
       end
-      mock_simple_table(table_name, partition_key, clustering_columns, remaining_columns)
-      mock_simple_table(:image_data, partition_key, clustering_columns, remaining_columns)
+      mock_simple_table(table_name, partition_key, clustering_columns, columns)
+      mock_simple_table(:image_data, partition_key, clustering_columns, columns)
     end
 
     after do
@@ -830,6 +830,23 @@ module CassandraModel
       it 'should not log an error' do
         expect(Logging.logger).not_to receive(:error)
         Record.new(attributes).save_async
+      end
+
+      context 'when part of the primary key is missing' do
+        let(:partition_key) { [:part1, :part2] }
+        let(:clustering_columns) { [:ck1, :ck2] }
+        let(:remaining_columns) { [] }
+        let(:record_instance) { Record.new(attributes) }
+        let(:record_saved_future) { record_instance.save_async }
+        let(:error_message) { 'Invalid null value for primary key parts "part2", "ck1"' }
+
+        subject { record_saved_future.get }
+
+        let(:attributes) { {part1: 'Part 1', ck2: 'Does not matter'} }
+
+        it 'should raise an Cassandra::Invalid error' do
+          expect { subject }.to raise_error(Cassandra::Errors::InvalidError, error_message)
+        end
       end
 
       context 'when an error occurs' do
