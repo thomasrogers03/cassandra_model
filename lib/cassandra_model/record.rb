@@ -263,12 +263,20 @@ module CassandraModel
     end
 
     def missing_key_message(missing_primary_columns)
-      "Invalid null value for primary key parts #{missing_primary_columns.map(&:to_s).map(&:inspect) * ', '}"
+      "Invalid primary key parts #{missing_primary_columns.map(&:to_s).map(&:inspect) * ', '}"
     end
 
     def invalid_primary_key_parts
       save_attributes = internal_attributes
-      self.class.internal_primary_key.select { |value| save_attributes[value].nil? }
+      if self.class.internal_partition_key.one? && save_attributes[internal_partition_key_part_one].blank?
+        [internal_partition_key_part_one]
+      else
+        self.class.internal_primary_key.select { |value| save_attributes[value].nil? }
+      end
+    end
+
+    def internal_partition_key_part_one
+      self.class.internal_partition_key.first
     end
 
     def execute_callback(callback, *extra_params)

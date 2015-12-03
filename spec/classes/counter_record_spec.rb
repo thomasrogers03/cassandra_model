@@ -128,7 +128,7 @@ module CassandraModel
         let(:record_instance) { CounterRecord.new(attributes) }
         let(:column_values) { (remaining_columns + partition_key + clustering_columns).map { |key| attributes[key] } }
         let(:record_saved_future) { record_instance.increment_async!(counter: 13)}
-        let(:error_message) { 'Invalid null value for primary key parts "part2", "ck1"' }
+        let(:error_message) { 'Invalid primary key parts "part2", "ck1"' }
 
         subject { record_saved_future.get }
 

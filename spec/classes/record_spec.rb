@@ -840,7 +840,7 @@ module CassandraModel
         let(:record_instance) { Record.new(attributes) }
         let(:column_values) { (partition_key + clustering_columns + remaining_columns).map { |key| attributes[key] } }
         let(:record_saved_future) { record_instance.save_async }
-        let(:error_message) { 'Invalid null value for primary key parts "part2", "ck1"' }
+        let(:error_message) { 'Invalid primary key parts "part2", "ck1"' }
 
         subject { record_saved_future.get }
 
@@ -851,6 +851,16 @@ module CassandraModel
         it 'should call the associated global callback' do
           expect(GlobalCallbacks).to receive(:call).with(:save_record_failed, record_instance, a_kind_of(Cassandra::Errors::InvalidError), statement, column_values)
           subject rescue nil
+        end
+
+        context 'when there is only one partition key part and it is an empty string' do
+          let(:partition_key) { [:part1] }
+          let(:attributes) { {part1: '', ck1: 'Also does not matter', ck2: 'Does not matter'} }
+          let(:error_message) { 'Invalid primary key parts "part1"' }
+
+          it 'should raise an Cassandra::Invalid error' do
+            expect { subject }.to raise_error(Cassandra::Errors::InvalidError, error_message)
+          end
         end
       end
 
