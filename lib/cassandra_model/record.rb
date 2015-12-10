@@ -244,8 +244,7 @@ module CassandraModel
                  session.execute_async(statement, *save_column_values, write_query_options(options))
                end
       future.on_failure do |error|
-        Logging.logger.error("Error saving #{self.class}: #{error}")
-        execute_callback(:save_record_failed, error, statement, save_column_values)
+        handle_save_error(error, save_column_values, statement)
       end
     end
 
@@ -253,10 +252,14 @@ module CassandraModel
       missing_primary_columns = invalid_primary_key_parts
       if missing_primary_columns.present?
         error = invalid_key_error(missing_primary_columns, statement)
-        Logging.logger.error("Error saving #{self.class}: #{error}")
-        execute_callback(:save_record_failed, error, statement, save_column_values)
+        handle_save_error(error, save_column_values, statement)
         Cassandra::Future.error(error)
       end
+    end
+
+    def handle_save_error(error, save_column_values, statement)
+      Logging.logger.error("Error saving #{self.class}: #{error}")
+      execute_callback(:save_record_failed, error, statement, save_column_values)
     end
 
     def invalid_key_error(missing_primary_columns, statement)
