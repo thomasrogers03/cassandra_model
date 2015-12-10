@@ -253,6 +253,7 @@ module CassandraModel
       missing_primary_columns = invalid_primary_key_parts
       if missing_primary_columns.present?
         error = invalid_key_error(missing_primary_columns, statement)
+        Logging.logger.error("Error saving #{self.class}: #{error}")
         execute_callback(:save_record_failed, error, statement, save_column_values)
         Cassandra::Future.error(error)
       end

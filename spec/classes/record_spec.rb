@@ -21,6 +21,7 @@ module CassandraModel
       end
       mock_simple_table(table_name, partition_key, clustering_columns, columns)
       mock_simple_table(:image_data, partition_key, clustering_columns, columns)
+      allow(Logging.logger).to receive(:error)
     end
 
     after do
@@ -848,6 +849,11 @@ module CassandraModel
           expect { subject }.to raise_error(Cassandra::Errors::InvalidError, error_message)
         end
 
+        it 'should log the error' do
+          expect(Logging.logger).to receive(:error).with("Error saving CassandraModel::Record: #{error_message}")
+          subject rescue nil
+        end
+
         it 'should call the associated global callback' do
           expect(GlobalCallbacks).to receive(:call).with(:save_record_failed, record_instance, a_kind_of(Cassandra::Errors::InvalidError), statement, column_values)
           subject rescue nil
@@ -868,8 +874,6 @@ module CassandraModel
         let(:future_error) { 'IOError: Connection Closed' }
         let(:record_instance) { Record.new(attributes) }
         let(:column_values) { record_instance.attributes.values }
-
-        before { allow(Logging.logger).to receive(:error) }
 
         it 'should log the error' do
           expect(Logging.logger).to receive(:error).with('Error saving CassandraModel::Record: IOError: Connection Closed')
