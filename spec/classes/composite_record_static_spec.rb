@@ -24,7 +24,7 @@ module CassandraModel
     let(:partition_key) { [:rk_model, :rk_series] }
     let(:clustering_columns) { [:ck_price, :ck_model] }
     let(:remaining_columns) { [:meta_data] }
-    let(:columns) { partition_key + clustering_columns + remaining_columns}
+    let(:columns) { partition_key + clustering_columns + remaining_columns }
     let(:query) { '' }
     let!(:statement) { mock_prepare(query) }
 
@@ -194,6 +194,25 @@ module CassandraModel
         it 'should generate a table of composite defaults from the data set inquirer' do
           is_expected.to eq([{rk_year: 0}, {rk_make: '', rk_model: 'NULL'}])
         end
+      end
+    end
+
+    describe '.restriction_attributes' do
+      let(:defaults) { [{model: ''}, {model: '', series: ''}] }
+      let(:restriction) { {model: 'AABBCCDD', series: '91A', price: 9.99} }
+
+      subject { MockRecordStatic.restriction_attributes(restriction) }
+
+      before do
+        MockRecordStatic.composite_defaults = defaults
+      end
+
+      it { is_expected.to eq(rk_model: 'AABBCCDD', rk_series: '91A', ck_price: 9.99) }
+
+      context 'when missing information from the restriction' do
+        let(:restriction) { {series: '91A', price: 9.99} }
+
+        it { is_expected.to eq(rk_series: '91A', ck_price: 9.99, rk_model: '') }
       end
     end
 

@@ -74,6 +74,18 @@ module CassandraModel
       end
     end
 
+    def restriction_attributes(restriction)
+      updated_restriction = restriction.inject({}) do |memo, (key, value)|
+        updated_key = key_for_where_params(key)
+        memo.merge!(updated_key => value)
+      end
+
+      missing_keys = Set.new(internal_partition_key - updated_restriction.keys)
+      default_clause = composite_defaults.find { |row| (missing_keys ^ row.keys).empty? }
+      updated_restriction.merge!(default_clause) if default_clause
+      updated_restriction
+    end
+
     private
 
     def build_composite_map
@@ -121,16 +133,7 @@ module CassandraModel
     end
 
     def where_params(clause)
-      updated_clause = clause.inject({}) do |memo, (key, value)|
-        updated_key = key_for_where_params(key)
-        memo.merge!(updated_key => value)
-      end
-
-      missing_keys = Set.new(internal_partition_key - updated_clause.keys)
-      default_clause = composite_defaults.find { |row| (missing_keys ^ row.keys).empty? }
-      updated_clause.merge!(default_clause) if default_clause
-
-      super(updated_clause)
+      super restriction_attributes(clause)
     end
 
     def key_for_where_params(key)
