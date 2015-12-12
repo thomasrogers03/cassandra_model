@@ -275,6 +275,14 @@ module CassandraModel
       end
     end
 
+    describe '.restriction_attributes' do
+      let(:restriction) { {city: Faker::Address.city, street: Faker::Address.street_name} }
+
+      subject { Record.restriction_attributes(restriction) }
+
+      it { is_expected.to eq(restriction) }
+    end
+
     describe '.request_async' do
       let(:clause) { {} }
       let(:where_clause) { nil }

@@ -409,6 +409,10 @@ module CassandraModel
 
       alias :create! :create
 
+      def restriction_attributes(restriction)
+        restriction
+      end
+
       def request_async(clause, options = {})
         page_size = options[:page_size]
         trace = options[:trace]
