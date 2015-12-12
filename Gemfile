@@ -20,6 +20,7 @@ group :test do
   gem 'pry'
   gem 'timecop'
   gem 'simplecov', require: false
+  gem 'faker'
 end
 
 gemspec
