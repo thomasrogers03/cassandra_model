@@ -20,6 +20,12 @@ module CassandraModel
             its(column_set_name) { is_expected.to eq(column_name => type) }
           end
         end
+
+        context "when the column is exactly #{postfix}" do
+          let(:column_name) { :"#{postfix}" }
+
+          its(column_set_name) { is_expected.to eq(column_name => type) }
+        end
       end
 
       it_behaves_like 'a data type determine by a postfix', :at, :timestamp

@@ -13,21 +13,21 @@ module TypeGuessing
     private
 
     def postfix_type
-      if column =~ /_at$/
+      if column =~ /(^|_)at$/
         :timestamp
-      elsif column =~ /_at_id$/
+      elsif column =~ /(^|_)at_id$/
         :timeuuid
-      elsif column =~ /_id$/
+      elsif column =~ /(^|_)id$/
         :uuid
-      elsif column =~ /_(price|average|stddev)$/
+      elsif column =~ /(^|_)(price|average|stddev)$/
         :double
-      elsif column =~ /_(total|count)$/
+      elsif column =~ /(^|_)(total|count)$/
         counter_type
-      elsif column =~ /_(year|day|month|index)$/
+      elsif column =~ /(^|_)(year|day|month|index)$/
         :int
-      elsif column =~ /_data/
+      elsif column =~ /(^|_)data/
         :blob
-      elsif column =~ /_map$/
+      elsif column =~ /(^|_)map$/
         'map<string, string>'
       end
     end
