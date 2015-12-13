@@ -283,6 +283,14 @@ module CassandraModel
       it { is_expected.to eq(restriction) }
     end
 
+    describe '.select_columns' do
+      let(:columns) { Faker::Lorem.words.map(&:to_sym) }
+
+      subject { Record.select_columns(columns) }
+
+      it { is_expected.to eq(columns) }
+    end
+
     describe '.request_async' do
       let(:clause) { {} }
       let(:where_clause) { nil }

@@ -413,6 +413,10 @@ module CassandraModel
         restriction
       end
 
+      def select_columns(columns)
+        columns
+      end
+
       def request_async(clause, options = {})
         page_size = options[:page_size]
         trace = options[:trace]
