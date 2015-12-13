@@ -86,6 +86,16 @@ module CassandraModel
       updated_restriction
     end
 
+    def select_columns(select)
+      select.map do |column|
+        if internal_columns.include?(column)
+          column
+        else
+          mapped_column(column)
+        end
+      end
+    end
+
     private
 
     def build_composite_map
@@ -120,16 +130,6 @@ module CassandraModel
     def order_by_clause(order_by)
       order_by = select_columns(order_by) if order_by
       super(order_by)
-    end
-
-    def select_columns(select)
-      select.map do |column|
-        if internal_columns.include?(column)
-          column
-        else
-          mapped_column(column)
-        end
-      end
     end
 
     def where_params(clause)
