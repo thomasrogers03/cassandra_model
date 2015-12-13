@@ -291,6 +291,28 @@ module CassandraModel
       it { is_expected.to eq(columns) }
     end
 
+    describe '.cassandra_columns' do
+      let(:cassandra_columns) do
+        3.times.map do
+          Cassandra::Column.new(Faker::Lorem.word, %w(int text timestamp).sample.to_sym, nil)
+        end
+      end
+      let(:column_type_map) do
+        cassandra_columns.inject({}) do |memo, column|
+          memo.merge!(column.name => column.type)
+        end
+      end
+      let(:cassandra_table) { double(:table, columns: cassandra_columns) }
+
+      subject { Record.cassandra_columns }
+
+      before do
+        allow(Record.table.connection.keyspace).to receive(:table).and_return(cassandra_table)
+      end
+
+      it { is_expected.to eq(column_type_map) }
+    end
+
     describe '.request_async' do
       let(:clause) { {} }
       let(:where_clause) { nil }

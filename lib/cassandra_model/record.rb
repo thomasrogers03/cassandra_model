@@ -26,6 +26,8 @@ module CassandraModel
         :composite_primary_key,
 
         :composite_shard_key,
+
+        :cassandra_columns,
     ) # Using this instead of OpenStruct, as there seems to be a bug in JRuby that causes this to get mangled over time
     ConfigureableAttributes = Struct.new(
         :table_name,
@@ -415,6 +417,12 @@ module CassandraModel
 
       def select_columns(columns)
         columns
+      end
+
+      def cassandra_columns
+        table_data.cassandra_columns ||= table.connection.keyspace.table(table_name).columns.inject({}) do |memo, column|
+          memo.merge!(column.name => column.type)
+        end
       end
 
       def request_async(clause, options = {})
