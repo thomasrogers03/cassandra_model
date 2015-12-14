@@ -29,7 +29,9 @@ module CassandraModel
 
     def composite_rows
       (self.class.composite_defaults || []).map do |row|
-        merged_attributes = attributes.merge(row)
+        merged_attributes = self.class.deferred_columns.inject(attributes.merge(row)) do |memo, column|
+          memo.merge!(column => public_send(column))
+        end
         self.class.new(merged_attributes, validate: false)
       end
     end

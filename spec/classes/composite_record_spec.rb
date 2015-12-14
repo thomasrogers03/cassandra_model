@@ -55,13 +55,32 @@ module CassandraModel
 
       it 'should save the record with the composite columns properly resolved' do
         expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 'AABBCCDD', {}, {})
-        subject.save_async
+        subject.save_async.get
       end
 
       it 'should save variations for each default column' do
         expect(connection).to receive(:execute_async).with(statement, '', '91A', 'AABBCCDD', {}, {})
         expect(connection).to receive(:execute_async).with(statement, '', '', 'AABBCCDD', {}, {})
-        subject.save_async
+        subject.save_async.get
+      end
+
+      context 'with a deferred column' do
+        let(:fake_column_value) { [:some, great: 'stuff'] }
+        let(:serialized_fake_column) { Marshal.dump(fake_column_value) }
+        subject { MockRecordInstance.new(model: 'AABBCCDD', series: '91A', fake_column: fake_column_value) }
+
+        before do
+          MockRecordInstance.deferred_column :fake_column, on_load: ->(attributes) { Marshal.load(attributes[:meta_data]) if attributes[:meta_data] },
+                                             on_save: ->(attributes, value) { attributes[:meta_data] = Marshal.dump(value) }
+          subject.fake_column
+        end
+        after { MockRecordInstance.send(:remove_method, :fake_column) if MockRecordInstance.instance_methods(false).include?(:fake_column) }
+
+        it 'should save variations for each default column' do
+          expect(connection).to receive(:execute_async).with(statement, '', '91A', 'AABBCCDD', serialized_fake_column, {})
+          expect(connection).to receive(:execute_async).with(statement, '', '', 'AABBCCDD', serialized_fake_column, {})
+          subject.save_async.get
+        end
       end
     end
 
