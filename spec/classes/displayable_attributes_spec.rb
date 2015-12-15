@@ -3,10 +3,15 @@ require 'rspec'
 module CassandraModel
   describe DisplayableAttributes do
     let(:attributes) { {} }
+    let(:field_type) { :text }
+    let(:cassandra_columns) { {partition: :text, clustering: :text, some: field_type} }
 
     subject { Record.new(attributes, validate: false) }
 
-    before { mock_simple_table(:records, [], [], []) }
+    before do
+      mock_simple_table(:records, [], [], [])
+      allow(Record).to receive(:cassandra_columns).and_return(cassandra_columns)
+    end
     after { Record.reset! }
 
     describe '#as_json' do
@@ -20,6 +25,13 @@ module CassandraModel
         let(:attributes) { {partition: 'Key', clustering: 'Columns', some: 'Field'} }
 
         its(:as_json) { is_expected.to eq(attributes) }
+      end
+
+      context 'when a column provided is a blob' do
+        let(:field_type) { :blob }
+        let(:attributes) { {partition: 'Key', clustering: 'Columns', some: 'Field'} }
+
+        its(:as_json) { is_expected.to eq(attributes.except(:some)) }
       end
 
       context 'with deferred columns' do

@@ -26,8 +26,12 @@ module CassandraModel
     private
 
     def json_attributes
-      self.class.deferred_columns.inject(attributes) do |memo, column|
-        memo.merge(column => public_send(column))
+      json_attributes = attributes.keys.inject({}) do |memo, column|
+        memo[column] = attributes[column] unless self.class.cassandra_columns[column] == :blob
+        memo
+      end
+      self.class.deferred_columns.inject(json_attributes) do |memo, column|
+        memo.merge!(column => public_send(column))
       end
     end
 
