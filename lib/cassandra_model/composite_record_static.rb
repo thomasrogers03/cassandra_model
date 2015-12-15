@@ -91,14 +91,14 @@ module CassandraModel
     end
 
     def select_column(column)
-      if internal_columns.include?(column)
-        column
-      else
-        mapped_column(column)
-      end
+      has_field?(column) ? column : mapped_column(column)
     end
 
     private
+
+    def has_field?(column)
+      internal_columns.include?(column)
+    end
 
     def build_composite_map
       if table_config.composite_defaults
