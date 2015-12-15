@@ -19,18 +19,24 @@ module CassandraModel
       if displayable_attributes
         displayable_attributes.is_a?(Hash) ? mapped_as_json : sliced_displayable_attributes
       else
-        attributes
+        json_attributes
       end
     end
 
     private
+
+    def json_attributes
+      self.class.deferred_columns.inject(attributes) do |memo, column|
+        memo.merge(column => public_send(column))
+      end
+    end
 
     def mapped_as_json
       sliced_displayable_attributes.inject({}) { |memo, (key, value)| memo.merge!(displayable_attributes[key] => value) }
     end
 
     def sliced_displayable_attributes
-      attributes.slice(*displayable_attributes_slice)
+      json_attributes.slice(*displayable_attributes_slice)
     end
 
     def displayable_attributes_slice

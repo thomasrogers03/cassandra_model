@@ -22,6 +22,16 @@ module CassandraModel
         its(:as_json) { is_expected.to eq(attributes) }
       end
 
+      context 'with deferred columns' do
+        let(:attributes) { {partition: 'Key'} }
+        before do
+          Record.deferred_column :fake_column, on_load: ->(attributes) { 'fake data' }
+        end
+        after { Record.send(:remove_method, :fake_column) if Record.instance_methods(false).include?(:fake_column) }
+
+        its(:as_json) { is_expected.to eq(partition: 'Key', fake_column: 'fake data') }
+      end
+
       context 'when configured to only return certain columns' do
         let(:attributes) { {partition: 'Key', clustering: 'Columns', some: 'Field'} }
         let(:display_columns) { [:partition] }
