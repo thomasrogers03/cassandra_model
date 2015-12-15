@@ -27,7 +27,13 @@ module CassandraModel
 
     def json_attributes
       json_attributes = attributes.keys.inject({}) do |memo, column|
-        memo[column] = attributes[column] unless self.class.cassandra_columns[column] == :blob
+        case self.class.cassandra_columns[column]
+          when :blob
+          when :uuid
+            memo[column] = attributes[column].to_s
+          else
+            memo[column] = attributes[column]
+        end
         memo
       end
       self.class.deferred_columns.inject(json_attributes) do |memo, column|

@@ -34,6 +34,14 @@ module CassandraModel
         its(:as_json) { is_expected.to eq(attributes.except(:some)) }
       end
 
+      context 'when a column provided is a Cassandra::Uuid' do
+        let(:field_type) { :uuid }
+        let(:some_uuid) { SecureRandom.uuid }
+        let(:attributes) { {partition: 'Key', clustering: 'Columns', some: Cassandra::Uuid.new(some_uuid)} }
+
+        its(:as_json) { is_expected.to eq(attributes.merge(some: some_uuid)) }
+      end
+
       context 'with deferred columns' do
         let(:attributes) { {partition: 'Key'} }
         before do
