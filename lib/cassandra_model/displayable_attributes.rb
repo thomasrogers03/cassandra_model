@@ -29,6 +29,10 @@ module CassandraModel
       json_attributes = attributes.keys.inject({}) do |memo, column|
         case column_type(column)
           when :blob
+          when :timestamp
+            memo[column] = attributes[column].to_i
+          when :timeuuid
+            memo[column] = attributes[column].to_s
           when :uuid
             memo[column] = attributes[column].to_s
           else

@@ -35,6 +35,22 @@ module CassandraModel
         its(:as_json) { is_expected.to eq(attributes.except(:some)) }
       end
 
+      context 'when a column provided is a timestamp' do
+        let(:field_type) { :timestamp }
+        let(:some_time) { Time.now }
+        let(:attributes) { {partition: 'Key', clustering: 'Columns', some: some_time} }
+
+        its(:as_json) { is_expected.to eq(attributes.merge(some: some_time.to_i)) }
+      end
+
+      context 'when a column provided is a Cassandra::TimeUuid' do
+        let(:field_type) { :timeuuid }
+        let(:some_uuid) { SecureRandom.uuid }
+        let(:attributes) { {partition: 'Key', clustering: 'Columns', some: Cassandra::TimeUuid.new(some_uuid)} }
+
+        its(:as_json) { is_expected.to eq(attributes.merge(some: some_uuid)) }
+      end
+
       context 'when a column provided is a Cassandra::Uuid' do
         let(:field_type) { :uuid }
         let(:some_uuid) { SecureRandom.uuid }
