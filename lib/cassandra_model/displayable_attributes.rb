@@ -27,7 +27,7 @@ module CassandraModel
 
     def json_attributes
       json_attributes = attributes.keys.inject({}) do |memo, column|
-        case self.class.cassandra_columns[column]
+        case self.class.cassandra_columns[self.class.select_column(column).to_s]
           when :blob
           when :uuid
             memo[column] = attributes[column].to_s
