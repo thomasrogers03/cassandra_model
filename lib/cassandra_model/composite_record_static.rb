@@ -86,13 +86,15 @@ module CassandraModel
       updated_restriction
     end
 
-    def select_columns(select)
-      select.map do |column|
-        if internal_columns.include?(column)
-          column
-        else
-          mapped_column(column)
-        end
+    def select_columns(columns)
+      columns.map { |column| select_column(column) }
+    end
+
+    def select_column(column)
+      if internal_columns.include?(column)
+        column
+      else
+        mapped_column(column)
       end
     end
 

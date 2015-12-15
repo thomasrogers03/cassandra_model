@@ -291,6 +291,14 @@ module CassandraModel
       it { is_expected.to eq(columns) }
     end
 
+    describe '.select_column' do
+      let(:column) { Faker::Lorem.word }
+
+      subject { Record.select_column(column) }
+
+      it { is_expected.to eq(column) }
+    end
+
     describe '.cassandra_columns' do
       let(:cassandra_columns) do
         3.times.map do

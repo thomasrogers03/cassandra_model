@@ -255,6 +255,41 @@ module CassandraModel
       end
     end
 
+    describe '.select_column' do
+      let(:partition_key) { [:rk_model] }
+      let(:clustering_columns) { [:ck_model] }
+      let(:remaining_columns) { [:model] }
+      let(:select_column) { :model }
+
+      subject { MockRecordStatic.select_column(select_column) }
+
+      it { is_expected.to eq(select_column) }
+
+      context 'when the selected column is not present in the field' do
+        let(:remaining_columns) { [] }
+
+        context 'when a selected column is only present as a clustering key part' do
+          let(:partition_key) { [:rk_series] }
+
+          it { is_expected.to eq(:ck_model) }
+        end
+
+        context 'when a selected column is only present as a partition key part' do
+          let(:clustering_columns) { [:ck_series] }
+
+          it { is_expected.to eq(:rk_model) }
+        end
+
+        context 'when a selected column is not present as a field, but both in the partition and clustering keys' do
+          let(:partition_key) { [:rk_model] }
+
+          it 'prefers the clustering column over the partition key' do
+            is_expected.to eq(:ck_model)
+          end
+        end
+      end
+    end
+
     describe '.request_async' do
       let(:query) { 'SELECT * FROM mock_records WHERE rk_model = ? AND rk_series = ? AND ck_price = ?' }
       let(:defaults) { [{model: ''}, {model: '', series: ''}] }
