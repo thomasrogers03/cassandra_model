@@ -104,6 +104,18 @@ module CassandraModel
           end
         end
       end
+
+      context 'when configured to filter out certain columns for display' do
+        let(:attributes) { {partition: 'Key', clustering: 'Columns', some: 'Field'} }
+        let(:reject_columns) { [:partition] }
+
+        before do
+          allow(Record).to receive(:columns).and_return([:partition, :clustering, :some])
+          Record.filter_display_attributes(*reject_columns)
+        end
+
+        its(:as_json) { is_expected.to eq(clustering: 'Columns', some: 'Field') }
+      end
     end
   end
 end

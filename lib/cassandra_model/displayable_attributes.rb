@@ -5,6 +5,10 @@ module CassandraModel
       table_config.display_attributes = map ? map : columns
     end
 
+    def filter_display_attributes(*filter_columns)
+      table_config.display_attributes = columns - filter_columns
+    end
+
     def displayable_attributes
       table_config.display_attributes
     end
