@@ -27,7 +27,7 @@ module CassandraModel
 
     def json_attributes
       json_attributes = attributes.keys.inject({}) do |memo, column|
-        case self.class.cassandra_columns[self.class.select_column(column).to_s]
+        case column_type(column)
           when :blob
           when :uuid
             memo[column] = attributes[column].to_s
@@ -39,6 +39,10 @@ module CassandraModel
       self.class.deferred_columns.inject(json_attributes) do |memo, column|
         memo.merge!(column => public_send(column))
       end
+    end
+
+    def column_type(column)
+      self.class.cassandra_columns[self.class.select_column(column).to_s]
     end
 
     def mapped_as_json
