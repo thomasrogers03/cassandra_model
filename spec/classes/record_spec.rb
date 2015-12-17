@@ -470,6 +470,25 @@ module CassandraModel
           expect(Record.request_async({}, options).get).to eq([record_one, record_two, record_three])
         end
 
+        context 'with a direction specified' do
+          let(:direction) { :desc }
+          let(:options) { {order_by: [{cluster: direction}]} }
+          let(:order_clause) { ' ORDER BY cluster DESC' }
+
+          it 'should order the results  the specified direction' do
+            expect(Record.request_async({}, options).get).to eq([record_one, record_two, record_three])
+          end
+
+          context 'with a different direction' do
+            let(:direction) { :asc }
+            let(:order_clause) { ' ORDER BY cluster ASC' }
+
+            it 'should order the results  the specified direction' do
+              expect(Record.request_async({}, options).get).to eq([record_one, record_two, record_three])
+            end
+          end
+        end
+
         context 'with multiple columns selected' do
           let(:options) { {order_by: [:cluster, :other_cluster]} }
           let(:order_clause) { ' ORDER BY cluster, other_cluster' }

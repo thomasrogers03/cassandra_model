@@ -462,7 +462,18 @@ module CassandraModel
       end
 
       def order_by_clause(order_by)
-        " ORDER BY #{multi_csv_clause(order_by)}" if order_by
+        if order_by
+          order_by = [order_by] unless order_by.is_a?(Array)
+          ordering_columns = order_by.map do |column|
+            if column.is_a?(Hash)
+              column, direction = column.first
+              "#{column} #{direction.upcase}"
+            else
+              column
+            end
+          end
+          " ORDER BY #{multi_csv_clause(ordering_columns)}"
+        end
       end
 
       def first_async(clause = {}, options = {})
