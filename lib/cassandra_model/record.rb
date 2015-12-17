@@ -415,6 +415,10 @@ module CassandraModel
         restriction
       end
 
+      def normalized_attributes(attributes)
+        attributes.symbolize_keys
+      end
+
       def select_columns(columns)
         columns
       end
@@ -586,12 +590,8 @@ module CassandraModel
       end
 
       def record_from_result(row, execution_info, invalidate_result)
-        attributes = row_attributes(row)
+        attributes = normalized_attributes(row)
         new(attributes, execution_info: execution_info).tap { |result| result.invalidate! if invalidate_result }
-      end
-
-      def row_attributes(row)
-        row.symbolize_keys
       end
 
       def manual_shard(&block)

@@ -86,6 +86,18 @@ module CassandraModel
       updated_restriction
     end
 
+    def normalized_attributes(row)
+      row = super(row)
+
+      row.inject({}) do |memo, (column, value)|
+        if column =~ /^rk_/ || column =~ /^ck_/
+          memo.merge!(mapped_column(column) => value)
+        else
+          memo.merge!(column => value)
+        end
+      end
+    end
+
     def select_columns(columns)
       columns.map { |column| select_column(column) }
     end
@@ -163,18 +175,6 @@ module CassandraModel
 
     def composite_default_row_key(key)
       composite_pk_map[key] || key
-    end
-
-    def row_attributes(row)
-      row = super(row)
-
-      row.inject({}) do |memo, (column, value)|
-        if column =~ /^rk_/ || column =~ /^ck_/
-          memo.merge!(mapped_column(column) => value)
-        else
-          memo.merge!(column => value)
-        end
-      end
     end
 
     def mapped_column(column)

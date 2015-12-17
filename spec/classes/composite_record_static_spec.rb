@@ -255,6 +255,28 @@ module CassandraModel
       end
     end
 
+    describe '.normalized_attributes' do
+      let(:key) { 'model' }
+      let(:value) { Faker::Lorem.word }
+      let(:attributes) { {key => value} }
+
+      subject { MockRecordStatic.normalized_attributes(attributes) }
+
+      it { is_expected.to eq(model: value) }
+
+      context 'when the key is part of the row/partition key' do
+        let(:key) { 'rk_model' }
+
+        it { is_expected.to eq(model: value) }
+      end
+
+      context 'when the key is part of the clustering columns' do
+        let(:key) { 'ck_model' }
+
+        it { is_expected.to eq(model: value) }
+      end
+    end
+
     describe '.select_column' do
       let(:partition_key) { [:rk_model] }
       let(:clustering_columns) { [:ck_model] }

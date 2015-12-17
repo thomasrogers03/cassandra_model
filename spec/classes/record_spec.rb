@@ -283,6 +283,15 @@ module CassandraModel
       it { is_expected.to eq(restriction) }
     end
 
+    describe '.normalized_attributes' do
+      let(:key) { Faker::Lorem.word }
+      let(:attributes) { {key => Faker::Lorem.word} }
+
+      subject { Record.normalized_attributes(attributes) }
+
+      it { is_expected.to eq(attributes.symbolize_keys) }
+    end
+
     describe '.select_columns' do
       let(:columns) { Faker::Lorem.words.map(&:to_sym) }
 
