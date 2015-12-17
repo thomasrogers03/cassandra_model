@@ -429,7 +429,7 @@ module CassandraModel
 
       def cassandra_columns
         table_data.cassandra_columns ||= table.connection.keyspace.table(table_name).columns.inject({}) do |memo, column|
-          memo.merge!(column.name => column.type)
+          memo.merge!(column.name.to_sym => column.type)
         end
       end
 

@@ -316,7 +316,7 @@ module CassandraModel
       end
       let(:column_type_map) do
         cassandra_columns.inject({}) do |memo, column|
-          memo.merge!(column.name => column.type)
+          memo.merge!(column.name.to_sym => column.type)
         end
       end
       let(:cassandra_table) { double(:table, columns: cassandra_columns) }
