@@ -399,6 +399,22 @@ module CassandraModel
           expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 9.99, {})
           MockRecordStatic.request_async({model: 'AABBCCDD', series: '91A', price: 9.99}, order_by: [:model])
         end
+
+        context 'with a specific ordering direction' do
+          let(:query) { 'SELECT * FROM mock_records WHERE rk_model = ? AND rk_series = ? AND ck_price = ? ORDER BY ck_model DESC' }
+
+          it 'should map the composite column to the clustering column' do
+            expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 9.99, {})
+            MockRecordStatic.request_async({model: 'AABBCCDD', series: '91A', price: 9.99}, order_by: [{model: :desc}])
+          end
+        end
+
+        context 'with the column is not specified in an array' do
+          it 'should handle this properly' do
+            expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 9.99, {})
+            MockRecordStatic.request_async({model: 'AABBCCDD', series: '91A', price: 9.99}, order_by: :model)
+          end
+        end
       end
 
       context 'when missing information from the query' do

@@ -142,7 +142,17 @@ module CassandraModel
     end
 
     def order_by_clause(order_by)
-      order_by = select_columns(order_by) if order_by
+      if order_by
+        order_by = [order_by] unless order_by.is_a?(Array)
+        order_by = order_by.map do |column|
+          if column.is_a?(Hash)
+            column, direction = column.first
+            {select_column(column) => direction}
+          else
+            select_column(column)
+          end
+        end
+      end
       super(order_by)
     end
 
