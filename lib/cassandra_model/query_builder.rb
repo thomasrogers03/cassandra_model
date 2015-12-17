@@ -89,7 +89,14 @@ module CassandraModel
 
     def order(*columns)
       @options[:order_by] ||= []
-      @options[:order_by].concat(columns)
+      if columns.first.is_a?(Hash)
+        columns = columns.first.map do |column, direction|
+          {column => direction}
+        end
+        @options[:order_by].concat(columns)
+      else
+        @options[:order_by].concat(columns)
+      end
       self
     end
 

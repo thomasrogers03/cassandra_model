@@ -326,6 +326,21 @@ module CassandraModel
     it_behaves_like 'a comma separated option', :select, :select
     it_behaves_like 'a comma separated option', :order, :order_by
 
+    describe '#order' do
+      context 'when the order is specified using a hash' do
+        let(:first_column) { {Faker::Lorem.word => :asc} }
+        let(:second_column) { {Faker::Lorem.word => :desc} }
+        let(:ordering_columns) do
+          first_column.merge(second_column)
+        end
+
+        it 'should split the hash into multiple ordering clauses' do
+          expect(record).to receive(:request).with({}, {order_by: [first_column, second_column]})
+          subject.order(ordering_columns).get
+        end
+      end
+    end
+
     describe '#limit' do
       let(:params) { 100 }
 
