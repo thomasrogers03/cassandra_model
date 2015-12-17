@@ -333,10 +333,11 @@ module CassandraModel
     describe '.request_async' do
       let(:clause) { {} }
       let(:where_clause) { nil }
+      let(:limit_clause) { nil }
       let(:table_name) { :table }
       let(:select_clause) { '*' }
       let(:order_clause) { nil }
-      let(:query) { "SELECT #{select_clause} FROM #{table_name}#{where_clause}#{order_clause}" }
+      let(:query) { "SELECT #{select_clause} FROM #{table_name}#{where_clause}#{order_clause}#{limit_clause}" }
       let(:page_results) { ['partition' => 'Partition Key'] }
       let(:result_page) { MockPage.new(true, MockFuture.new([]), page_results) }
       let(:results) { MockFuture.new(result_page) }
@@ -346,15 +347,19 @@ module CassandraModel
 
       before do
         Record.table_name = table_name
-        allow(connection).to receive(:execute_async).and_return(results)
+        allow(connection).to receive(:execute_async).with(statement, *clause.values, {}).and_return(results)
       end
 
       it 'should create a Record instance for each returned result' do
         expect(Record.request_async(clause).get.first).to eq(record)
       end
 
-      it 'should save the execution info from the query result when querying for one record' do
-        expect(Record.request_async(clause, limit: 1).get.execution_info).to eq(execution_info)
+      describe 'saving the execution info for a single result' do
+        let(:limit_clause) { ' LIMIT 1' }
+
+        it 'should save the execution info from the query result when querying for one record' do
+          expect(Record.request_async(clause, limit: 1).get.execution_info).to eq(execution_info)
+        end
       end
 
       it 'should save the execution info from the query result when querying for multiple record' do
@@ -421,32 +426,32 @@ module CassandraModel
       end
 
       context 'when selecting a subset of columns' do
-        let(:clause) { {select: :partition} }
+        let(:options) { {select: :partition} }
         let(:select_clause) { :partition }
         let(:record) { Record.new(partition: 'Partition Key') }
 
         it 'should return a new instance of the Record with only that attribute assigned' do
-          expect(Record.request_async({}, clause).get.first).to eq(record)
+          expect(Record.request_async({}, options).get.first).to eq(record)
         end
 
         it 'should invalidate the record' do
-          expect(Record.request_async({}, clause).get.first.valid).to eq(false)
+          expect(Record.request_async({}, options).get.first.valid).to eq(false)
         end
 
         context 'with multiple columns selected' do
-          let(:clause) { {select: [:partition, :cluster]} }
+          let(:options) { {select: [:partition, :cluster]} }
           let(:select_clause) { %w(partition cluster).join(', ') }
           let(:page_results) { [{'partition' => 'Partition Key', cluster: 'Cluster Key'}] }
           let(:record) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key') }
 
           it 'should select all the specified columns' do
-            expect(Record.request_async({}, clause).get.first).to eq(record)
+            expect(Record.request_async({}, options).get.first).to eq(record)
           end
         end
       end
 
       context 'when ordering by a subset of columns' do
-        let(:clause) { {order_by: :cluster} }
+        let(:options) { {order_by: :cluster} }
         let(:order_clause) { ' ORDER BY cluster' }
         let(:page_results) do
           [
@@ -462,15 +467,15 @@ module CassandraModel
         let(:remaining_columns) { [] }
 
         it 'should order the results by the specified column' do
-          expect(Record.request_async({}, clause).get).to eq([record_one, record_two, record_three])
+          expect(Record.request_async({}, options).get).to eq([record_one, record_two, record_three])
         end
 
         context 'with multiple columns selected' do
-          let(:clause) { {order_by: [:cluster, :other_cluster]} }
+          let(:options) { {order_by: [:cluster, :other_cluster]} }
           let(:order_clause) { ' ORDER BY cluster, other_cluster' }
 
           it 'should order by all the specified columns' do
-            expect(Record.request_async({}, clause).get).to eq([record_one, record_two, record_three])
+            expect(Record.request_async({}, options).get).to eq([record_one, record_two, record_three])
           end
         end
       end
@@ -484,20 +489,20 @@ module CassandraModel
       end
 
       context 'with multiple results' do
-        let(:clause) { {limit: 2} }
+        let(:options) { {limit: 2} }
         let(:where_clause) { ' LIMIT 2' }
         let(:results) { MockFuture.new([{'partition' => 'Partition Key 1'}, {'partition' => 'Partition Key 2'}]) }
 
         it 'should support limits' do
           expect(connection).to receive(:execute_async).with(statement, {}).and_return(results)
-          Record.request_async({}, clause)
+          Record.request_async({}, options)
         end
 
         context 'with a strange limit' do
-          let(:clause) { {limit: 'bob'} }
+          let(:options) { {limit: 'bob'} }
 
           it 'should raise an error' do
-            expect { Record.request_async({}, clause) }.to raise_error("Invalid limit 'bob'")
+            expect { Record.request_async({}, options) }.to raise_error("Invalid limit 'bob'")
           end
         end
       end
@@ -539,7 +544,7 @@ module CassandraModel
       end
 
       context 'when paginating over results' do
-        let(:clause) { {page_size: 2} }
+        let(:options) { {page_size: 2} }
         let(:first_page_results) { [{'partition' => 'Partition Key 1'}, {'partition' => 'Partition Key 2'}] }
         let(:first_page) { MockPage.new(true, nil, first_page_results) }
         let(:first_page_future) { MockFuture.new(first_page) }
@@ -547,7 +552,7 @@ module CassandraModel
         it 'should return an enumerable capable of producing all the records' do
           allow(connection).to receive(:execute_async).with(statement, page_size: 2).and_return(first_page_future)
           results = []
-          Record.request_async({}, clause).each do |result|
+          Record.request_async({}, options).each do |result|
             results << result
           end
           expected_records = [
