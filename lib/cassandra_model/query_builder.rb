@@ -82,22 +82,11 @@ module CassandraModel
     end
 
     def select(*columns)
-      @options[:select] ||= []
-      @options[:select].concat(columns)
-      self
+      append_option(columns, :select)
     end
 
     def order(*columns)
-      @options[:order_by] ||= []
-      if columns.first.is_a?(Hash)
-        columns = columns.first.map do |column, direction|
-          {column => direction}
-        end
-        @options[:order_by].concat(columns)
-      else
-        @options[:order_by].concat(columns)
-      end
-      self
+      append_option(columns, :order_by)
     end
 
     def limit(limit)
@@ -116,6 +105,19 @@ module CassandraModel
     end
 
     private
+
+    def append_option(columns, option)
+      @options[option] ||= []
+      if columns.first.is_a?(Hash)
+        columns = columns.first.map do |column, direction|
+          {column => direction}
+        end
+        @options[option].concat(columns)
+      else
+        @options[option].concat(columns)
+      end
+      self
+    end
 
     def pluck_values(columns, result)
       result.attributes.slice(*columns).values
