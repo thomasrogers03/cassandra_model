@@ -86,15 +86,21 @@ module CassandraModel
       updated_restriction
     end
 
-    def normalized_attributes(row)
-      row = super(row)
+    def normalized_column(column)
+      column = super(column)
 
-      row.inject({}) do |memo, (column, value)|
-        if column =~ /^rk_/ || column =~ /^ck_/
-          memo.merge!(mapped_column(column) => value)
-        else
-          memo.merge!(column => value)
-        end
+      if column =~ /^rk_/ || column =~ /^ck_/
+        mapped_column(column)
+      else
+        column
+      end
+    end
+
+    def normalized_attributes(attributes)
+      attributes = super(attributes)
+
+      attributes.inject({}) do |memo, (column, value)|
+        memo.merge!(normalized_column(column) => value)
       end
     end
 

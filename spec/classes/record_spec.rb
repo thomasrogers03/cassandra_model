@@ -275,6 +275,14 @@ module CassandraModel
       end
     end
 
+    describe '.normalized_column' do
+      let(:key) { Faker::Lorem.word }
+
+      subject { Record.normalized_column(key) }
+
+      it { is_expected.to eq(key.to_sym) }
+    end
+
     describe '.restriction_attributes' do
       let(:restriction) { {city: Faker::Address.city, street: Faker::Address.street_name} }
 

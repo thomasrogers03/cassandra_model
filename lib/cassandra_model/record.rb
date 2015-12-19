@@ -415,6 +415,10 @@ module CassandraModel
         restriction
       end
 
+      def normalized_column(column)
+        column.to_sym
+      end
+
       def normalized_attributes(attributes)
         attributes.symbolize_keys
       end
