@@ -120,8 +120,8 @@ module CassandraModel
 
     def inspected_attributes
       columns = self.class.cassandra_columns.map do |column, _|
-        column
-      end
+        self.class.normalized_column(column)
+      end.uniq
 
       base_attributes = columns.map do |column|
         if (value = attributes[column])

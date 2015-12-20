@@ -1309,7 +1309,10 @@ module CassandraModel
       let(:record) { klass.new(attributes, validate: false) }
       let(:cassandra_columns) { {partition_key: :text, clustering: :text} }
 
-      before { allow(Record).to receive(:cassandra_columns).and_return(cassandra_columns) }
+      before do
+        allow(Record).to receive(:cassandra_columns).and_return(cassandra_columns)
+        allow(Record).to receive(:normalized_column) { |column| column }
+      end
 
       it { is_expected.to eq('#<CassandraModel::Record partition_key: "Partition", clustering: "45">') }
 
@@ -1319,6 +1322,24 @@ module CassandraModel
         let(:klass) { ImageData }
 
         it { is_expected.to eq('#<CassandraModel::ImageData partition_key: "Different Partition", description: "A great image!">') }
+      end
+
+      context 'when the record class maps columns' do
+        let(:cassandra_columns) { {rk_partition_key: :text, rk_clustering: :text} }
+
+        before do
+          allow(Record).to receive(:normalized_column) do |column|
+            (column =~ /^rk_/) ? column.to_s[3..-1].to_sym : column
+          end
+        end
+
+        it { is_expected.to eq('#<CassandraModel::Record partition_key: "Partition", clustering: "45">') }
+
+        context 'when a normalized column appears twice' do
+          let(:cassandra_columns) { {rk_partition_key: :text, rk_clustering: :text, partition_key: :text} }
+
+          it { is_expected.to eq('#<CassandraModel::Record partition_key: "Partition", clustering: "45">') }
+        end
       end
 
       context 'when some of the attributes are not assigned' do
