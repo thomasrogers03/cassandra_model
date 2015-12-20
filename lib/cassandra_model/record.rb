@@ -119,9 +119,13 @@ module CassandraModel
     end
 
     def inspected_attributes
-      attributes.map do |key, value|
+      base_attributes = attributes.map do |key, value|
         %Q{#{key}: "#{value.to_s.truncate(53)}"}
-      end * ', '
+      end
+      base_attributes += deferred_columns.map do |column|
+        %Q{#{column}: "#{public_send(column)}"}
+      end
+      base_attributes * ', '
     end
 
     protected

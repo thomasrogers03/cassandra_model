@@ -1330,6 +1330,20 @@ module CassandraModel
 
         it { is_expected.to eq(%Q{#<CassandraModel::Record partition_key: "#{trimmed_key}">}) }
       end
+
+      context 'with deferred columns' do
+        let(:attributes) { {} }
+
+        before do
+          Record.deferred_column :description, on_load: ->(_) { {Faker::Lorem.word => Faker::Lorem.word} }
+        end
+
+        after do
+          Record.send(:remove_method, :description) if Record.instance_methods(false).include?(:partition)
+        end
+
+        it { is_expected.to eq(%Q{#<CassandraModel::Record description: "#{record.description.inspect}">}) }
+      end
     end
 
     describe '#inspect' do
