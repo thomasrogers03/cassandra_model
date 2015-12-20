@@ -1307,14 +1307,25 @@ module CassandraModel
       let(:attributes) { {partition_key: 'Partition', clustering: 45} }
       let(:klass) { Record }
       let(:record) { klass.new(attributes, validate: false) }
+      let(:cassandra_columns) { {partition_key: :text, clustering: :text} }
+
+      before { allow(Record).to receive(:cassandra_columns).and_return(cassandra_columns) }
 
       it { is_expected.to eq('#<CassandraModel::Record partition_key: "Partition", clustering: "45">') }
 
       context 'with a different record' do
         let(:attributes) { {partition_key: 'Different Partition', description: 'A great image!'} }
+        let(:cassandra_columns) { {partition_key: :text, description: :text} }
         let(:klass) { ImageData }
 
         it { is_expected.to eq('#<CassandraModel::ImageData partition_key: "Different Partition", description: "A great image!">') }
+      end
+
+      context 'when some of the attributes are not assigned' do
+        let(:attributes) { {partition_key: 'Different Partition'} }
+        let(:cassandra_columns) { {partition_key: :text, description: :text} }
+
+        it { is_expected.to eq('#<CassandraModel::Record partition_key: "Different Partition", description: (empty)>') }
       end
 
       context 'with an invalid record' do
@@ -1326,6 +1337,7 @@ module CassandraModel
       context 'with a really long attribute' do
         let(:key) { 'My super awesome really long and crazy partition key of spamming your irb' }
         let(:trimmed_key) { key.truncate(53) }
+        let(:cassandra_columns) { {partition_key: :text} }
         let(:attributes) { {partition_key: key} }
 
         it { is_expected.to eq(%Q{#<CassandraModel::Record partition_key: "#{trimmed_key}">}) }
@@ -1333,6 +1345,7 @@ module CassandraModel
 
       context 'with deferred columns' do
         let(:attributes) { {} }
+        let(:cassandra_columns) { {} }
 
         before do
           Record.deferred_column :description, on_load: ->(_) { {Faker::Lorem.word => Faker::Lorem.word} }

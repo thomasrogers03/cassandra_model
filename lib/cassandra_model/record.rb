@@ -119,8 +119,16 @@ module CassandraModel
     end
 
     def inspected_attributes
-      base_attributes = attributes.map do |key, value|
-        %Q{#{key}: "#{value.to_s.truncate(53)}"}
+      columns = self.class.cassandra_columns.map do |column, _|
+        column
+      end
+
+      base_attributes = columns.map do |column|
+        if (value = attributes[column])
+          %Q{#{column}: "#{value.to_s.truncate(53)}"}
+        else
+          "#{column}: (empty)"
+        end
       end
       base_attributes += deferred_columns.map do |column|
         %Q{#{column}: "#{public_send(column)}"}
