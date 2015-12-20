@@ -119,9 +119,9 @@ module CassandraModel
     end
 
     def inspected_attributes
-      columns = self.class.cassandra_columns.map do |column, _|
-        self.class.normalized_column(column)
-      end.uniq
+      columns = self.class.cassandra_columns.map do |column, type|
+        self.class.normalized_column(column) unless type == :blob
+      end.compact.uniq
 
       base_attributes = columns.map do |column|
         if (value = attributes[column])

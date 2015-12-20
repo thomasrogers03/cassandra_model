@@ -1324,6 +1324,12 @@ module CassandraModel
         it { is_expected.to eq('#<CassandraModel::ImageData partition_key: "Different Partition", description: "A great image!">') }
       end
 
+      context 'when a column is a blob' do
+        let(:cassandra_columns) { {partition_key: :text, clustering: :blob} }
+
+        it { is_expected.to eq('#<CassandraModel::Record partition_key: "Partition">') }
+      end
+
       context 'when the record class maps columns' do
         let(:cassandra_columns) { {rk_partition_key: :text, rk_clustering: :text} }
 
