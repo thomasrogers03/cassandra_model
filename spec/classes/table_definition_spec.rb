@@ -76,17 +76,28 @@ module CassandraModel
       end
 
       context 'when the inquirer shards requests' do
-        let(:sharding_column) { Faker::Lorem.word.to_sym }
+        let(:sharding_column_name) { Faker::Lorem.word.to_sym }
+        let(:sharding_column) { sharding_column_name }
+        let(:sharding_definition) { {:"rk_#{sharding_column_name}" => :int} }
         let(:rk_partition_key) do
           partition_key.inject({}) do |memo, (key, value)|
             memo.merge!(:"rk_#{key}" => value)
-          end.merge(:"rk_#{sharding_column}" => :int)
+          end.merge(sharding_definition)
         end
 
         before { inquirer.shards_queries(sharding_column) }
 
         it 'should generate a table definition from an inquirer/data set pair' do
           is_expected.to eq(TableDefinition.new(attributes))
+        end
+
+        context 'when the shard is a hash' do
+          let(:sharding_column) { {sharding_column_name => :double} }
+          let(:sharding_definition) { {:"rk_#{sharding_column_name}" => :double} }
+
+          it 'should override the type' do
+            is_expected.to eq(TableDefinition.new(attributes))
+          end
         end
       end
     end

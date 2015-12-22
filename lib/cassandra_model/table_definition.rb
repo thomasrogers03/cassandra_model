@@ -2,12 +2,19 @@ module CassandraModel
   class TableDefinition
     attr_reader :name
 
-    def self.from_data_model(name, inquirer, data_set)
+    def self.from_data_model(table_name, inquirer, data_set)
       partition_key = inquirer_partition_key(inquirer)
-      partition_key.merge!(:"rk_#{inquirer.shard_column}" => :int) if inquirer.shard_column
+      if inquirer.shard_column
+        if inquirer.shard_column.is_a?(Hash)
+          column_name, type = inquirer.shard_column.first
+          partition_key.merge!(:"rk_#{column_name}" => type)
+        else
+          partition_key.merge!(:"rk_#{inquirer.shard_column}" => :int)
+        end
+      end
       clustering_columns = table_set_clustering_columns(data_set)
       remaining_columns = table_set_remaining_columns(data_set)
-      new(name: name, partition_key: partition_key,
+      new(name: table_name, partition_key: partition_key,
           clustering_columns: clustering_columns,
           remaining_columns: remaining_columns)
     end
