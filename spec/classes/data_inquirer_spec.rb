@@ -57,11 +57,18 @@ module CassandraModel
     describe '#shards_queries' do
       it 'should mark the inquirer as sharding the requests for data' do
         subject.shards_queries
-        expect(subject.is_sharding).to eq(true)
+        expect(subject.shard_column).to eq(:shard)
       end
 
       it 'should not shard the requests by default' do
-        expect(!!subject.is_sharding).to eq(false)
+        expect(subject.shard_column).to be_nil
+      end
+
+      context 'with a user specified column' do
+        it 'should use the specified column as the sharding key' do
+          subject.shards_queries(:week)
+          expect(subject.shard_column).to eq(:week)
+        end
       end
     end
 

@@ -2,7 +2,7 @@ module CassandraModel
   class DataInquirer
     include TypeGuessing
 
-    attr_reader :partition_key, :column_defaults, :is_sharding
+    attr_reader :partition_key, :column_defaults, :shard_column
 
     def initialize
       @partition_key = Hash.new { |hash, key| hash[key] = :text }
@@ -20,8 +20,8 @@ module CassandraModel
       self
     end
 
-    def shards_queries
-      @is_sharding = true
+    def shards_queries(column = :shard)
+      @shard_column = column
     end
 
     def composite_rows

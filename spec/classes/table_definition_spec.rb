@@ -76,13 +76,14 @@ module CassandraModel
       end
 
       context 'when the inquirer shards requests' do
+        let(:sharding_column) { Faker::Lorem.word.to_sym }
         let(:rk_partition_key) do
           partition_key.inject({}) do |memo, (key, value)|
             memo.merge!(:"rk_#{key}" => value)
-          end.merge(rk_shard: :int)
+          end.merge(:"rk_#{sharding_column}" => :int)
         end
 
-        before { inquirer.shards_queries }
+        before { inquirer.shards_queries(sharding_column) }
 
         it 'should generate a table definition from an inquirer/data set pair' do
           is_expected.to eq(TableDefinition.new(attributes))
