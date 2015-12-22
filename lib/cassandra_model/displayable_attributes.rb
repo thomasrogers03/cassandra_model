@@ -50,7 +50,7 @@ module CassandraModel
     end
 
     def column_type(column)
-      self.class.cassandra_columns[self.class.select_column(column).to_s]
+      self.class.cassandra_columns[self.class.select_column(column)]
     end
 
     def mapped_as_json

@@ -4,7 +4,7 @@ module CassandraModel
   describe DisplayableAttributes do
     let(:attributes) { {} }
     let(:field_type) { :text }
-    let(:cassandra_columns) { {'partition' => :text, 'clustering' => :text, 'some' => field_type} }
+    let(:cassandra_columns) { {partition: :text, clustering: :text, some: field_type} }
 
     subject { Record.new(attributes, validate: false) }
 
@@ -60,7 +60,7 @@ module CassandraModel
 
         context 'when the column is mapped' do
           let(:attributes) { {some: Cassandra::Uuid.new(some_uuid)} }
-          let(:cassandra_columns) { {'rk_some' => field_type} }
+          let(:cassandra_columns) { {rk_some: field_type} }
 
           before { allow(Record).to receive(:select_column) { |column| :"rk_#{column}" } }
 
