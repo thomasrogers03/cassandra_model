@@ -1,14 +1,12 @@
 source 'https://rubygems.org'
 
 group :development do
-  require 'yaml'
-  require 'logger'
-  gem 'rdoc'
-  gem 'cassandra-driver', '~> 1.1'
-  gem 'activesupport'
-  gem 'concurrent-ruby'
-  gem 'thomas_utils', '~> 0.1.4', github: 'thomasrogers03/thomas_utils'
-  gem 'batch_reactor', github: 'thomasrogers03/batch_reactor'
+  gem 'rdoc', require: false
+  gem 'cassandra-driver', '~> 1.1', require: false
+  gem 'activesupport', require: false
+  gem 'concurrent-ruby', require: false
+  gem 'thomas_utils', '~> 0.1.4', github: 'thomasrogers03/thomas_utils', require: false
+  gem 'batch_reactor', github: 'thomasrogers03/batch_reactor', require: false
 end
 
 group :test do

@@ -14,8 +14,12 @@
 # limitations under the License.
 #++
 
+require 'yaml'
+require 'logger'
 require 'concurrent'
 require 'cassandra'
+require 'thomas_utils'
+require 'batch_reactor'
 require 'active_support/all'
 require 'active_support/core_ext/class/attribute_accessors'
 
