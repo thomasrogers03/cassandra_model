@@ -19,6 +19,7 @@ group :test do
   gem 'timecop'
   gem 'simplecov', require: false
   gem 'faker'
+  gem 'cassandra_mocks', github: 'thomasrogers03/cassandra_mocks', require: false
 end
 
 gemspec
