@@ -1,7 +1,6 @@
 module CassandraModel
   module CompositeRecordStatic
-    PK_MUTEX = Mutex.new
-    CK_MUTEX = Mutex.new
+    MUTEX = Mutex.new
 
     extend Forwardable
 
@@ -24,30 +23,27 @@ module CassandraModel
     end
 
     def columns
-      table_data.composite_columns ||= composite_columns.each { |column| define_attribute(column) }
-    end
-
-    def composite_pk_map
-      unless table_data.composite_pk_map
-        PK_MUTEX.synchronize do
-          return table_data.composite_pk_map if table_data.composite_pk_map
+      unless table_data.composite_columns
+        MUTEX.synchronize do
+          return table_data.composite_columns if table_data.composite_columns
 
           table_data.composite_pk_map = {}
-          columns
+          table_data.composite_ck_map = {}
+          table_data.composite_columns = composite_columns.each { |column| define_attribute(column) }
         end
       end
+      table_data.composite_columns
+    end
+
+    alias :ensure_attributes_accessible! :columns
+
+    def composite_pk_map
+      ensure_attributes_accessible! unless table_data.composite_columns
       table_data.composite_pk_map
     end
 
     def composite_ck_map
-      unless table_data.composite_ck_map
-        CK_MUTEX.synchronize do
-          return table_data.composite_ck_map if table_data.composite_ck_map
-
-          table_data.composite_ck_map = {}
-          columns
-        end
-      end
+      ensure_attributes_accessible! unless table_data.composite_columns
       table_data.composite_ck_map
     end
 
@@ -126,8 +122,8 @@ module CassandraModel
 
     def composite_columns
       internal_columns.map do |column|
-        trimmed_column(column, /^rk_/, composite_pk_map) ||
-            trimmed_column(column, /^ck_/, composite_ck_map) ||
+        trimmed_column(column, /^rk_/, table_data.composite_pk_map) ||
+            trimmed_column(column, /^ck_/, table_data.composite_ck_map) ||
             column
       end.uniq
     end
