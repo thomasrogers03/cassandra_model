@@ -55,6 +55,8 @@ module CassandraModel
             retype_to(:timestamp)
           when Cassandra::Uuid then
             retype_to(:uuid)
+          when String then
+            retype_to(:text)
         end
       end
 
@@ -82,6 +84,8 @@ module CassandraModel
             default_to(Time.at(0))
           when :uuid then
             default_to(Cassandra::Uuid.new(0))
+          when :text then
+            default_to('')
         end
       end
 
