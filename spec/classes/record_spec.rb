@@ -177,6 +177,11 @@ module CassandraModel
       end
     end
 
+    describe '.composite_defaults' do
+      subject { Record.composite_defaults }
+      it { is_expected.to eq([]) }
+    end
+
     describe '.table_name' do
       it 'should be the lower-case plural of the class' do
         expect(Record.table_name).to eq('records')

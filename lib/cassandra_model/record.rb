@@ -398,6 +398,10 @@ module CassandraModel
         (columns & input_columns).inject({}) { |memo, column| memo.merge!(column => column) }
       end
 
+      def composite_defaults
+        []
+      end
+
       def query_for_save(options = {})
         existence_clause = options[:check_exists] && ' IF NOT EXISTS'
         column_names = internal_columns.join(', ')
