@@ -152,6 +152,31 @@ module CassandraModel
       end
     end
 
+    describe '.denormalized_column_map' do
+      let(:klass) { Record }
+      let(:expected_map) { (klass.columns & input_columns).inject({}) { |memo, column| memo.merge!(column => column) } }
+      let(:input_columns) { klass.columns }
+
+      subject { klass.denormalized_column_map(input_columns) }
+
+      it { is_expected.to eq(expected_map) }
+
+      context 'with a different table' do
+        let(:klass) { ImageData }
+        it { is_expected.to eq(expected_map) }
+      end
+
+      context 'with a different input list' do
+        let(:input_columns) { [:partition] }
+        it { is_expected.to eq(expected_map) }
+      end
+
+      context 'with an input list containing extra columns' do
+        let(:input_columns) { [:partition, :some_unk_field] }
+        it { is_expected.to eq(expected_map) }
+      end
+    end
+
     describe '.table_name' do
       it 'should be the lower-case plural of the class' do
         expect(Record.table_name).to eq('records')
