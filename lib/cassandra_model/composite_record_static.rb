@@ -1,4 +1,5 @@
 module CassandraModel
+  #noinspection ALL
   module CompositeRecordStatic
     MUTEX = Mutex.new
 
@@ -7,17 +8,17 @@ module CassandraModel
     def_delegator :table_config, :composite_defaults=
 
     def partition_key
-      table_data.composite_partition_key ||= internal_partition_key.map { |column| trimmed_column(column, /^rk_/, composite_pk_map) || column }
+      table_data.composite_partition_key ||= internal_partition_key.map { |column| trim_column!(column, /^rk_/, composite_pk_map) || column }
     end
 
     def clustering_columns
-      table_data.composite_clustering_columns ||= internal_clustering_columns.map { |column| trimmed_column(column, /^ck_/, composite_ck_map) || column }
+      table_data.composite_clustering_columns ||= internal_clustering_columns.map { |column| trim_column!(column, /^ck_/, composite_ck_map) || column }
     end
 
     def primary_key
       table_data.composite_primary_key ||= (internal_partition_key + internal_clustering_columns).map do |column|
-        trimmed_column(column, /^rk_/, composite_pk_map) ||
-            trimmed_column(column, /^ck_/, composite_ck_map) ||
+        trim_column!(column, /^rk_/, composite_pk_map) ||
+            trim_column!(column, /^ck_/, composite_ck_map) ||
             column
       end.uniq
     end
@@ -36,6 +37,20 @@ module CassandraModel
     end
 
     alias :ensure_attributes_accessible! :columns
+
+    def denormalized_column_map(input_columns)
+      internal_columns.inject({}) do |memo, column|
+        result_column = input_columns.find { |input_column| input_column == column }
+        unless result_column
+          trimmed_column = trimmed_column(column, /^rk_/) ||
+              trimmed_column(column, /^ck_/) ||
+              column
+          result_column = input_columns.find { |input_column| input_column == trimmed_column }
+        end
+        memo[column] = result_column if result_column
+        memo
+      end
+    end
 
     def composite_pk_map
       ensure_attributes_accessible! unless table_data.composite_columns
@@ -122,20 +137,25 @@ module CassandraModel
 
     def composite_columns
       internal_columns.map do |column|
-        trimmed_column(column, /^rk_/, table_data.composite_pk_map) ||
-            trimmed_column(column, /^ck_/, table_data.composite_ck_map) ||
+        trim_column!(column, /^rk_/, table_data.composite_pk_map) ||
+            trim_column!(column, /^ck_/, table_data.composite_ck_map) ||
             column
       end.uniq
     end
 
-    def trimmed_column(column, column_trim, map)
-      column_str = column.to_s
-      if column_str =~ column_trim
-        column_str.gsub(column_trim, '').to_sym.tap do |result_column|
+    def trim_column!(column, column_trim, map)
+      trimmed_column = trimmed_column(column, column_trim)
+      if trimmed_column
+        trimmed_column.tap do |result_column|
           map[result_column] = column
           map[column] = result_column
         end
       end
+    end
+
+    def trimmed_column(column, column_trim)
+      column_str = column.to_s
+      column_str.gsub(column_trim, '').to_sym if column_str =~ column_trim
     end
 
     def select_clause(select)

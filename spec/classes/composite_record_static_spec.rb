@@ -59,6 +59,29 @@ module CassandraModel
         end
       end
 
+      describe '.denormalized_column_map' do
+        let(:input_columns) { MockRecordStatic.internal_columns }
+        let(:expected_map) { {rk_model: :rk_model, series: :series, ck_model: :ck_model, meta_data: :meta_data} }
+
+        subject { MockRecordStatic.denormalized_column_map(input_columns) }
+
+        it { is_expected.to eq(expected_map) }
+
+        context 'when the input columns have been normalized' do
+          let(:input_columns) { MockRecordStatic.columns }
+          let(:expected_map) { {rk_model: :model, series: :series, ck_model: :model, meta_data: :meta_data} }
+
+          it { is_expected.to eq(expected_map) }
+
+          context 'when a column is not available in the input' do
+            let(:input_columns) { [:model] }
+            let(:expected_map) { {rk_model: :model, ck_model: :model} }
+
+            it { is_expected.to eq(expected_map) }
+          end
+        end
+      end
+
       describe '.partition_key' do
         subject { MockRecordStatic.partition_key }
 
