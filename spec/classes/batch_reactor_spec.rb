@@ -137,7 +137,7 @@ module CassandraModel
 
       context 'with different options specified' do
         let(:hosts) { [:host1] }
-        let(:host_buffers) { [[], []] }
+        let(:host_buffers) { 2.times.map { MockBatch.new } }
         let(:max_batch_size) { 2 }
 
         it 'should forward the options to the unlderying BatchReactor' do
