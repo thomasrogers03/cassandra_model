@@ -99,6 +99,17 @@ module CassandraModel
           expect(subject.columns).to eq(title: :text, series: :text)
         end
       end
+
+      context 'when called multiple time' do
+        let(:first_set) { Faker::Lorem.words.map(&:to_sym) }
+        let(:second_set) { Faker::Lorem.words.map(&:to_sym) }
+
+        it 'should be defined by all of those columns' do
+          subject.is_defined_by(*first_set)
+          subject.is_defined_by(*second_set)
+          expect(subject.clustering_columns).to eq(first_set + second_set)
+        end
+      end
     end
 
     describe '#retype' do
