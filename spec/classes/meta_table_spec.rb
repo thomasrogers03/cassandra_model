@@ -106,6 +106,14 @@ module CassandraModel
     shared_examples_for 'a method requiring the table to exist' do |method|
       describe "#{method}" do
         let(:cql) { definition.to_cql(check_exists: true) }
+        let(:bad_keyspace) { double(:keyspace, table: nil) }
+
+        before do
+          allow(cluster).to receive(:keyspace) do
+            allow(cluster).to receive(:keyspace).and_return(keyspace)
+            bad_keyspace
+          end
+        end
 
         context 'when the table does not yet exist' do
           it 'should create the table' do
@@ -114,11 +122,20 @@ module CassandraModel
           end
         end
 
-        context 'when the table already exists' do
+        context 'when the table already exists in the descriptors table' do
           let(:valid) { false }
 
-          it 'should create the table' do
+          it 'should not create the table' do
             expect(connection).not_to receive(:execute).with(cql)
+            subject.public_send(method)
+          end
+        end
+
+        context 'when the table already exists in the keyspace' do
+          before { allow(cluster).to receive(:keyspace).and_return(keyspace) }
+
+          it 'should not attempt to create an entry into the descriptor table' do
+            expect(connection).not_to receive(:execute)
             subject.public_send(method)
           end
         end
@@ -137,8 +154,6 @@ module CassandraModel
         end
 
         describe 'consistency' do
-          let(:bad_keyspace) { double(:keyspace, table: nil) }
-
           it 'should wait until the schema says the table exists' do
             allow(cluster).to receive(:keyspace).and_return(bad_keyspace, bad_keyspace, keyspace)
             expect(subject.columns).to eq([:partition])

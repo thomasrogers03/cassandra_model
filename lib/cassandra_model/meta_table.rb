@@ -36,13 +36,15 @@ module CassandraModel
     end
 
     def create_table
-      descriptor = TableDescriptor.create(@table_definition)
-      create_cassandra_table(descriptor) if descriptor.valid
-      100.times do
-        sleep 0.100
-        break if keyspace.table(name_in_cassandra)
+      keyspace.table(name_in_cassandra) || begin
+        descriptor = TableDescriptor.create(@table_definition)
+        create_cassandra_table(descriptor) if descriptor.valid
+        100.times do
+          sleep 0.100
+          break if keyspace.table(name_in_cassandra)
+        end
+        keyspace.table(name_in_cassandra) or raise "Could not verify the creation of table #{name_in_cassandra}"
       end
-      keyspace.table(name_in_cassandra) or raise "Could not verify the creation of table #{name_in_cassandra}"
     end
 
     def create_cassandra_table(descriptor)
