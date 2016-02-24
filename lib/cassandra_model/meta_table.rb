@@ -11,7 +11,7 @@ module CassandraModel
 
     def name
       @name ||= begin
-        create_table
+        table
         name_in_cassandra
       end
     end
