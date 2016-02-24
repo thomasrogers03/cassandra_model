@@ -2,21 +2,43 @@ module CassandraModel
   class TableDefinition
     attr_reader :name
 
-    def self.from_data_model(table_name, inquirer, data_set)
-      partition_key = inquirer_partition_key(inquirer)
-      if inquirer.shard_column
-        if inquirer.shard_column.is_a?(Hash)
-          column_name, type = inquirer.shard_column.first
-          partition_key.merge!(:"rk_#{column_name}" => type)
-        else
-          partition_key.merge!(:"rk_#{inquirer.shard_column}" => :int)
+    class << self
+
+      def from_data_model(table_name, inquirer, data_set)
+        partition_key = inquirer_partition_key(inquirer)
+        if inquirer.shard_column
+          if inquirer.shard_column.is_a?(Hash)
+            column_name, type = inquirer.shard_column.first
+            partition_key.merge!(:"rk_#{column_name}" => type)
+          else
+            partition_key.merge!(:"rk_#{inquirer.shard_column}" => :int)
+          end
+        end
+        clustering_columns = table_set_clustering_columns(data_set)
+        remaining_columns = table_set_remaining_columns(data_set)
+        new(name: table_name, partition_key: partition_key,
+            clustering_columns: clustering_columns,
+            remaining_columns: remaining_columns)
+      end
+
+      private
+
+      def table_set_remaining_columns(data_set)
+        data_set.columns.except(*data_set.clustering_columns)
+      end
+
+      def table_set_clustering_columns(data_set)
+        data_set.clustering_columns.inject({}) do |memo, column|
+          memo.merge!(:"ck_#{column}" => data_set.columns[column])
         end
       end
-      clustering_columns = table_set_clustering_columns(data_set)
-      remaining_columns = table_set_remaining_columns(data_set)
-      new(name: table_name, partition_key: partition_key,
-          clustering_columns: clustering_columns,
-          remaining_columns: remaining_columns)
+
+      def inquirer_partition_key(inquirer)
+        inquirer.partition_key.inject({}) do |memo, (key, value)|
+          memo.merge!(:"rk_#{key}" => value)
+        end
+      end
+
     end
 
     def initialize(options)
@@ -47,22 +69,6 @@ module CassandraModel
     end
 
     private
-
-    def self.table_set_remaining_columns(data_set)
-      data_set.columns.except(*data_set.clustering_columns)
-    end
-
-    def self.table_set_clustering_columns(data_set)
-      data_set.clustering_columns.inject({}) do |memo, column|
-        memo.merge!(:"ck_#{column}" => data_set.columns[column])
-      end
-    end
-
-    def self.inquirer_partition_key(inquirer)
-      inquirer.partition_key.inject({}) do |memo, (key, value)|
-        memo.merge!(:"rk_#{key}" => value)
-      end
-    end
 
     def columns
       @columns.map { |name, type| "#{name} #{type}" } * ', '
