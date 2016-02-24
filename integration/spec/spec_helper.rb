@@ -59,7 +59,7 @@ RSpec.configure do |config|
   config.before :suite do
     setup_keyspace(:replicating)
     setup_keyspace(:single)
-    CassandraModel::TableDescriptor.create_descriptor_table_if_not_exists
+    CassandraModel::TableDescriptor.create_descriptor_table
   end
 
   config.after do
