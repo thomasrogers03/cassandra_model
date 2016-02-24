@@ -1,11 +1,13 @@
 module CassandraModel
   #noinspection ALL
   module CompositeRecordStatic
-    MUTEX = Mutex.new
-
     extend Forwardable
 
     def_delegator :table_config, :composite_defaults=
+    
+    def self.extended(base)
+      base.instance_variable_set(:@mutex, Mutex.new)
+    end
 
     def partition_key
       table_data.composite_partition_key ||= internal_partition_key.map { |column| trim_column!(column, /^rk_/, composite_pk_map) || column }
@@ -25,7 +27,7 @@ module CassandraModel
 
     def columns
       unless table_data.composite_columns
-        MUTEX.synchronize do
+        @mutex.synchronize do
           return table_data.composite_columns if table_data.composite_columns
 
           table_data.composite_pk_map = {}
