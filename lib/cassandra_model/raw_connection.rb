@@ -1,11 +1,6 @@
 module CassandraModel
+  #noinspection RubyTooManyInstanceVariablesInspection
   class RawConnection
-    CLUSTER_MUTEX = Mutex.new
-    SESSION_MUTEX = Mutex.new
-    CONFIG_MUTEX = Mutex.new
-    STATEMENT_MUTEX = Mutex.new
-    REACTOR_MUTEX = Mutex.new
-
     DEFAULT_CONFIGURATION = {
         hosts: %w(localhost),
         keyspace: 'default_keyspace',
@@ -24,18 +19,23 @@ module CassandraModel
     def initialize(config_name = nil)
       @config_name = config_name
       @statement_cache = Concurrent::Map.new
+
+      @cluster_mutex = Mutex.new
+      @session_mutex = Mutex.new
+      @config_mutex = Mutex.new
+      @reactor_mutex = Mutex.new
     end
 
     def config=(value)
-      CONFIG_MUTEX.synchronize { @config = DEFAULT_CONFIGURATION.merge(value) }
+      @config_mutex.synchronize { @config = DEFAULT_CONFIGURATION.merge(value) }
     end
 
     def config
-      safe_getset_variable(CONFIG_MUTEX, :@config) { load_config }
+      safe_getset_variable(@config_mutex, :@config) { load_config }
     end
 
     def cluster
-      safe_getset_variable(CLUSTER_MUTEX, :@cluster) do
+      safe_getset_variable(@cluster_mutex, :@cluster) do
         connection_configuration = config.slice(:hosts,
                                                 :compression,
                                                 :consistency,
@@ -48,7 +48,7 @@ module CassandraModel
     end
 
     def session
-      safe_getset_variable(SESSION_MUTEX, :@session) { cluster.connect(config[:keyspace]) }
+      safe_getset_variable(@session_mutex, :@session) { cluster.connect(config[:keyspace]) }
     end
 
     def keyspace
@@ -73,7 +73,7 @@ module CassandraModel
 
     def shutdown
       @shutdown = true
-      REACTOR_MUTEX.synchronize do
+      @reactor_mutex.synchronize do
         @unlogged_reactor.stop.get if @unlogged_reactor
         @unlogged_reactor = nil
 
@@ -83,11 +83,11 @@ module CassandraModel
         @counter_reactor.stop.get if @counter_reactor
         @counter_reactor = nil
       end
-      SESSION_MUTEX.synchronize do
+      @session_mutex.synchronize do
         @session.close if @session
         @session = nil
       end
-      CLUSTER_MUTEX.synchronize do
+      @cluster_mutex.synchronize do
         @cluster.close if @cluster
         @cluster = nil
       end
@@ -120,7 +120,7 @@ module CassandraModel
     end
 
     def reactor(name, type)
-      safe_getset_variable(REACTOR_MUTEX, name) do
+      safe_getset_variable(@reactor_mutex, name) do
         BatchReactor.new(cluster, session, type, config[:batch_reactor] || {}).tap do |reactor|
           reactor.start.get
         end
