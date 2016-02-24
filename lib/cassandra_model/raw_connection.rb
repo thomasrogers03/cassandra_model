@@ -23,7 +23,7 @@ module CassandraModel
 
     def initialize(config_name = nil)
       @config_name = config_name
-      @statement_cache = {}
+      @statement_cache = Concurrent::Map.new
     end
 
     def config=(value)
@@ -68,9 +68,7 @@ module CassandraModel
     end
 
     def statement(query)
-      statement_cache[query] || begin
-        STATEMENT_MUTEX.synchronize { statement_cache[query] ||= session.prepare(query) }
-      end
+      statement_cache.fetch_or_store(query) { session.prepare(query) }
     end
 
     def shutdown
