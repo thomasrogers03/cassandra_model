@@ -1,17 +1,17 @@
 GIT
   remote: git://github.com/thomasrogers03/batch_reactor.git
-  revision: f4e812bac1bbafdca90a63e80d2b64e2231025a5
+  revision: e3cd2ebd332d94bdfb010568b4a6dc503b92a7a8
   specs:
-    batch_reactor (0.0.1)
+    batch_reactor (0.0.2)
       ione (~> 1.2)
 
 GIT
   remote: git://github.com/thomasrogers03/cassandra_mocks.git
-  revision: b47d4be55ca85b3c9bba2229edd1697e5efae9ed
+  revision: e16454e353200a1e3a7fb11de74b1e00cdd53a6a
   specs:
-    cassandra_mocks (0.0.10)
+    cassandra_mocks (1.0.0)
       activesupport (~> 4.0)
-      cassandra-driver (~> 1.1)
+      cassandra-driver (>= 1.1, <= 2.0.1)
 
 GIT
   remote: git://github.com/thomasrogers03/thomas_utils.git
@@ -24,31 +24,31 @@ GIT
 PATH
   remote: .
   specs:
-    cassandra_model (0.10.1)
+    cassandra_model (1.0.0)
       activesupport (~> 4.0)
       batch_reactor (~> 0.0.1)
-      cassandra-driver (~> 1.1)
+      cassandra-driver (>= 1.1, <= 2.0.1)
       thomas_utils (~> 0.1.13)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (4.2.5)
+    activesupport (4.2.5.1)
       i18n (~> 0.7)
       json (~> 1.7, >= 1.7.7)
       minitest (~> 5.1)
       thread_safe (~> 0.3, >= 0.3.4)
       tzinfo (~> 1.1)
-    cassandra-driver (1.2.0)
+    cassandra-driver (2.0.1)
       ione (~> 1.2)
-    cassandra-driver (1.2.0-java)
+    cassandra-driver (2.0.1-java)
       ione (~> 1.2)
-    coderay (1.1.0)
+    coderay (1.1.1)
     concurrent-ruby (1.0.0)
     concurrent-ruby (1.0.0-java)
     diff-lcs (1.2.5)
     docile (1.1.5)
-    faker (1.5.0)
+    faker (1.6.3)
       i18n (~> 0.5)
     ffi (1.9.10)
     ffi (1.9.10-java)
@@ -76,13 +76,13 @@ GEM
     ione (1.2.3)
     json (1.8.3)
     json (1.8.3-java)
-    listen (3.0.5)
+    listen (3.0.6)
       rb-fsevent (>= 0.9.3)
-      rb-inotify (>= 0.9)
-    lumberjack (1.0.9)
+      rb-inotify (>= 0.9.7)
+    lumberjack (1.0.10)
     method_source (0.8.2)
-    minitest (5.8.3)
-    nenv (0.2.0)
+    minitest (5.8.4)
+    nenv (0.3.0)
     notiffany (0.0.8)
       nenv (~> 0.1)
       shellany (~> 0.0)
@@ -95,10 +95,10 @@ GEM
       method_source (~> 0.8.1)
       slop (~> 3.4)
       spoon (~> 0.0)
-    rb-fsevent (0.9.6)
-    rb-inotify (0.9.5)
+    rb-fsevent (0.9.7)
+    rb-inotify (0.9.7)
       ffi (>= 0.5.0)
-    rdoc (4.2.0)
+    rdoc (4.2.2)
       json (~> 1.4)
     rspec (3.1.0)
       rspec-core (~> 3.1.0)
@@ -116,7 +116,7 @@ GEM
       rspec-support (~> 3.1.0)
     rspec-support (3.1.2)
     shellany (0.0.1)
-    simplecov (0.11.1)
+    simplecov (0.11.2)
       docile (~> 1.1.0)
       json (~> 1.8)
       simplecov-html (~> 0.10.0)
@@ -140,7 +140,6 @@ PLATFORMS
 DEPENDENCIES
   activesupport
   batch_reactor!
-  cassandra-driver (~> 1.1)
   cassandra_mocks!
   cassandra_model!
   concurrent-ruby

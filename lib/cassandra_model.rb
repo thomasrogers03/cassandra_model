@@ -23,6 +23,7 @@ require 'batch_reactor'
 require 'active_support/all'
 require 'active_support/core_ext/class/attribute_accessors'
 
+require 'cassandra_model/session_compatibility'
 require 'cassandra_model/concurrency_helper'
 require 'cassandra_model/logging'
 require 'cassandra_model/global_callbacks'
