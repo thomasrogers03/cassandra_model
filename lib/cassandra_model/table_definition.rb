@@ -41,11 +41,15 @@ module CassandraModel
 
     end
 
+    attr_reader :table_id, :name_in_cassandra
+
     def initialize(options)
       @partition_key = options[:partition_key].keys
       @clustering_columns = options[:clustering_columns].keys
       @name = options[:name]
       @columns = options[:partition_key].merge(options[:clustering_columns].merge(options[:remaining_columns]))
+      @table_id = generate_table_id
+      @name_in_cassandra = "#{name}_#{table_id}"
     end
 
     def to_cql(options = {})
@@ -56,19 +60,15 @@ module CassandraModel
       "CREATE TABLE #{exists}#{table_name} (#{columns}, PRIMARY KEY #{primary_key})"
     end
 
-    def table_id
-      Digest::MD5.hexdigest(columns)
-    end
-
-    def name_in_cassandra
-      "#{name}_#{table_id}"
-    end
-
     def ==(rhs)
       to_cql == rhs.to_cql
     end
 
     private
+
+    def generate_table_id
+      Digest::MD5.hexdigest(columns)
+    end
 
     def columns
       @columns.map { |name, type| "#{name} #{type}" } * ', '
