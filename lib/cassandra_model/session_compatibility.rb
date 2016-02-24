@@ -8,5 +8,9 @@ module Cassandra
       __execute_async(statement, options.merge(arguments: args))
     end
 
+    def execute(statement, *args)
+      execute_async(statement, *args).get
+    end
+
   end
 end
