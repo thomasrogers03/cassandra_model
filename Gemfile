@@ -2,7 +2,6 @@ source 'https://rubygems.org'
 
 group :development do
   gem 'rdoc', require: false
-  gem 'cassandra-driver', '~> 1.1', require: false
   gem 'activesupport', require: false
   gem 'concurrent-ruby', require: false
   gem 'thomas_utils', '~> 0.1.4', github: 'thomasrogers03/thomas_utils', require: false
@@ -19,7 +18,6 @@ group :test do
   gem 'timecop'
   gem 'simplecov', require: false
   gem 'faker'
-  gem 'cassandra_mocks', github: 'thomasrogers03/cassandra_mocks', require: false
 end
 
 gemspec
