@@ -14,4 +14,5 @@ data modelling for Cassandra tables easy, fast, and stable}
   s.add_runtime_dependency 'activesupport', '~> 4.0'
   s.add_runtime_dependency 'batch_reactor', '~> 0.0.1'
   s.add_runtime_dependency 'thomas_utils', '~> 0.1.13'
+  s.add_runtime_dependency 'concurrent-ruby', '~> 1.0.0'
 end
