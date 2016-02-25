@@ -7,9 +7,5 @@ module CassandraModel
         end
       end
     end
-
-    def session
-      @session ||= Cassandra::Mocks::Session.new(config[:keyspace], cluster)
-    end
   end
 end
