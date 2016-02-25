@@ -37,6 +37,13 @@ module Cassandra
         subject.execute_async(statement, *args, options)
         expect(result[0][1]).to eq(options.merge(arguments: args))
       end
+
+      context 'when using the new interface properly' do
+        it 'allows us to pass in arguments' do
+          subject.execute_async(statement, options.merge(arguments: args))
+          expect(result[0][1]).to eq(options.merge(arguments: args))
+        end
+      end
     end
 
     describe '#execute' do
