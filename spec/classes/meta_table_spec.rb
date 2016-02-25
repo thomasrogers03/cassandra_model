@@ -141,7 +141,9 @@ module CassandraModel
         end
 
         context 'when creating the table raises an error' do
-          before { allow(connection).to receive(:execute).and_raise('Could not create table!') }
+          let(:error) { StandardError.new('Could not create table!') }
+
+          before { allow(connection).to receive(:execute).and_raise(error) }
 
           it 'should remove the created TableDescriptor' do
             expect(descriptor).to receive(:delete)
@@ -149,7 +151,7 @@ module CassandraModel
           end
 
           it 'should re-raise the error' do
-            expect { subject.public_send(method) }.to raise_error
+            expect { subject.public_send(method) }.to raise_error(error)
           end
         end
 
