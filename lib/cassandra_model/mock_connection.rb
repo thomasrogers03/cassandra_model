@@ -1,11 +1,7 @@
 module CassandraModel
   class RawConnection
     def cluster
-      @cluster ||= begin
-        Cassandra::Mocks::Cluster.new.tap do |cluster|
-          cluster.add_keyspace(config[:keyspace])
-        end
-      end
+      @cluster ||= Cassandra::Mocks::Cluster.new
     end
   end
 end
