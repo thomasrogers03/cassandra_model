@@ -2,9 +2,6 @@ require 'spec_helper'
 
 module CassandraModel
   describe Record do
-    class ImageData < Record
-    end
-
     let(:table_name) { :records }
     let(:query) { nil }
     let(:partition_key) { [:partition] }
@@ -12,6 +9,9 @@ module CassandraModel
     let(:primary_key) { partition_key + clustering_columns }
     let(:remaining_columns) { [] }
     let(:columns) { primary_key + remaining_columns }
+    let(:base_record_klass) { NamedClass.create('CassandraModel::Record', Record) {} }
+    let(:image_data_klass) { NamedClass.create('CassandraModel::ImageData', base_record_klass) {} }
+    let(:klass) { base_record_klass }
     let!(:statement) { mock_prepare(query) }
 
     before do
@@ -24,20 +24,15 @@ module CassandraModel
       allow(Logging.logger).to receive(:error)
     end
 
-    after do
-      Record.reset!
-      ImageData.reset!
-    end
-
     context 'when mixing in query methods' do
       let(:base_results) { MockPage.new(true, nil, ['OK']) }
       let(:base_future) { MockFuture.new(base_results) }
 
-      subject { Record }
+      subject { klass }
 
       before do
-        Record.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
-        Record.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) { MockFuture.new(nil) }
+        klass.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
+        klass.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) { MockFuture.new(nil) }
         allow(connection).to receive(:execute_async).and_return(base_future)
       end
 
@@ -48,7 +43,7 @@ module CassandraModel
     shared_examples_for 'a set of columns' do |method|
       let(:columns) { [:column1] }
 
-      subject { Record }
+      subject { klass }
 
       before { allow_any_instance_of(TableRedux).to receive(method).and_return(columns) }
 
@@ -72,7 +67,7 @@ module CassandraModel
       describe 'defining methods for record columns' do
 
         it 'should define a method to assign and retrieve the column' do
-          record = Record.new(partition: 'Partition Key')
+          record = klass.new(partition: 'Partition Key')
           record.partition = 'Different Key'
           expect(record.partition).to eq('Different Key')
         end
@@ -81,7 +76,7 @@ module CassandraModel
           let(:clustering_columns) { [:clustering] }
 
           it 'should define a method to assign and retrieve the additional column' do
-            record = Record.new(clustering: 'Clustering Key')
+            record = klass.new(clustering: 'Clustering Key')
             record.clustering = 'Different Key'
             expect(record.clustering).to eq('Different Key')
           end
@@ -89,19 +84,14 @@ module CassandraModel
       end
 
       describe 'record initialization' do
-        after do
-          Record.send(:remove_method, :partition) if Record.instance_methods(false).include?(:partition)
-          Record.send(:remove_method, :partition=) if Record.instance_methods(false).include?(:partition=)
-        end
-
         it 'should be a valid record initially' do
-          record = Record.new(partition: 'Partition Key')
+          record = klass.new(partition: 'Partition Key')
           expect(record.valid).to eq(true)
         end
 
         describe 'inputs' do
           let(:attributes) { {part: 'Partition', ck: 'Clustering'} }
-          let!(:record) { Record.new(attributes, validate: false) }
+          let!(:record) { klass.new(attributes, validate: false) }
 
           it 'should not modify the passed in attributes hash' do
             attributes.delete(:part)
@@ -115,31 +105,26 @@ module CassandraModel
         end
 
         it 'should ensure that the getters are defined' do
-          record = Record.new({}, validate: false)
+          record = klass.new({}, validate: false)
           expect { record.partition }.not_to raise_error
         end
 
         it 'should ensure that the setters are defined' do
-          record = Record.new({}, validate: false)
+          record = klass.new({}, validate: false)
           expect { record.partition = 'bob' }.not_to raise_error
         end
 
         it 'can initialize without any paramters' do
-          expect(Record.new.attributes).to eq({})
+          expect(klass.new.attributes).to eq({})
         end
 
         describe 'working with deferred columns' do
           let(:data) { SecureRandom.uuid }
           let(:new_attributes) { {saved_data: data} }
 
-          subject { Record.new(new_attributes) }
+          subject { klass.new(new_attributes) }
 
-          before { Record.deferred_column :saved_data, on_load: ->(_) { data } }
-
-          after do
-            Record.send(:remove_method, :saved_data) if Record.instance_methods(false).include?(:saved_data)
-            Record.send(:remove_method, :saved_data=) if Record.instance_methods(false).include?(:saved_data=)
-          end
+          before { klass.deferred_column :saved_data, on_load: ->(_) { data } }
 
           its(:saved_data) { is_expected.to eq(data) }
           its(:attributes) { is_expected.not_to include(:saved_data) }
@@ -153,7 +138,7 @@ module CassandraModel
     end
 
     describe '.denormalized_column_map' do
-      let(:klass) { Record }
+      let(:klass) { base_record_klass }
       let(:expected_map) { (klass.columns & input_columns).inject({}) { |memo, column| memo.merge!(column => column) } }
       let(:input_columns) { klass.columns }
 
@@ -162,7 +147,7 @@ module CassandraModel
       it { is_expected.to eq(expected_map) }
 
       context 'with a different table' do
-        let(:klass) { ImageData }
+        let(:klass) { NamedClass.create('CassandraModel::ImageData', base_record_klass) {} }
         it { is_expected.to eq(expected_map) }
       end
 
@@ -178,52 +163,51 @@ module CassandraModel
     end
 
     describe '.composite_defaults' do
-      subject { Record.composite_defaults }
+      subject { klass.composite_defaults }
       it { is_expected.to eq([]) }
     end
 
     describe '.table_name' do
       it 'should be the lower-case plural of the class' do
-        expect(Record.table_name).to eq('records')
+        expect(klass.table_name).to eq('records')
       end
 
       context 'when inherited from a different class' do
-        it { expect(ImageData.table_name).to eq('image_data') }
+        it { expect(image_data_klass.table_name).to eq('image_data') }
       end
 
       context 'when overridden' do
-        before { Record.table_name = 'image_data' }
-        it { expect(Record.table_name).to eq('image_data') }
+        before { klass.table_name = 'image_data' }
+        it { expect(klass.table_name).to eq('image_data') }
       end
     end
 
     describe '.connection_name' do
       it 'should use the default connection' do
-        expect(Record.table.connection).to eq(ConnectionCache[nil])
+        expect(klass.table.connection).to eq(ConnectionCache[nil])
       end
 
       context 'when overridden' do
         let(:connection_name) { :counters }
 
-        before { Record.connection_name = :counters }
+        before { klass.connection_name = :counters }
 
         it 'should use the specified connection' do
-          expect(Record.table.connection).to eq(ConnectionCache[:counters])
+          expect(klass.table.connection).to eq(ConnectionCache[:counters])
         end
       end
     end
 
     describe '.table=' do
       it 'should allow the user to overwrite the default table behaviour' do
-        Record.table = TableRedux.new('week 1 table')
-        expect(Record.table_name).to eq('week 1 table')
+        klass.table = TableRedux.new('week 1 table')
+        expect(klass.table_name).to eq('week 1 table')
       end
     end
 
     describe '.query_for_save' do
       let(:columns) { [:partition] }
       let(:clustering_columns) { [] }
-      let(:klass) { Record }
 
       it 'should represent the query for saving all the column values' do
         expect(klass.query_for_save).to eq('INSERT INTO records (partition) VALUES (?)')
@@ -238,7 +222,7 @@ module CassandraModel
       end
 
       context 'with a different record type/table name' do
-        let(:klass) { ImageData }
+        let(:klass) { image_data_klass }
 
         it 'should represent the query for saving all the column values' do
           expect(klass.query_for_save).to eq('INSERT INTO image_data (partition) VALUES (?)')
@@ -249,7 +233,6 @@ module CassandraModel
     describe '.query_for_delete' do
       let(:partition_key) { [:partition] }
       let(:clustering_columns) { [] }
-      let(:klass) { Record }
 
       it 'should represent the query for saving all the column values' do
         expect(klass.query_for_delete).to eq('DELETE FROM records WHERE partition = ?')
@@ -264,7 +247,7 @@ module CassandraModel
       end
 
       context 'with a different record type/table name' do
-        let(:klass) { ImageData }
+        let(:klass) { image_data_klass }
 
         it 'should represent the query for saving all the column values' do
           expect(klass.query_for_delete).to eq('DELETE FROM image_data WHERE partition = ?')
@@ -274,33 +257,32 @@ module CassandraModel
 
     describe '.create_async' do
       let(:attributes) { {partition: 'Partition Key'} }
-      let(:klass) { Record }
       let(:record) { klass.new(attributes) }
       let(:future_record) { MockFuture.new(record) }
       let(:options) { {} }
 
       before do
-        allow_any_instance_of(Record).to receive(:save_async).with(options).and_return(future_record)
+        allow_any_instance_of(klass).to receive(:save_async).with(options).and_return(future_record)
       end
 
       it 'should return a new record instance with the specified attributes' do
-        expect(Record.create_async(attributes).get).to eq(record)
+        expect(klass.create_async(attributes).get).to eq(record)
       end
 
       context 'when options are provided' do
         let(:options) { {check_exists: true} }
 
         it 'should return a new record instance with the specified attributes' do
-          expect(Record.create_async(attributes, options).get).to eq(record)
+          expect(klass.create_async(attributes, options).get).to eq(record)
         end
       end
 
       context 'with a different record type' do
-        let(:klass) { ImageData }
+        let(:klass) { image_data_klass }
 
         it 'should create an instance of that record' do
-          expect(ImageData).to receive(:new).with(attributes).and_return(record)
-          ImageData.create_async(attributes)
+          expect(image_data_klass).to receive(:new).with(attributes).and_return(record)
+          image_data_klass.create_async(attributes)
         end
       end
     end
@@ -308,7 +290,7 @@ module CassandraModel
     describe '.normalized_column' do
       let(:key) { Faker::Lorem.word }
 
-      subject { Record.normalized_column(key) }
+      subject { klass.normalized_column(key) }
 
       it { is_expected.to eq(key.to_sym) }
     end
@@ -316,7 +298,7 @@ module CassandraModel
     describe '.restriction_attributes' do
       let(:restriction) { {city: Faker::Address.city, street: Faker::Address.street_name} }
 
-      subject { Record.restriction_attributes(restriction) }
+      subject { klass.restriction_attributes(restriction) }
 
       it { is_expected.to eq(restriction) }
     end
@@ -325,7 +307,7 @@ module CassandraModel
       let(:key) { Faker::Lorem.word }
       let(:attributes) { {key => Faker::Lorem.word} }
 
-      subject { Record.normalized_attributes(attributes) }
+      subject { klass.normalized_attributes(attributes) }
 
       it { is_expected.to eq(attributes.symbolize_keys) }
     end
@@ -333,7 +315,7 @@ module CassandraModel
     describe '.select_columns' do
       let(:columns) { Faker::Lorem.words.map(&:to_sym) }
 
-      subject { Record.select_columns(columns) }
+      subject { klass.select_columns(columns) }
 
       it { is_expected.to eq(columns) }
     end
@@ -341,7 +323,7 @@ module CassandraModel
     describe '.select_column' do
       let(:column) { Faker::Lorem.word }
 
-      subject { Record.select_column(column) }
+      subject { klass.select_column(column) }
 
       it { is_expected.to eq(column) }
     end
@@ -359,10 +341,10 @@ module CassandraModel
       end
       let(:cassandra_table) { double(:table, columns: cassandra_columns) }
 
-      subject { Record.cassandra_columns }
+      subject { klass.cassandra_columns }
 
       before do
-        allow(Record.table.connection.keyspace).to receive(:table).and_return(cassandra_table)
+        allow(klass.table.connection.keyspace).to receive(:table).and_return(cassandra_table)
       end
 
       it { is_expected.to eq(column_type_map) }
@@ -380,28 +362,28 @@ module CassandraModel
       let(:result_page) { MockPage.new(true, MockFuture.new([]), page_results) }
       let(:results) { MockFuture.new(result_page) }
       let(:execution_info) { result_page.execution_info }
-      let(:record) { Record.new(partition: 'Partition Key') }
+      let(:record) { klass.new(partition: 'Partition Key') }
       let(:remaining_columns) { [:time_stamp] }
 
       before do
-        Record.table_name = table_name
+        klass.table_name = table_name
         allow(connection).to receive(:execute_async).with(statement, *clause.values, {}).and_return(results)
       end
 
       it 'should create a Record instance for each returned result' do
-        expect(Record.request_async(clause).get.first).to eq(record)
+        expect(klass.request_async(clause).get.first).to eq(record)
       end
 
       describe 'saving the execution info for a single result' do
         let(:limit_clause) { ' LIMIT 1' }
 
         it 'should save the execution info from the query result when querying for one record' do
-          expect(Record.request_async(clause, limit: 1).get.execution_info).to eq(execution_info)
+          expect(klass.request_async(clause, limit: 1).get.execution_info).to eq(execution_info)
         end
       end
 
       it 'should save the execution info from the query result when querying for multiple record' do
-        expect(Record.request_async(clause).get.first.execution_info).to eq(execution_info)
+        expect(klass.request_async(clause).get.first.execution_info).to eq(execution_info)
       end
 
       context 'when the restriction key is a KeyComparer' do
@@ -410,7 +392,7 @@ module CassandraModel
 
         it 'should query using the specified comparer' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
-          Record.request_async(clause)
+          klass.request_async(clause)
         end
 
         context 'when the KeyComparer maps to an array' do
@@ -420,7 +402,7 @@ module CassandraModel
 
           it 'should query using all params' do
             expect(connection).to receive(:execute_async).with(statement, 999.98, 'ATF50', {}).and_return(results)
-            Record.request_async(clause)
+            klass.request_async(clause)
           end
         end
       end
@@ -428,11 +410,11 @@ module CassandraModel
       context 'with a read consistency configured' do
         let(:consistency) { :quorum }
 
-        before { Record.read_consistency = consistency }
+        before { klass.read_consistency = consistency }
 
         it 'should query using the specified consistency' do
           expect(connection).to receive(:execute_async).with(statement, consistency: consistency).and_return(results)
-          Record.request_async(clause)
+          klass.request_async(clause)
         end
 
         context 'with a different consistency' do
@@ -440,7 +422,7 @@ module CassandraModel
 
           it 'should query using the specified consistency' do
             expect(connection).to receive(:execute_async).with(statement, consistency: consistency).and_return(results)
-            Record.request_async(clause)
+            klass.request_async(clause)
           end
         end
       end
@@ -448,7 +430,7 @@ module CassandraModel
       context 'when tracing is specified' do
         it 'should forward tracing to the underlying query execution' do
           expect(connection).to receive(:execute_async).with(statement, trace: true).and_return(results)
-          Record.request_async(clause, trace: true)
+          klass.request_async(clause, trace: true)
         end
       end
 
@@ -459,31 +441,31 @@ module CassandraModel
 
         it 'should query using an IN' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Other Partition Key', {}).and_return(results)
-          Record.request_async(clause)
+          klass.request_async(clause)
         end
       end
 
       context 'when selecting a subset of columns' do
         let(:options) { {select: :partition} }
         let(:select_clause) { :partition }
-        let(:record) { Record.new(partition: 'Partition Key') }
+        let(:record) { klass.new(partition: 'Partition Key') }
 
-        it 'should return a new instance of the Record with only that attribute assigned' do
-          expect(Record.request_async({}, options).get.first).to eq(record)
+        it 'should return a new instance of the klass with only that attribute assigned' do
+          expect(klass.request_async({}, options).get.first).to eq(record)
         end
 
         it 'should invalidate the record' do
-          expect(Record.request_async({}, options).get.first.valid).to eq(false)
+          expect(klass.request_async({}, options).get.first.valid).to eq(false)
         end
 
         context 'with multiple columns selected' do
           let(:options) { {select: [:partition, :cluster]} }
           let(:select_clause) { %w(partition cluster).join(', ') }
           let(:page_results) { [{'partition' => 'Partition Key', cluster: 'Cluster Key'}] }
-          let(:record) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key') }
+          let(:record) { klass.new(partition: 'Partition Key', cluster: 'Cluster Key') }
 
           it 'should select all the specified columns' do
-            expect(Record.request_async({}, options).get.first).to eq(record)
+            expect(klass.request_async({}, options).get.first).to eq(record)
           end
         end
       end
@@ -498,14 +480,14 @@ module CassandraModel
               {'partition' => 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key 2'}
           ]
         end
-        let(:record_one) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key', other_cluster: 'Other Cluster Key') }
-        let(:record_two) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key') }
-        let(:record_three) { Record.new(partition: 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key 2') }
+        let(:record_one) { klass.new(partition: 'Partition Key', cluster: 'Cluster Key', other_cluster: 'Other Cluster Key') }
+        let(:record_two) { klass.new(partition: 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key') }
+        let(:record_three) { klass.new(partition: 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key 2') }
         let(:clustering_columns) { [:cluster, :other_cluster] }
         let(:remaining_columns) { [] }
 
         it 'should order the results by the specified column' do
-          expect(Record.request_async({}, options).get).to eq([record_one, record_two, record_three])
+          expect(klass.request_async({}, options).get).to eq([record_one, record_two, record_three])
         end
 
         context 'with a direction specified' do
@@ -514,7 +496,7 @@ module CassandraModel
           let(:order_clause) { ' ORDER BY cluster DESC' }
 
           it 'should order the results  the specified direction' do
-            expect(Record.request_async({}, options).get).to eq([record_one, record_two, record_three])
+            expect(klass.request_async({}, options).get).to eq([record_one, record_two, record_three])
           end
 
           context 'with a different direction' do
@@ -522,7 +504,7 @@ module CassandraModel
             let(:order_clause) { ' ORDER BY cluster ASC' }
 
             it 'should order the results  the specified direction' do
-              expect(Record.request_async({}, options).get).to eq([record_one, record_two, record_three])
+              expect(klass.request_async({}, options).get).to eq([record_one, record_two, record_three])
             end
           end
         end
@@ -532,7 +514,7 @@ module CassandraModel
           let(:order_clause) { ' ORDER BY cluster, other_cluster' }
 
           it 'should order by all the specified columns' do
-            expect(Record.request_async({}, options).get).to eq([record_one, record_two, record_three])
+            expect(klass.request_async({}, options).get).to eq([record_one, record_two, record_three])
           end
         end
       end
@@ -541,7 +523,7 @@ module CassandraModel
         let(:table_name) { :image_data }
 
         it 'should return records of that type' do
-          expect(ImageData.request_async(clause).get.first).to be_a_kind_of(ImageData)
+          expect(image_data_klass.request_async(clause).get.first).to be_a_kind_of(image_data_klass)
         end
       end
 
@@ -552,14 +534,14 @@ module CassandraModel
 
         it 'should support limits' do
           expect(connection).to receive(:execute_async).with(statement, {}).and_return(results)
-          Record.request_async({}, options)
+          klass.request_async({}, options)
         end
 
         context 'with a strange limit' do
           let(:options) { {limit: 'bob'} }
 
           it 'should raise an error' do
-            expect { Record.request_async({}, options) }.to raise_error("Invalid limit 'bob'")
+            expect { klass.request_async({}, options) }.to raise_error("Invalid limit 'bob'")
           end
         end
       end
@@ -567,7 +549,7 @@ module CassandraModel
       context 'with no clause' do
         it 'should query for everything' do
           expect(connection).to receive(:execute_async).with(statement, {}).and_return(results)
-          Record.request_async(clause)
+          klass.request_async(clause)
         end
       end
 
@@ -581,7 +563,7 @@ module CassandraModel
 
         it 'should return the result of a select query given a restriction' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
-          Record.request_async(clause)
+          klass.request_async(clause)
         end
       end
 
@@ -596,7 +578,7 @@ module CassandraModel
 
         it 'should return the result of a select query given a restriction' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {}).and_return(results)
-          Record.request_async(clause)
+          klass.request_async(clause)
         end
       end
 
@@ -609,12 +591,12 @@ module CassandraModel
         it 'should return an enumerable capable of producing all the records' do
           allow(connection).to receive(:execute_async).with(statement, page_size: 2).and_return(first_page_future)
           results = []
-          Record.request_async({}, options).each do |result|
+          klass.request_async({}, options).each do |result|
             results << result
           end
           expected_records = [
-              Record.new(partition: 'Partition Key 1'),
-              Record.new(partition: 'Partition Key 2')
+              klass.new(partition: 'Partition Key 1'),
+              klass.new(partition: 'Partition Key 2')
           ]
           expect(results).to eq(expected_records)
         end
@@ -628,7 +610,7 @@ module CassandraModel
 
         it 'should order options and restrictions in the query properly' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {}).and_return(results)
-          Record.request_async(clause, options)
+          klass.request_async(clause, options)
         end
       end
     end
@@ -637,7 +619,7 @@ module CassandraModel
       let(:request_attributes) { ['Partition Key'] }
       let(:clause) { {partition: 'Partition Key'} }
       let(:options) { {select: :partition} }
-      let(:record) { Record.new(partition: 'Partition Key') }
+      let(:record) { klass.new(partition: 'Partition Key') }
 
       let(:query) { 'SELECT partition FROM records WHERE partition = ? LIMIT 1' }
       let(:page_results) { ['partition' => 'Partition Key'] }
@@ -645,19 +627,19 @@ module CassandraModel
       let(:results) { MockFuture.new(result_page) }
 
       before do
-        Record.table_name = table_name
+        klass.table_name = table_name
         allow(connection).to receive(:execute_async).with(statement, *request_attributes, {}).and_return(results)
       end
 
       it 'should delegate to request using a limit of 1' do
-        expect(Record.first_async(clause, options).get).to eq(record)
+        expect(klass.first_async(clause, options).get).to eq(record)
       end
 
       context 'when the request returns no results' do
         let(:page_results) { [] }
 
         it 'should return nil' do
-          expect(Record.first_async(clause, options).get).to be_nil
+          expect(klass.first_async(clause, options).get).to be_nil
         end
       end
 
@@ -666,30 +648,30 @@ module CassandraModel
         let(:query) { 'SELECT * FROM records LIMIT 1' }
 
         it 'should default the request clause to {}' do
-          expect(Record.first_async.get).to eq(record)
+          expect(klass.first_async.get).to eq(record)
         end
       end
     end
 
     shared_examples_for 'a method creating a record' do |method|
       let(:attributes) { {partition: 'Partition Key'} }
-      let(:record) { Record.new(attributes) }
+      let(:record) { klass.new(attributes) }
       let(:future_record) { MockFuture.new(record) }
       let(:options) { {} }
 
       before do
-        allow(Record).to receive(:create_async).with(attributes, options).and_return(future_record)
+        allow(klass).to receive(:create_async).with(attributes, options).and_return(future_record)
       end
 
       it 'should resolve the future returned by .create_async' do
-        expect(Record.public_send(method, attributes)).to eq(record)
+        expect(klass.public_send(method, attributes)).to eq(record)
       end
 
       context 'when options are provided' do
         let(:options) { {check_exists: true} }
 
         it 'should resolve the future returned by .create_async' do
-          expect(Record.public_send(method, attributes, options)).to eq(record)
+          expect(klass.public_send(method, attributes, options)).to eq(record)
         end
       end
     end
@@ -700,12 +682,12 @@ module CassandraModel
     describe '.request' do
       let(:clause) { {} }
       let(:options) { {limit: 1} }
-      let(:record) { Record.new(partition: 'Partition Key') }
+      let(:record) { klass.new(partition: 'Partition Key') }
       let(:future_record) { MockFuture.new([record]) }
 
       it 'should resolve the future provided by request_async' do
-        allow(Record).to receive(:request_async).with(clause, options).and_return(future_record)
-        expect(Record.request(clause, options)).to eq([record])
+        allow(klass).to receive(:request_async).with(clause, options).and_return(future_record)
+        expect(klass.request(clause, options)).to eq([record])
       end
     end
 
@@ -716,37 +698,36 @@ module CassandraModel
       let(:future_record) { MockFuture.new(record) }
 
       it 'should resolve the future provided by first_async' do
-        allow(Record).to receive(:first_async).with(clause, options).and_return(future_record)
-        expect(Record.first(clause, options)).to eq(record)
+        allow(klass).to receive(:first_async).with(clause, options).and_return(future_record)
+        expect(klass.first(clause, options)).to eq(record)
       end
 
       it 'should default the request clause to {}' do
-        expect(Record).to receive(:first_async).with({}, {}).and_return(future_record)
-        Record.first
+        expect(klass).to receive(:first_async).with({}, {}).and_return(future_record)
+        klass.first
       end
     end
 
     describe 'sharding' do
       let(:sharding_column) { :shard }
-      let(:klass) { Record }
 
       it_behaves_like 'a sharding model'
     end
 
     describe '#attributes' do
       it 'should return the attributes of the created Record' do
-        record = Record.new(partition: 'Partition Key')
+        record = klass.new(partition: 'Partition Key')
         expect(record.attributes).to eq(partition: 'Partition Key')
       end
 
       context 'with an invalid column' do
         it 'should raise an error' do
-          expect { Record.new(fake_column: 'Partition Key') }.to raise_error("Invalid column 'fake_column' specified")
+          expect { klass.new(fake_column: 'Partition Key') }.to raise_error("Invalid column 'fake_column' specified")
         end
 
         context 'when validation is disabled' do
           it 'should not raise an error' do
-            expect { Record.new({fake_column: 'Partition Key'}, validate: false) }.not_to raise_error
+            expect { klass.new({fake_column: 'Partition Key'}, validate: false) }.not_to raise_error
           end
         end
       end
@@ -757,7 +738,7 @@ module CassandraModel
       let(:clustering_columns) { [:ck1] }
       let(:remaining_columns) { [:field] }
       let(:attributes) { {pk1: 'Some pk', ck1: 'Some ck', field: 'data'} }
-      let(:record) { Record.new(attributes) }
+      let(:record) { klass.new(attributes) }
 
       describe '#partition_key' do
 
@@ -821,17 +802,17 @@ module CassandraModel
       let(:results) { MockFuture.new(error: future_error, result: page_results) }
 
       before do
-        Record.table_name = table_name
+        klass.table_name = table_name
         allow(connection).to receive(:execute_async).and_return(results)
       end
 
       it 'should save the record to the database' do
         expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
-        Record.new(attributes).save_async
+        klass.new(attributes).save_async
       end
 
       it 'should call the associated global callback' do
-        record = Record.new(attributes)
+        record = klass.new(attributes)
         expect(GlobalCallbacks).to receive(:call).with(:record_saved, record)
         record.save_async
       end
@@ -839,18 +820,18 @@ module CassandraModel
       context 'with tracing specified' do
         it 'should execute the query with tracing enabled' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', trace: true).and_return(results)
-          Record.new(attributes).save_async(trace: true)
+          klass.new(attributes).save_async(trace: true)
         end
       end
 
       it 'should assign the execution_info for this record' do
-        record = Record.new(attributes)
+        record = klass.new(attributes)
         record.save_async
         expect(record.execution_info).to eq(execution_info)
       end
 
       context 'when the Record class has deferred columns' do
-        let(:record) { Record.new(attributes) }
+        let(:record) { klass.new(attributes) }
         let(:save_block) { ->(attributes, value) {} }
 
         before do
@@ -861,14 +842,14 @@ module CassandraModel
               nil
             end
           end
-          Record.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: save_block
-          Record.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: save_block
+          klass.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: save_block
+          klass.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: save_block
         end
 
         it 'should wrap everything in a future' do
           expect(ThomasUtils::Future).to receive(:new) do |&block|
-            expect(Record).to receive(:save_deferred_columns).with(record).and_return([])
-            expect(Record).to receive(:save_async_deferred_columns).with(record).and_return([])
+            expect(klass).to receive(:save_deferred_columns).with(record).and_return([])
+            expect(klass).to receive(:save_async_deferred_columns).with(record).and_return([])
             block.call
           end.and_return(MockFuture.new(record))
           record.save_async
@@ -876,18 +857,18 @@ module CassandraModel
 
         describe 'saving the execution info' do
           before do
-            allow(Record).to receive(:save_deferred_columns).with(record).and_return([])
-            allow(Record).to receive(:save_async_deferred_columns).with(record).and_return([])
+            allow(klass).to receive(:save_deferred_columns).with(record).and_return([])
+            allow(klass).to receive(:save_async_deferred_columns).with(record).and_return([])
           end
 
           it 'should assign the execution_info for this record' do
-            record = Record.new(attributes)
+            record = klass.new(attributes)
             record.save_async
             expect(record.execution_info).to eq(execution_info)
           end
 
           it 'should call the associated global callback' do
-            record = Record.new(attributes)
+            record = klass.new(attributes)
             expect(GlobalCallbacks).to receive(:call).with(:record_saved, record)
             record.save_async
           end
@@ -905,34 +886,34 @@ module CassandraModel
 
         context 'when specifying explicitly not to save deferred columns' do
           it 'should not save them' do
-            expect(Record).not_to receive(:save_deferred_columns)
-            expect(Record).not_to receive(:save_async_deferred_columns)
+            expect(klass).not_to receive(:save_deferred_columns)
+            expect(klass).not_to receive(:save_async_deferred_columns)
             record.save_async(skip_deferred_columns: true)
           end
         end
       end
 
       context 'when the record has been invalidated' do
-        before { allow_any_instance_of(Record).to receive(:valid).and_return(false) }
+        before { allow_any_instance_of(klass).to receive(:valid).and_return(false) }
 
         it 'should raise an error' do
-          expect { Record.new(attributes).save_async }.to raise_error('Cannot save invalidated record!')
+          expect { klass.new(attributes).save_async }.to raise_error('Cannot save invalidated record!')
         end
       end
 
       context 'when configured to use a batch' do
-        subject { Record }
+        subject { klass }
         it_behaves_like 'a query running in a batch', :save_async, [], ['Partition Key']
       end
 
       context 'when a consistency is specified' do
         let(:consistency) { :quorum }
 
-        before { Record.write_consistency = consistency }
+        before { klass.write_consistency = consistency }
 
         it 'should save the record to the database' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', consistency: consistency).and_return(results)
-          Record.new(attributes).save_async
+          klass.new(attributes).save_async
         end
 
         context 'with a different consistency' do
@@ -940,14 +921,14 @@ module CassandraModel
 
           it 'should save the record to the database' do
             expect(connection).to receive(:execute_async).with(statement, 'Partition Key', consistency: consistency).and_return(results)
-            Record.new(attributes).save_async
+            klass.new(attributes).save_async
           end
         end
       end
 
       it 'should not log an error' do
         expect(Logging.logger).not_to receive(:error)
-        Record.new(attributes).save_async
+        klass.new(attributes).save_async
       end
 
       context 'when part of the primary key is missing' do
@@ -955,7 +936,7 @@ module CassandraModel
         let(:clustering_columns) { [:ck1, :ck2] }
         let(:remaining_columns) { [] }
         let(:attributes) { {part1: 'Part 1', ck2: 'Does not matter'} }
-        let(:record_instance) { Record.new(attributes) }
+        let(:record_instance) { klass.new(attributes) }
         let(:column_values) { (partition_key + clustering_columns + remaining_columns).map { |key| attributes[key] } }
         let(:record_saved_future) { record_instance.save_async }
         let(:error_message) { 'Invalid primary key parts "part2", "ck1"' }
@@ -989,7 +970,7 @@ module CassandraModel
 
       context 'when an error occurs' do
         let(:future_error) { 'IOError: Connection Closed' }
-        let(:record_instance) { Record.new(attributes) }
+        let(:record_instance) { klass.new(attributes) }
         let(:column_values) { record_instance.attributes.values }
 
         it 'should log the error' do
@@ -1012,7 +993,7 @@ module CassandraModel
         end
 
         context 'with a different model' do
-          let(:record_instance) { ImageData.new(attributes) }
+          let(:record_instance) { image_data_klass.new(attributes) }
 
           it 'should log the error' do
             expect(Logging.logger).to receive(:error).with('Error saving CassandraModel::ImageData: IOError: Connection Closed')
@@ -1022,7 +1003,7 @@ module CassandraModel
       end
 
       it 'should return a future resolving to the record instance' do
-        record = Record.new(partition: 'Partition Key')
+        record = klass.new(partition: 'Partition Key')
         expect(record.save_async.get).to eq(record)
       end
 
@@ -1031,18 +1012,18 @@ module CassandraModel
 
         it 'should save the record to the database' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
-          Record.new(attributes).save_async(check_exists: true)
+          klass.new(attributes).save_async(check_exists: true)
         end
 
         it 'should NOT invalidate the record if it does not yet exist' do
-          expect(Record.new(attributes).save_async(check_exists: true).get.valid).to eq(true)
+          expect(klass.new(attributes).save_async(check_exists: true).get.valid).to eq(true)
         end
 
         context 'when the record already exists' do
           let(:query_results) { [{'[applied]' => false}] }
 
           it 'should invalidate the record if it already exists' do
-            expect(Record.new(attributes).save_async(check_exists: true).get.valid).to eq(false)
+            expect(klass.new(attributes).save_async(check_exists: true).get.valid).to eq(false)
           end
         end
       end
@@ -1053,14 +1034,14 @@ module CassandraModel
 
         it 'should save the record to the database using the specified attributes' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {}).and_return(results)
-          Record.new(attributes).save_async
+          klass.new(attributes).save_async
         end
       end
     end
 
     shared_examples_for 'a method saving a record' do |method|
       let(:attributes) { {partition: 'Partition Key'} }
-      let(:record) { Record.new(attributes) }
+      let(:record) { klass.new(attributes) }
       let(:record_future) { MockFuture.new(record) }
       let(:options) { {} }
 
@@ -1089,7 +1070,7 @@ module CassandraModel
 
     describe '#invalidate!' do
       it 'should invalidate the Record' do
-        record = Record.new({})
+        record = klass.new({})
         record.invalidate!
         expect(record.valid).to eq(false)
       end
@@ -1105,30 +1086,30 @@ module CassandraModel
       let(:results) { MockFuture.new([]) }
 
       before do
-        Record.table_name = table_name
-        allow(Record).to receive(:partition_key).and_return(partition_key)
-        allow(Record).to receive(:clustering_columns).and_return(clustering_columns)
+        klass.table_name = table_name
+        allow(klass).to receive(:partition_key).and_return(partition_key)
+        allow(klass).to receive(:clustering_columns).and_return(clustering_columns)
         allow(connection).to receive(:execute_async).and_return(results)
       end
 
       it 'should delete the record from the database' do
         expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {})
-        Record.new(attributes).delete_async
+        klass.new(attributes).delete_async
       end
 
       context 'when configured to use a batch' do
-        subject { Record }
+        subject { klass }
         it_behaves_like 'a query running in a batch', :delete_async, [], ['Partition Key', 'Cluster Key']
       end
 
       context 'when a consistency is specified' do
         let(:consistency) { :quorum }
 
-        before { Record.write_consistency = consistency }
+        before { klass.write_consistency = consistency }
 
         it 'should delete the record from the database' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', consistency: consistency)
-          Record.new(attributes).delete_async
+          klass.new(attributes).delete_async
         end
 
         context 'with a different consistency' do
@@ -1136,18 +1117,18 @@ module CassandraModel
 
           it 'should delete the record from the database' do
             expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', consistency: consistency)
-            Record.new(attributes).delete_async
+            klass.new(attributes).delete_async
           end
         end
       end
 
       it 'should return a future resolving to the record instance' do
-        record = Record.new(partition: 'Partition Key')
+        record = klass.new(partition: 'Partition Key')
         expect(record.delete_async.get).to eq(record)
       end
 
       it 'should invalidate the record instance' do
-        record = Record.new(partition: 'Partition Key')
+        record = klass.new(partition: 'Partition Key')
         record.delete_async
         expect(record.valid).to eq(false)
       end
@@ -1157,7 +1138,7 @@ module CassandraModel
 
         it 'should delete the record from the database' do
           expect(connection).to receive(:execute_async).with(statement, 'Different Partition Key', 'Different Cluster Key', {})
-          Record.new(attributes).delete_async
+          klass.new(attributes).delete_async
         end
       end
 
@@ -1166,7 +1147,7 @@ module CassandraModel
 
         it 'should delete the record from the database' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {})
-          Record.new(attributes).delete_async
+          klass.new(attributes).delete_async
         end
       end
 
@@ -1177,14 +1158,14 @@ module CassandraModel
 
         it 'should delete the record from the database' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {})
-          Record.new(attributes).delete_async
+          klass.new(attributes).delete_async
         end
       end
     end
 
     describe '#delete' do
       let(:attributes) { {partition: 'Partition Key'} }
-      let(:record) { Record.new(attributes) }
+      let(:record) { klass.new(attributes) }
       let(:record_future) { MockFuture.new(record) }
 
       it 'should delete the record' do
@@ -1211,31 +1192,29 @@ module CassandraModel
       let(:results) { MockFuture.new([]) }
 
       before do
-        Record.table_name = table_name
+        klass.table_name = table_name
         allow(connection).to receive(:execute_async).and_return(results)
         mock_simple_table(:records, partition_key, clustering_columns, columns)
       end
 
-      after { Record.reset! }
-
       it 'should update the record in the database' do
         expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', {})
-        Record.new(attributes).update_async(new_attributes)
+        klass.new(attributes).update_async(new_attributes)
       end
 
       context 'when configured to use a batch' do
-        subject { Record }
+        subject { klass }
         it_behaves_like 'a query running in a batch', :update_async, [meta_data: 'Some Data'], ['Some Data', 'Partition Key', 'Cluster Key']
       end
 
       context 'when a consistency is specified' do
         let(:consistency) { :quorum }
 
-        before { Record.write_consistency = consistency }
+        before { klass.write_consistency = consistency }
 
         it 'should update the record in the database' do
           expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', consistency: consistency)
-          Record.new(attributes).update_async(new_attributes)
+          klass.new(attributes).update_async(new_attributes)
         end
 
         context 'with a different consistency' do
@@ -1243,7 +1222,7 @@ module CassandraModel
 
           it 'should update the record in the database' do
             expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', consistency: consistency)
-            Record.new(attributes).update_async(new_attributes)
+            klass.new(attributes).update_async(new_attributes)
           end
         end
       end
@@ -1252,7 +1231,7 @@ module CassandraModel
         let(:new_attributes) { {fake_column: 'Some Fake Data'} }
 
         it 'should raise an error' do
-          expect { Record.new(attributes).update_async(new_attributes) }.to raise_error("Invalid column 'fake_column' specified")
+          expect { klass.new(attributes).update_async(new_attributes) }.to raise_error("Invalid column 'fake_column' specified")
         end
       end
 
@@ -1262,7 +1241,7 @@ module CassandraModel
 
         it 'should update only the value of that key for the map' do
           expect(connection).to receive(:execute_async).with(statement, 'North America', 'Partition Key', 'Cluster Key', {})
-          Record.new(attributes).update_async(new_attributes)
+          klass.new(attributes).update_async(new_attributes)
         end
       end
 
@@ -1272,17 +1251,17 @@ module CassandraModel
 
         it 'should update the record in the database with those attributes' do
           expect(connection).to receive(:execute_async).with(statement, 'meta-data', 'Some additional information', 'Partition Key', 'Cluster Key', {})
-          Record.new(attributes).update_async(new_attributes)
+          klass.new(attributes).update_async(new_attributes)
         end
       end
 
       it 'should return a future resolving to the record instance' do
-        record = Record.new(partition: 'Partition Key')
+        record = klass.new(partition: 'Partition Key')
         expect(record.update_async(new_attributes).get).to eq(record)
       end
 
       it 'should include the new attributes in the updated Record' do
-        record = Record.new(partition: 'Partition Key')
+        record = klass.new(partition: 'Partition Key')
         expect(record.update_async(new_attributes).get.attributes).to include(new_attributes)
       end
 
@@ -1291,7 +1270,7 @@ module CassandraModel
 
         it 'should update the record in the database' do
           expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Different Partition Key', 'Different Cluster Key', {})
-          Record.new(attributes).update_async(new_attributes)
+          klass.new(attributes).update_async(new_attributes)
         end
       end
 
@@ -1300,7 +1279,7 @@ module CassandraModel
 
         it 'should update the record in the database' do
           expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', {})
-          Record.new(attributes).update_async(new_attributes)
+          klass.new(attributes).update_async(new_attributes)
         end
       end
 
@@ -1311,7 +1290,7 @@ module CassandraModel
 
         it 'should update the record in the database' do
           expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', {})
-          Record.new(attributes).update_async(new_attributes)
+          klass.new(attributes).update_async(new_attributes)
         end
       end
     end
@@ -1319,7 +1298,7 @@ module CassandraModel
     describe '#update' do
       let(:attributes) { {partition: 'Partition Key'} }
       let(:new_attributes) { {meta_data: 'meta-data', misc_data: 'Some additional information'} }
-      let(:record) { Record.new(attributes) }
+      let(:record) { klass.new(attributes) }
       let(:record_future) { MockFuture.new(record) }
 
       it 'should update the record' do
@@ -1335,13 +1314,12 @@ module CassandraModel
 
     shared_examples_for 'an inspection method' do
       let(:attributes) { {partition_key: 'Partition', clustering: 45} }
-      let(:klass) { Record }
       let(:record) { klass.new(attributes, validate: false) }
       let(:cassandra_columns) { {partition_key: :text, clustering: :text} }
 
       before do
-        allow(Record).to receive(:cassandra_columns).and_return(cassandra_columns)
-        allow(Record).to receive(:normalized_column) { |column| column }
+        allow(klass).to receive(:cassandra_columns).and_return(cassandra_columns)
+        allow(klass).to receive(:normalized_column) { |column| column }
       end
 
       it { is_expected.to eq('#<CassandraModel::Record partition_key: "Partition", clustering: "45">') }
@@ -1349,7 +1327,7 @@ module CassandraModel
       context 'with a different record' do
         let(:attributes) { {partition_key: 'Different Partition', description: 'A great image!'} }
         let(:cassandra_columns) { {partition_key: :text, description: :text} }
-        let(:klass) { ImageData }
+        let(:klass) { NamedClass.create('CassandraModel::ImageData', base_record_klass) }
 
         it { is_expected.to eq('#<CassandraModel::ImageData partition_key: "Different Partition", description: "A great image!">') }
       end
@@ -1364,7 +1342,7 @@ module CassandraModel
         let(:cassandra_columns) { {rk_partition_key: :text, rk_clustering: :text} }
 
         before do
-          allow(Record).to receive(:normalized_column) do |column|
+          allow(klass).to receive(:normalized_column) do |column|
             (column =~ /^rk_/) ? column.to_s[3..-1].to_sym : column
           end
         end
@@ -1405,11 +1383,7 @@ module CassandraModel
         let(:cassandra_columns) { {} }
 
         before do
-          Record.deferred_column :description, on_load: ->(_) { {Faker::Lorem.word => Faker::Lorem.word} }
-        end
-
-        after do
-          Record.send(:remove_method, :description) if Record.instance_methods(false).include?(:partition)
+          klass.deferred_column :description, on_load: ->(_) { {Faker::Lorem.word => Faker::Lorem.word} }
         end
 
         it { is_expected.to eq(%Q{#<CassandraModel::Record description: "#{record.description.inspect}">}) }
@@ -1428,24 +1402,24 @@ module CassandraModel
 
     describe '#==' do
       it 'should be true when the attributes match' do
-        expect(Record.new(partition: 'Partition Key')).to eq(Record.new(partition: 'Partition Key'))
+        expect(klass.new(partition: 'Partition Key')).to eq(klass.new(partition: 'Partition Key'))
       end
 
       it 'should be false when the attributes do not match' do
-        expect(Record.new(partition: 'Partition Key')).not_to eq(Record.new(partition: 'Different Key'))
+        expect(klass.new(partition: 'Partition Key')).not_to eq(klass.new(partition: 'Different Key'))
       end
 
       context 'when comparing a non Record' do
         it 'should return false' do
-          expect(Record.new({})).not_to eq('Record')
+          expect(klass.new({})).not_to eq('Record')
         end
       end
 
       describe 'working with deferred columns' do
-        let(:lhs) { Record.new(partition: 'Partition Key', data: SecureRandom.uuid) }
-        let(:rhs) { Record.new(partition: 'Partition Key', data: SecureRandom.uuid) }
+        let(:lhs) { klass.new(partition: 'Partition Key', data: SecureRandom.uuid) }
+        let(:rhs) { klass.new(partition: 'Partition Key', data: SecureRandom.uuid) }
 
-        before { Record.deferred_column :data, on_load: ->(_) {} }
+        before { klass.deferred_column :data, on_load: ->(_) {} }
 
         it 'should not include deferred columns when comparing' do
           expect(lhs).to eq(rhs)
