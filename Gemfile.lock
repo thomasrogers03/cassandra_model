@@ -15,9 +15,9 @@ GIT
 
 GIT
   remote: git://github.com/thomasrogers03/thomas_utils.git
-  revision: 928398f713acba53229fbadc2797184613831e95
+  revision: 8d183610e4cc567d414870cf533a088f7ce8f93c
   specs:
-    thomas_utils (0.1.18)
+    thomas_utils (0.1.19)
       concurrent-ruby (~> 1.0.0)
       workers (~> 0.3)
 
@@ -29,7 +29,7 @@ PATH
       batch_reactor (~> 0.0.1)
       cassandra-driver (>= 1.1, <= 2.0.1)
       concurrent-ruby (~> 1.0.0)
-      thomas_utils (~> 0.1.13)
+      thomas_utils (~> 0.1.19)
 
 GEM
   remote: https://rubygems.org/
@@ -45,8 +45,8 @@ GEM
     cassandra-driver (2.0.1-java)
       ione (~> 1.2)
     coderay (1.1.1)
-    concurrent-ruby (1.0.0)
-    concurrent-ruby (1.0.0-java)
+    concurrent-ruby (1.0.1)
+    concurrent-ruby (1.0.1-java)
     diff-lcs (1.2.5)
     docile (1.1.5)
     faker (1.6.3)
@@ -154,7 +154,7 @@ DEPENDENCIES
   rspec
   rspec-its
   simplecov
-  thomas_utils (~> 0.1.4)!
+  thomas_utils!
   timecop
 
 BUNDLED WITH

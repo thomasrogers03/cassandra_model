@@ -4,7 +4,7 @@ group :development do
   gem 'rdoc', require: false
   gem 'activesupport', require: false
   gem 'concurrent-ruby', require: false
-  gem 'thomas_utils', '~> 0.1.4', github: 'thomasrogers03/thomas_utils', require: false
+  gem 'thomas_utils', github: 'thomasrogers03/thomas_utils', require: false
   gem 'batch_reactor', github: 'thomasrogers03/batch_reactor', require: false
 end
 
