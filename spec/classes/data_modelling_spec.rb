@@ -6,7 +6,7 @@ module CassandraModel
       extend DataModelling
 
       class << self
-        attr_reader :table_definition, :composite_defaults
+        attr_reader :table_definition, :composite_defaults, :internal_columns
         attr_accessor :connection_name, :generated_table_name, :table_name, :table
 
         def table_config
@@ -14,6 +14,10 @@ module CassandraModel
         end
 
         alias :generate_table_name :generated_table_name
+
+        def columns
+          @internal_columns = @composite_defaults.map(&:keys).flatten.uniq
+        end
 
         def generate_composite_defaults_from_inquirer(inquirer)
           @composite_defaults = inquirer.composite_rows.map do |row|
@@ -77,7 +81,11 @@ module CassandraModel
         it 'should generate composite defaults from the inquirer' do
           expect(MockDataModel.composite_defaults).to eq([{model: ''}, {make: ''}])
         end
-        
+
+        it 'should ensure the table is persisted' do
+          expect(MockDataModel.internal_columns).to match_array([:make, :model])
+        end
+
         context 'when overriding the table name' do
           let(:table_name) { :super_cars }
 

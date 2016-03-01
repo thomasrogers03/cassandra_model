@@ -17,6 +17,7 @@ module CassandraModel
                    end
 
       generate_composite_defaults_from_inquirer(inquirer)
+      columns
     end
 
     private
