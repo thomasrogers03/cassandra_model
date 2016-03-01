@@ -50,7 +50,8 @@ module CassandraModel
                                                 :connection_timeout, :timeout,
                                                 :username, :password,
                                                 :address_resolution)
-        connection_configuration.merge!(logger: Logging.logger)
+        connection_configuration[:logger] = Logging.logger
+        connection_configuration[:futures_factory] = futures_factory
         Cassandra.cluster(connection_configuration)
       end
     end

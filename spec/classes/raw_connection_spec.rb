@@ -168,7 +168,8 @@ module CassandraModel
             logger: Logging.logger,
             consistency: :one,
             connection_timeout: 10,
-            timeout: 10
+            timeout: 10,
+            futures_factory: raw_connection.futures_factory
         }
       end
 
