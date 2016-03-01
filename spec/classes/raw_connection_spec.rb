@@ -130,6 +130,34 @@ module CassandraModel
       end
     end
 
+    describe '#executor' do
+      subject { raw_connection.executor }
+
+      it { is_expected.to be_a_kind_of(Concurrent::CachedThreadPool) }
+
+      it 'should instance cache the value' do
+        raw_connection.executor
+        expect(Concurrent::CachedThreadPool).not_to receive(:new)
+        raw_connection.executor
+      end
+    end
+
+    describe '#futures_factory' do
+      subject { raw_connection.futures_factory }
+
+      it { is_expected.to be_a_kind_of(Cassandra::Future::Factory) }
+
+      it 'should use our executor' do
+        expect(subject.instance_variable_get(:@executor)).to eq(raw_connection.executor)
+      end
+
+      it 'should instance cache the value' do
+        raw_connection.futures_factory
+        expect(Cassandra::Future::Factory).not_to receive(:new)
+        raw_connection.futures_factory
+      end
+    end
+
     describe '#cluster' do
       subject { raw_connection.cluster }
 

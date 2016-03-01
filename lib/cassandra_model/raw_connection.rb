@@ -1,6 +1,8 @@
 module CassandraModel
   #noinspection RubyTooManyInstanceVariablesInspection
   class RawConnection
+    extend Forwardable
+
     DEFAULT_CONFIGURATION = {
         hosts: %w(localhost),
         keyspace: 'default_keyspace',
@@ -16,6 +18,9 @@ module CassandraModel
 
     include ConcurrencyHelper
 
+    def_delegator :@executor, :value, :executor
+    def_delegator :@futures_factory, :value, :futures_factory
+
     def initialize(config_name = nil)
       @config_name = config_name
       @statement_cache = Concurrent::Map.new
@@ -24,6 +29,9 @@ module CassandraModel
       @session_mutex = Mutex.new
       @config_mutex = Mutex.new
       @reactor_mutex = Mutex.new
+
+      @executor = Concurrent::Delay.new { Concurrent::CachedThreadPool.new }
+      @futures_factory = Concurrent::Delay.new { Cassandra::Future::Factory.new(executor) }
     end
 
     def config=(value)
