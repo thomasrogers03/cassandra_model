@@ -1,6 +1,8 @@
 module CassandraModel
   class TableDescriptor < Record
 
+    self.serial_consistency = :serial
+
     class << self
       def create_async(table_definition)
         super(table_descriptor(table_definition), check_exists: true)
