@@ -42,7 +42,13 @@ module CassandraModel
         sleep 0.100
         break if keyspace.table(name_in_cassandra)
       end
-      keyspace.table(name_in_cassandra) or raise "Could not verify the creation of table #{name_in_cassandra}"
+
+      keyspace.table(name_in_cassandra).tap do |table|
+        unless table
+          descriptor.delete
+          raise "Could not verify the creation of table #{name_in_cassandra}"
+        end
+      end
     end
 
     def create_cassandra_table(descriptor)

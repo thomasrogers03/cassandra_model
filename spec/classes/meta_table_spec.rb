@@ -162,8 +162,17 @@ module CassandraModel
           end
 
           context 'when the table takes too long to create' do
-            it 'should raise an error' do
+            before do
               allow(cluster).to receive(:keyspace).and_return(bad_keyspace)
+              allow(descriptor).to receive(:delete)
+            end
+
+            it 'should raise an error' do
+              expect { subject.columns }.to raise_error("Could not verify the creation of table #{definition.name_in_cassandra}")
+            end
+
+            it 'should raise an error' do
+              expect(descriptor).to receive(:delete)
               expect { subject.columns }.to raise_error("Could not verify the creation of table #{definition.name_in_cassandra}")
             end
           end
