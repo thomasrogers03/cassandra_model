@@ -22,8 +22,8 @@ module CassandraModel
 
     def serialized_column(column, serializer)
       serialized_column = :"#{column}_data"
-      deferred_column column, on_load: ->(attributes) { serializer.load(attributes[serialized_column]) },
-                      on_save: ->(attributes, value) { attributes[serialized_column] = serializer.dump(value) }
+      deferred_column column, on_load: ->(attributes) { serializer.load(attributes[serialized_column]) if attributes[serialized_column] },
+                      on_save: ->(attributes, value) { attributes[serialized_column] = (serializer.dump(value) if value) }
     end
 
     private

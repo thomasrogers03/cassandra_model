@@ -203,8 +203,8 @@ module CassandraModel
     describe '#serialized_column' do
       let(:column) { Faker::Lorem.word.to_sym }
       let(:serialized_column) { :"#{column}_data" }
-      let(:value) { Faker::Lorem.paragraphs }
       let(:serializer) { Marshal }
+      let(:value) { Faker::Lorem.paragraphs }
       let(:serialized_value) { serializer.dump(value) }
 
       before { data_model_class.serialized_column(column, serializer) }
@@ -234,6 +234,23 @@ module CassandraModel
           expect(attributes).to include(serialized_column => serialized_value)
         end
       end
+
+      context 'when the value is nil' do
+        let(:value) { nil }
+        let(:serialized_value) { nil }
+
+        it 'should load as nil' do
+          result = data_model_class.deferred_columns[column][:on_load].call(serialized_column => serialized_value)
+          expect(result).to be_nil
+        end
+
+        it 'should save as nil' do
+          attributes = {}
+          data_model_class.deferred_columns[column][:on_save].call(attributes, value)
+          expect(attributes).to include(serialized_column => nil)
+        end
+      end
+
     end
 
   end
