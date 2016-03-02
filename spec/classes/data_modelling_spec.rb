@@ -2,26 +2,29 @@ require 'spec_helper'
 
 module CassandraModel
   describe DataModelling do
-    class MockDataModel
-      extend DataModelling
 
-      class << self
-        attr_reader :table_definition, :composite_defaults, :internal_columns
-        attr_accessor :connection_name, :generated_table_name, :table_name, :table
+    let(:data_model_class) do
+      Class.new do
+        extend DataModelling
 
-        def table_config
-          self
-        end
+        class << self
+          attr_reader :table_definition, :composite_defaults, :internal_columns
+          attr_accessor :connection_name, :generated_table_name, :table_name, :table
 
-        alias :generate_table_name :generated_table_name
+          def table_config
+            self
+          end
 
-        def columns
-          @internal_columns = @composite_defaults.map(&:keys).flatten.uniq
-        end
+          alias :generate_table_name :generated_table_name
 
-        def generate_composite_defaults_from_inquirer(inquirer)
-          @composite_defaults = inquirer.composite_rows.map do |row|
-            row.inject({}) { |memo, column| memo.merge!(column => inquirer.column_defaults[column]) }
+          def columns
+            @internal_columns = @composite_defaults.map(&:keys).flatten.uniq
+          end
+
+          def generate_composite_defaults_from_inquirer(inquirer)
+            @composite_defaults = inquirer.composite_rows.map do |row|
+              row.inject({}) { |memo, column| memo.merge!(column => inquirer.column_defaults[column]) }
+            end
           end
         end
       end
@@ -34,18 +37,18 @@ module CassandraModel
     let(:full_table_name) { "#{table_name}_#{table_suffix}" if table_name }
     let(:invalid_table_descriptor) { TableDescriptor.new({}).tap { |desc| desc.invalidate! } }
 
-    subject { MockDataModel.new }
+    subject { data_model_class.new }
 
     it { is_expected.to be_a_kind_of(CompositeRecord) }
 
     before do
-      MockDataModel.table_name = table_name
+      data_model_class.table_name = table_name
       mock_simple_table(full_table_name, [:make, :model], [:make, :model], [:description]) if full_table_name
       mock_simple_table(:table_descriptors, [:name], [:created_at], [:id])
       allow(TableDescriptor).to receive(:create).and_return(invalid_table_descriptor)
       allow_any_instance_of(MetaTable).to receive(:sleep)
-      MockDataModel.connection_name = connection_name
-      MockDataModel.generated_table_name = generated_table_name
+      data_model_class.connection_name = connection_name
+      data_model_class.generated_table_name = generated_table_name
     end
 
     describe '#model_data' do
@@ -61,7 +64,7 @@ module CassandraModel
 
       context 'with a basic inquiry/data set pair' do
         before do
-          MockDataModel.model_data do |inquirer, data_set|
+          data_model_class.model_data do |inquirer, data_set|
             inquirer.knows_about(:make, :model)
             inquirer.knows_about(:make)
             inquirer.knows_about(:model)
@@ -71,25 +74,25 @@ module CassandraModel
         end
 
         it 'should create a meta table' do
-          expect(MockDataModel.table).to be_a_kind_of(MetaTable)
+          expect(data_model_class.table).to be_a_kind_of(MetaTable)
         end
 
         it 'should create a table based on an inquirer/data set pair' do
-          expect(MockDataModel.table).to eq(MetaTable.new(connection_name, table_definition))
+          expect(data_model_class.table).to eq(MetaTable.new(connection_name, table_definition))
         end
 
         it 'should generate composite defaults from the inquirer' do
-          expect(MockDataModel.composite_defaults).to eq([{model: ''}, {make: ''}])
+          expect(data_model_class.composite_defaults).to eq([{model: ''}, {make: ''}])
         end
 
         it 'should ensure the table is persisted' do
-          expect(MockDataModel.internal_columns).to match_array([:make, :model])
+          expect(data_model_class.internal_columns).to match_array([:make, :model])
         end
 
         context 'when overriding the table name' do
           let(:table_name) { :super_cars }
 
-          it { expect(MockDataModel.table.name).to start_with(table_name.to_s) }
+          it { expect(data_model_class.table.name).to start_with(table_name.to_s) }
         end
       end
 
@@ -116,7 +119,7 @@ module CassandraModel
 
         before do
           table_slices.times { |index| mock_simple_table("#{table_name}_#{index}_#{table_suffix}", [:make], [:model], []) }
-          MockDataModel.model_data do |inquirer, data_set|
+          data_model_class.model_data do |inquirer, data_set|
             inquirer.knows_about(:make)
             data_set.is_defined_by(:model)
             data_set.rotates_storage_across(table_slices).tables_every(rotation_interval)
@@ -124,14 +127,14 @@ module CassandraModel
         end
 
         it 'should create sufficient tables for rotation using the specified interval' do
-          expect(MockDataModel.table).to eq(RotatingTable.new(rotating_tables, rotation_interval))
+          expect(data_model_class.table).to eq(RotatingTable.new(rotating_tables, rotation_interval))
         end
 
         context 'with a different table name' do
           let(:generated_table_name) { :planes }
 
           it 'should use the proper table' do
-            expect(MockDataModel.table).to eq(RotatingTable.new(rotating_tables, rotation_interval))
+            expect(data_model_class.table).to eq(RotatingTable.new(rotating_tables, rotation_interval))
           end
         end
 
@@ -140,14 +143,14 @@ module CassandraModel
           let(:rotation_interval) { 1.week }
 
           it 'should create sufficient tables for rotation using the specified interval' do
-            expect(MockDataModel.table).to eq(RotatingTable.new(rotating_tables, rotation_interval))
+            expect(data_model_class.table).to eq(RotatingTable.new(rotating_tables, rotation_interval))
           end
         end
 
         context 'when overriding the table name' do
           let(:table_name) { :super_cars }
 
-          it { expect(MockDataModel.table.name).to match(/^#{table_name}_\d/) }
+          it { expect(data_model_class.table.name).to match(/^#{table_name}_\d/) }
         end
       end
 
@@ -164,7 +167,7 @@ module CassandraModel
         end
 
         before do
-          MockDataModel.model_data do |inquirer, data_set|
+          data_model_class.model_data do |inquirer, data_set|
             inquirer.knows_about(:artist, :year)
             inquirer.knows_about(:year)
             inquirer.knows_about(:artist)
@@ -180,11 +183,11 @@ module CassandraModel
         end
 
         it 'should create a table based on an inquirer/data set pair' do
-          expect(MockDataModel.table).to eq(MetaTable.new(connection_name, table_definition))
+          expect(data_model_class.table).to eq(MetaTable.new(connection_name, table_definition))
         end
 
         it 'should generate composite defaults from the inquirer' do
-          expect(MockDataModel.composite_defaults).to eq([{artist: 'NULL'}, {year: 1990}])
+          expect(data_model_class.composite_defaults).to eq([{artist: 'NULL'}, {year: 1990}])
         end
       end
     end
