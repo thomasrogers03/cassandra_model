@@ -34,6 +34,7 @@ module CassandraModel
         :connection_name,
 
         :write_consistency,
+        :serial_consistency,
         :read_consistency,
 
         :before_save_callbacks,
@@ -228,12 +229,17 @@ module CassandraModel
     def write_query_options(options = {})
       {}.tap do |new_option|
         new_option[:consistency] = write_consistency if write_consistency
+        new_option[:serial_consistency] = serial_consistency if serial_consistency
         new_option[:trace] = true if options[:trace]
       end
     end
 
     def write_consistency
       self.class.write_consistency
+    end
+
+    def serial_consistency
+      self.class.serial_consistency
     end
 
     def column_values
@@ -355,7 +361,7 @@ module CassandraModel
       def_delegator :table, :primary_key, :internal_primary_key
       def_delegator :table, :name, :table_name
       def_delegator :table, :columns, :internal_columns
-      def_delegators :table_config, :write_consistency, :read_consistency, :write_consistency=, :read_consistency=
+      def_delegators :table_config, :write_consistency, :serial_consistency, :read_consistency, :write_consistency=, :serial_consistency=, :read_consistency=
 
       alias :partition_key :internal_partition_key
       alias :clustering_columns :internal_clustering_columns

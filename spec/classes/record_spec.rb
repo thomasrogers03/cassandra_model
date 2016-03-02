@@ -1015,6 +1015,26 @@ module CassandraModel
           klass.new(attributes).save_async(check_exists: true)
         end
 
+        context 'when a consistency is specified' do
+          let(:consistency) { :local_serial }
+
+          before { klass.serial_consistency = consistency }
+
+          it 'should save the record to the database' do
+            expect(connection).to receive(:execute_async).with(statement, 'Partition Key', serial_consistency: consistency).and_return(results)
+            klass.new(attributes).save_async(check_exists: true)
+          end
+
+          context 'with a different consistency' do
+            let(:consistency) { :serial }
+
+            it 'should save the record to the database' do
+              expect(connection).to receive(:execute_async).with(statement, 'Partition Key', serial_consistency: consistency).and_return(results)
+              klass.new(attributes).save_async(check_exists: true)
+            end
+          end
+        end
+
         it 'should NOT invalidate the record if it does not yet exist' do
           expect(klass.new(attributes).save_async(check_exists: true).get.valid).to eq(true)
         end
