@@ -24,6 +24,8 @@ module CassandraModel
       allow(Logging.logger).to receive(:error)
     end
 
+    it { is_expected.to be_a_kind_of(RecordDebug) }
+
     context 'when mixing in query methods' do
       let(:base_results) { MockPage.new(true, nil, ['OK']) }
       let(:base_future) { MockFuture.new(base_results) }
