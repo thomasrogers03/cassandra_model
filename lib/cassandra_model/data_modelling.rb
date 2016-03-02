@@ -20,6 +20,12 @@ module CassandraModel
       columns
     end
 
+    def serialized_column(column, serializer)
+      serialized_column = :"#{column}_data"
+      deferred_column column, on_load: ->(attributes) { serializer.load(attributes[serialized_column]) },
+                      on_save: ->(attributes, value) { attributes[serialized_column] = serializer.dump(value) }
+    end
+
     private
 
     def table_sliced?(data_set)

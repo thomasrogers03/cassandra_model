@@ -21,10 +21,18 @@ module CassandraModel
             @internal_columns = @composite_defaults.map(&:keys).flatten.uniq
           end
 
+          def deferred_column(name, options)
+            deferred_columns[name] = options
+          end
+
           def generate_composite_defaults_from_inquirer(inquirer)
             @composite_defaults = inquirer.composite_rows.map do |row|
               row.inject({}) { |memo, column| memo.merge!(column => inquirer.column_defaults[column]) }
             end
+          end
+
+          def deferred_columns
+            @deferred_columns ||= {}
           end
         end
       end
@@ -188,6 +196,42 @@ module CassandraModel
 
         it 'should generate composite defaults from the inquirer' do
           expect(data_model_class.composite_defaults).to eq([{artist: 'NULL'}, {year: 1990}])
+        end
+      end
+    end
+
+    describe '#serialized_column' do
+      let(:column) { Faker::Lorem.word.to_sym }
+      let(:serialized_column) { :"#{column}_data" }
+      let(:value) { Faker::Lorem.paragraphs }
+      let(:serializer) { Marshal }
+      let(:serialized_value) { serializer.dump(value) }
+
+      before { data_model_class.serialized_column(column, serializer) }
+
+      it 'should define a deferred column method for loading the serialized column' do
+        result = data_model_class.deferred_columns[column][:on_load].call(serialized_column => serialized_value)
+        expect(result).to eq(value)
+      end
+
+      it 'should define a deferred column method for saving the serialized column' do
+        attributes = {}
+        data_model_class.deferred_columns[column][:on_save].call(attributes, value)
+        expect(attributes).to include(serialized_column => serialized_value)
+      end
+
+      context 'with a different serializer' do
+        let(:serializer) { JSON }
+
+        it 'should define a deferred column method for loading the serialized column' do
+          result = data_model_class.deferred_columns[column][:on_load].call(serialized_column => serialized_value)
+          expect(result).to eq(value)
+        end
+
+        it 'should define a deferred column method for saving the serialized column' do
+          attributes = {}
+          data_model_class.deferred_columns[column][:on_save].call(attributes, value)
+          expect(attributes).to include(serialized_column => serialized_value)
         end
       end
     end
