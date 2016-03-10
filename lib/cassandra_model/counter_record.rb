@@ -2,6 +2,20 @@ module CassandraModel
   class CounterRecord < Record
 
     def increment_async!(options)
+      internal_increment_async!(options)
+    end
+
+    def increment!(options)
+      increment_async!(options).get
+    end
+
+    def save_async
+      raise NotImplementedError
+    end
+
+    protected
+
+    def internal_increment_async!(options)
       counter_clause = counter_clause(options)
       row_key = internal_primary_key.values
       statement = increment_statement(counter_clause)
@@ -20,14 +34,6 @@ module CassandraModel
         Logging.logger.error("Error incrementing #{self.class}: #{error}")
         execute_callback(:save_record_failed, error, statement, column_values)
       end.then { self }
-    end
-
-    def increment!(options)
-      increment_async!(options).get
-    end
-
-    def save_async
-      raise NotImplementedError
     end
 
     private

@@ -1,7 +1,17 @@
 module CassandraModel
+  module CompositeCounterRecord
+    def increment_async!(counts)
+      futures = composite_rows.map { |record| record.internal_increment_async!(counts) }
+
+      futures << internal_increment_async!(counts)
+      Cassandra::Future.all(futures).then { self }
+    end
+  end
+
   module CompositeRecord
     def self.included(klass)
       klass.extend CompositeRecordStatic
+      klass.send(:include, CompositeCounterRecord) if klass < CounterRecord
     end
 
     def save_async(options = {})
