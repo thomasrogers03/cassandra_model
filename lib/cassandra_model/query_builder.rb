@@ -104,6 +104,17 @@ module CassandraModel
       self
     end
 
+    def ==(rhs)
+      rhs.is_a?(QueryBuilder) &&
+          rhs.record_klass == record_klass &&
+          rhs.params == params &&
+          rhs.options == options
+    end
+
+    protected
+
+    attr_reader :record_klass, :params, :options
+
     private
 
     def append_option(columns, option)
