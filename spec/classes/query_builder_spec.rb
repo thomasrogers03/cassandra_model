@@ -17,10 +17,12 @@ module CassandraModel
     let(:single_result_future) { MockFuture.new(results.first) }
     let(:create_result) { double(:record) }
     let(:create_result_future) { MockFuture.new(create_result) }
+    let(:record_scopes) { {} }
     let(:record) do
       double(:record_klass, request_async: result_paginator, request: results,
              first_async: single_result_future, first: results.first,
              create_async: create_result_future, create: create_result,
+             scopes: record_scopes,
              request_cql: nil)
     end
 
@@ -419,6 +421,37 @@ module CassandraModel
 
         it { is_expected.to eq(expected_result) }
       end
+    end
+
+    describe 'scoping' do
+      let(:scope_name) { Faker::Lorem.word }
+      let(:scope_args) { [] }
+
+      subject { QueryBuilder.new(record).public_send(scope_name, *scope_args) }
+
+      it { expect { subject }.to raise_error(NoMethodError) }
+
+      context 'when the record provides a scope' do
+        let(:key) { Faker::Lorem.word }
+        let(:value) { Faker::Lorem.sentence }
+        let(:scope_name) { Faker::Lorem.word.to_sym }
+        let(:scope) do
+          scope_key = key
+          scope_value = value
+          ->() { where(scope_key => scope_value) }
+        end
+        let(:record_scopes) { {scope_name => scope} }
+
+        it { is_expected.to eq(QueryBuilder.new(record).where(key => value)) }
+
+        context 'with a scope taking parameters' do
+          let(:scope_args) { [key, value] }
+          let(:scope) { ->(scope_key, scope_value) { where(scope_key => scope_value) } }
+
+          it { is_expected.to eq(QueryBuilder.new(record).where(key => value)) }
+        end
+      end
+
     end
 
   end

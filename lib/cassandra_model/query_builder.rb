@@ -111,6 +111,11 @@ module CassandraModel
           rhs.options == options
     end
 
+    def method_missing(method, *args)
+      scope = record_klass.scopes[method]
+      scope ? instance_exec(*args, &scope) : super
+    end
+
     protected
 
     attr_reader :record_klass, :params, :options
