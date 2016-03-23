@@ -3,6 +3,7 @@ require_relative 'meta_columns'
 
 module CassandraModel
   class Record
+    extend Scopes
     extend QueryHelper
     include MetaColumns
     include DisplayableAttributes
