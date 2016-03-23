@@ -30,12 +30,6 @@ module CassandraModel
 
     it { is_expected.to be_a_kind_of(Enumerable) }
 
-    shared_examples_for 'a method returning the builder' do |method|
-      it 'should return itself' do
-        expect(subject.send(method, params)).to eq(subject)
-      end
-    end
-
     describe '#async' do
       it 'should execute the built query asynchronously' do
         expect(record).to receive(:request_async).with({}, {})
@@ -268,8 +262,6 @@ module CassandraModel
     describe '#where' do
       let(:params) { {partition: 'Partition Key'} }
 
-      it_behaves_like 'a method returning the builder', :where
-
       shared_examples_for 'a where query' do |request_method, query_method|
         it 'should forward the request' do
           expect(record).to receive(request_method).with(params, {})
@@ -303,8 +295,6 @@ module CassandraModel
     shared_examples_for 'a comma separated option' do |method, option|
       describe "##{method}" do
         let(:params) { [:partition, :cluster] }
-
-        it_behaves_like 'a method returning the builder', method
 
         it_behaves_like 'an option query', method, option, :request_async, :async
         it_behaves_like 'an option query', method, option, :request, :get
@@ -361,8 +351,6 @@ module CassandraModel
     describe '#limit' do
       let(:params) { 100 }
 
-      it_behaves_like 'a method returning the builder', :limit
-
       it_behaves_like 'an option query', :limit, :limit, :request_async, :async
       it_behaves_like 'an option query', :limit, :limit, :request, :get
     end
@@ -370,16 +358,12 @@ module CassandraModel
     describe '#trace' do
       let(:params) { false }
 
-      it_behaves_like 'a method returning the builder', :trace
-
       it_behaves_like 'an option query', :trace, :trace, :request_async, :async
       it_behaves_like 'an option query', :trace, :trace, :request, :get
     end
 
     describe '#paginate' do
       let(:params) { 5000 }
-
-      it_behaves_like 'a method returning the builder', :paginate
 
       it_behaves_like 'an option query', :paginate, :page_size, :request_async, :async
       it_behaves_like 'an option query', :paginate, :page_size, :request, :get

@@ -3,12 +3,14 @@ module CassandraModel
     include Enumerable
     extend Forwardable
 
+    EMPTY_OPTION = [].freeze
+
     def_delegator :async, :each
 
-    def initialize(record_klass)
+    def initialize(record_klass, params = {}, options = {})
       @record_klass = record_klass
-      @params = {}
-      @options = {}
+      @params = params
+      @options = options
     end
 
     def async
@@ -59,8 +61,7 @@ module CassandraModel
     end
 
     def check_exists
-      @options.merge!(check_exists: true)
-      self
+      new_instance(@params, @options.merge(check_exists: true))
     end
 
     def pluck(*columns)
@@ -77,8 +78,7 @@ module CassandraModel
     end
 
     def where(params)
-      @params.merge!(params)
-      self
+      new_instance(@params.merge(params), @options)
     end
 
     def select(*columns)
@@ -90,18 +90,15 @@ module CassandraModel
     end
 
     def limit(limit)
-      @options[:limit] = limit
-      self
+      new_instance(@params, @options.merge(limit: limit))
     end
 
     def trace(trace)
-      @options[:trace] = trace
-      self
+      new_instance(@params, @options.merge(trace: trace))
     end
 
     def paginate(page_size)
-      @options[:page_size] = page_size
-      self
+      new_instance(@params, @options.merge(page_size: page_size))
     end
 
     def ==(rhs)
@@ -122,17 +119,21 @@ module CassandraModel
 
     private
 
+    def new_instance(params, options)
+      self.class.new(record_klass, params, options)
+    end
+
     def append_option(columns, option)
-      @options[option] ||= []
+      new_option = (@options[option] || EMPTY_OPTION).dup
       if columns.first.is_a?(Hash)
         columns = columns.first.map do |column, direction|
           {column => direction}
         end
-        @options[option].concat(columns)
+        new_option.concat(columns)
       else
-        @options[option].concat(columns)
+        new_option.concat(columns)
       end
-      self
+      new_instance(@params, @options.merge(option => new_option))
     end
 
     def pluck_values(columns, result)
