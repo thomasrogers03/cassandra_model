@@ -24,7 +24,7 @@ GIT
 PATH
   remote: .
   specs:
-    cassandra_model (1.0.7)
+    cassandra_model (1.0.8)
       activesupport (~> 4.0)
       batch_reactor (~> 0.0.1)
       cassandra-driver (>= 1.1, <= 2.0.1)
@@ -158,4 +158,4 @@ DEPENDENCIES
   timecop
 
 BUNDLED WITH
-   1.10.6
+   1.11.2
