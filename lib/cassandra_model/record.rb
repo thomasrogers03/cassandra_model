@@ -111,7 +111,9 @@ module CassandraModel
     alias :to_s :inspect
 
     def ==(rhs)
-      rhs.respond_to?(:attributes) && @attributes == rhs.attributes
+      rhs.respond_to?(:attributes) && columns.all? do |column|
+        attributes[column] == rhs.attributes[column]
+      end
     end
 
     private

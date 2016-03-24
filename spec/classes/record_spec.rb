@@ -1442,6 +1442,12 @@ module CassandraModel
         end
       end
 
+      context 'with one record having a nil value and another missing the key' do
+        subject { klass.new(partition: 'some partition', cluster: nil) }
+
+        it { is_expected.to eq(klass.new(partition: 'some partition')) }
+      end
+
       describe 'working with deferred columns' do
         let(:lhs) { klass.new(partition: 'Partition Key', data: SecureRandom.uuid) }
         let(:rhs) { klass.new(partition: 'Partition Key', data: SecureRandom.uuid) }
