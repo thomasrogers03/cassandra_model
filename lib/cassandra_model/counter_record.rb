@@ -9,11 +9,11 @@ module CassandraModel
       increment_async!(options).get
     end
 
-    def save_async
+    protected
+
+    def internal_save_async(options = {})
       raise NotImplementedError
     end
-
-    protected
 
     def internal_increment_async!(options)
       counter_clause = counter_clause(options)
