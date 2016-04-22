@@ -155,7 +155,7 @@ There are a number of features in Cassandra Model that may have missing or incom
 
 ## Copyright
 
-Copyright 2014-2015 Thomas Rogers.
+Copyright 2014-2016 Thomas Rogers.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
