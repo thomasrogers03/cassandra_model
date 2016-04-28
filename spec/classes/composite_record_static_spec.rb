@@ -16,7 +16,7 @@ module CassandraModel
 
       def internal_attributes
         internal_columns.inject({}) do |memo, column|
-          memo.merge(column => attribute(column))
+          memo.merge!(column => attribute(column))
         end
       end
     end
