@@ -127,11 +127,11 @@ module CassandraModel
       new_option = (@options[option] || EMPTY_OPTION).dup
       if columns.first.is_a?(Hash)
         columns = columns.first.map do |column, direction|
-          {column => direction}
+          {column.to_sym => direction}
         end
         new_option.concat(columns)
       else
-        new_option.concat(columns)
+        new_option.concat(columns.map(&:to_sym))
       end
       new_instance(@params, @options.merge(option => new_option))
     end

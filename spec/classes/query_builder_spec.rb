@@ -316,6 +316,11 @@ module CassandraModel
           subject.send(method, params[0]).send(method, params[1]).get
         end
 
+        it "supports specifying string values to #{method}" do
+          expect(record).to receive(:request).with({}, option => params)
+          subject.send(method, params[0].to_s).send(method, params[1].to_s).get
+        end
+
       end
 
     end
@@ -325,8 +330,10 @@ module CassandraModel
 
     describe '#select' do
       context 'when the columns are specified using a hash' do
-        let(:first_column) { {Faker::Lorem.word => :avg} }
-        let(:second_column) { {Faker::Lorem.word => :count} }
+        let(:first_column_key) { Faker::Lorem.word.to_sym }
+        let(:second_column_key) { (Faker::Lorem.words * '_').to_sym }
+        let(:first_column) { {first_column_key => :avg} }
+        let(:second_column) { {second_column_key => :count} }
         let(:select_columns) do
           first_column.merge(second_column)
         end
@@ -335,13 +342,18 @@ module CassandraModel
           expect(record).to receive(:request).with({}, {select: [first_column, second_column]})
           subject.select(select_columns).get
         end
+
+        it 'should convert the input column names to symbols' do
+          expect(record).to receive(:request).with({}, {select: [first_column, second_column]})
+          subject.select(select_columns.stringify_keys).get
+        end
       end
     end
 
     describe '#order' do
       context 'when the order is specified using a hash' do
-        let(:first_column) { {Faker::Lorem.word => :asc} }
-        let(:second_column) { {Faker::Lorem.word => :desc} }
+        let(:first_column) { {Faker::Lorem.word.to_sym => :asc} }
+        let(:second_column) { {(Faker::Lorem.words * '_').to_sym => :desc} }
         let(:ordering_columns) do
           first_column.merge(second_column)
         end
