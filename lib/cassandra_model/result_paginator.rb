@@ -29,20 +29,23 @@ module CassandraModel
     def iterate_page(current_page, &block)
       page_results = current_page.get
       unless page_results.empty?
-        modified_results = modified_page_results(page_results)
-        next_page(page_results, modified_results, &block)
+        next_page(page_results, &block)
       end
     end
 
-    def next_page(page_results, modified_results)
+    def next_page(page_results, &block)
       if page_results.last_page?
-        yield modified_results
+        modify_and_yield_page_results(page_results, &block)
         nil
       else
         current_page = page_results.next_page_async
-        yield modified_results
+        modify_and_yield_page_results(page_results, &block)
         current_page
       end
+    end
+
+    def modify_and_yield_page_results(page_results)
+      yield modified_page_results(page_results)
     end
 
     def modified_page_results(page_results)
