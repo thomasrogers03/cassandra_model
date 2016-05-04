@@ -272,6 +272,11 @@ module CassandraModel
           expect(record).to receive(request_method).with(params.merge(cluster: 'Cluster Key'), {})
           subject.where(params).where(cluster: 'Cluster Key').send(query_method)
         end
+
+        it 'supports string keys' do
+          expect(record).to receive(request_method).with(params, {})
+          subject.where(params.stringify_keys).send(query_method)
+        end
       end
 
       it_behaves_like 'a where query', :request_async, :async

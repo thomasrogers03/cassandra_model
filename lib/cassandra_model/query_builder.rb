@@ -78,7 +78,7 @@ module CassandraModel
     end
 
     def where(params)
-      new_instance(@params.merge(params), @options)
+      new_instance(@params.merge(params.symbolize_keys), @options)
     end
 
     def select(*columns)
