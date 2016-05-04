@@ -7,7 +7,7 @@ module CassandraModel
     let(:second_page_future) { nil }
     let(:execution_info) { 'EXECUTION' }
     let(:first_page) { MockPage.new(last_page, second_page_future, first_page_results, execution_info) }
-    let(:first_page_future) { double(:result, get: first_page) }
+    let(:first_page_future) { Cassandra::Future.value(first_page) }
     subject { ResultPaginator.new(first_page_future) { |result, execution_info| "Modified #{result} #{execution_info}" } }
 
     it { should be_a_kind_of(Enumerable) }
@@ -40,7 +40,7 @@ module CassandraModel
         let(:second_page_results) { ['Record 2'] }
         let(:second_execution_info) { 'EXEC 2' }
         let(:second_page) { MockPage.new(true, nil, second_page_results, second_execution_info) }
-        let(:second_page_future) { double(:result, get: second_page) }
+        let(:second_page_future) { Cassandra::Future.value(second_page) }
 
         it 'should yield the results from both pages' do
           results = []
