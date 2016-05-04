@@ -18,16 +18,21 @@ module CassandraModel
 
       current_page = @page
       while current_page
-        page_results = current_page.get
-        break if page_results.empty?
-        modified_results = modified_page_results(page_results)
-        current_page = next_page(page_results, modified_results, &block)
+        current_page = iterate_page(current_page, &block)
       end
     end
 
     alias :get :to_a
 
     private
+
+    def iterate_page(current_page, &block)
+      page_results = current_page.get
+      unless page_results.empty?
+        modified_results = modified_page_results(page_results)
+        next_page(page_results, modified_results, &block)
+      end
+    end
 
     def next_page(page_results, modified_results)
       if page_results.last_page?
