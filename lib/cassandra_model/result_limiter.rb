@@ -17,5 +17,15 @@ module CassandraModel
     end
 
     alias :get :to_a
+
+    def ==(rhs)
+      rhs.is_a?(ResultLimiter) &&
+          enum == rhs.enum &&
+          limit == rhs.limit
+    end
+
+    protected
+
+    attr_reader :enum, :limit
   end
 end

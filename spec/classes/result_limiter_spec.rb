@@ -53,5 +53,32 @@ module CassandraModel
       it { is_expected.to eq(result_limiter.to_a) }
     end
 
+    describe '#==' do
+      let(:enum) { Faker::Lorem.words }
+      let(:limit) { 15 }
+      let(:enum_two) { enum }
+      let(:limit_two) { limit }
+      let(:result_limiter_two) { ResultLimiter.new(enum_two, limit_two) }
+
+      subject { result_limiter == result_limiter_two }
+
+      it { is_expected.to eq(true) }
+
+      context 'with a different enum' do
+        let(:enum_two) { Faker::Lorem.words }
+        it { is_expected.to eq(false) }
+      end
+
+      context 'with a different limit' do
+        let(:limit_two) { 71 }
+        it { is_expected.to eq(false) }
+      end
+
+      context 'when not a limiter' do
+        let(:result_limiter_two) { [] }
+        it { is_expected.to eq(false) }
+      end
+    end
+
   end
 end
