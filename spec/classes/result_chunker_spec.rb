@@ -4,11 +4,15 @@ module CassandraModel
   describe ResultChunker do
 
     let(:model_klass) { Struct.new(:attributes) }
+    let(:cluster) { [] }
+    let(:enum) { [] }
     let(:chunker) { ResultChunker.new(enum, cluster) }
 
+    subject { chunker }
+
+    it { is_expected.to be_a_kind_of(Enumerable) }
+
     describe '#each' do
-      let(:cluster) { [] }
-      let(:enum) { [] }
       let(:results) { [] }
 
       subject { results }

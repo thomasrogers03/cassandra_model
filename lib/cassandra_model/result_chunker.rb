@@ -1,5 +1,6 @@
 module CassandraModel
   class ResultChunker
+    include Enumerable
 
     def initialize(enum, cluster)
       @enum = enum
