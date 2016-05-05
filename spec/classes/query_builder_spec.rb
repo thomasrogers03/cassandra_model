@@ -233,6 +233,43 @@ module CassandraModel
       end
     end
 
+    describe '#cluster' do
+      let(:results_klass) { Struct.new(:attributes) }
+      let(:results) { [results_klass.new(Faker::Lorem.word => Faker::Lorem.sentence)] }
+      let(:cluster_key) { Faker::Lorem.word.to_sym }
+      let(:cluster_key_two) { Faker::Lorem.word.to_sym }
+      let(:params) { {cluster_key => Faker::Lorem.sentence, cluster_key_two => Faker::Lorem.sentence} }
+      let(:cluster) { [cluster_key, cluster_key_two] }
+
+      it 'changes the enumerator provided by #each to a ResultChunker' do
+        enum = subject.where(params).cluster(*cluster).each
+        expect(enum).to eq(ResultChunker.new(result_paginator, cluster))
+      end
+
+      describe 'the results' do
+        let(:enum_results) { [] }
+        before { subject.where(params).cluster(*cluster).each { |cluster, rows| enum_results << [cluster, rows] } }
+
+        it 'supports passing a block' do
+          expect(enum_results).to eq(ResultChunker.new(result_paginator, cluster).to_a)
+        end
+      end
+
+      context 'when a limit is provided after the cluster' do
+        let(:limit) { rand(1..10) }
+
+        it 'changes the enumerator provided by #each to a ResultChunker wrapped in a ResultLimiter' do
+          enum = subject.where(params).cluster(*cluster).limit(limit).each
+          expect(enum).to eq(ResultLimiter.new(ResultChunker.new(result_paginator, cluster), limit))
+        end
+
+        it 'should not limit the query' do
+          expect(record).to receive(:request_async).with(params, {}).and_return(result_paginator)
+          subject.where(params).cluster(*cluster).limit(limit).each
+        end
+      end
+    end
+
     describe '#each_slice' do
       it 'should pass the block to the result of the query' do
         results = nil

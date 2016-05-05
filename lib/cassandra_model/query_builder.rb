@@ -5,12 +5,11 @@ module CassandraModel
 
     EMPTY_OPTION = [].freeze
 
-    def_delegator :async, :each
-
-    def initialize(record_klass, params = {}, options = {})
+    def initialize(record_klass, params = {}, options = {}, extra_options = {})
       @record_klass = record_klass
       @params = params
       @options = options
+      @extra_options = extra_options
     end
 
     def async
@@ -61,7 +60,7 @@ module CassandraModel
     end
 
     def check_exists
-      new_instance(@params, @options.merge(check_exists: true))
+      new_instance(@params, @options.merge(check_exists: true), @extra_options)
     end
 
     def pluck(*columns)
@@ -77,8 +76,26 @@ module CassandraModel
       paginate(slice_size).async.each_slice(&block)
     end
 
+    def each(&block)
+      if @extra_options[:cluster]
+        enum = ResultChunker.new(async, @extra_options[:cluster])
+        enum = if @extra_options[:cluster_limit]
+          ResultLimiter.new(enum, @extra_options[:cluster_limit])
+        else
+          enum
+        end
+        block_given? ? enum.each(&block) : enum
+      else
+        async.each(&block)
+      end
+    end
+
+    def cluster(*columns)
+      new_instance(@params, @options, @extra_options.merge(cluster: columns))
+    end
+
     def where(params)
-      new_instance(@params.merge(params.symbolize_keys), @options)
+      new_instance(@params.merge(params.symbolize_keys), @options, @extra_options)
     end
 
     def select(*columns)
@@ -90,15 +107,19 @@ module CassandraModel
     end
 
     def limit(limit)
-      new_instance(@params, @options.merge(limit: limit))
+      if @extra_options[:cluster]
+        new_instance(@params, @options, @extra_options.merge(cluster_limit: limit))
+      else
+        new_instance(@params, @options.merge(limit: limit), @extra_options)
+      end
     end
 
     def trace(trace)
-      new_instance(@params, @options.merge(trace: trace))
+      new_instance(@params, @options.merge(trace: trace), @extra_options)
     end
 
     def paginate(page_size)
-      new_instance(@params, @options.merge(page_size: page_size))
+      new_instance(@params, @options.merge(page_size: page_size), @extra_options)
     end
 
     def ==(rhs)
@@ -119,8 +140,8 @@ module CassandraModel
 
     private
 
-    def new_instance(params, options)
-      self.class.new(record_klass, params, options)
+    def new_instance(params, options, extra_options)
+      self.class.new(record_klass, params, options, extra_options)
     end
 
     def append_option(columns, option)
@@ -133,7 +154,7 @@ module CassandraModel
       else
         new_option.concat(columns.map(&:to_sym))
       end
-      new_instance(@params, @options.merge(option => new_option))
+      new_instance(@params, @options.merge(option => new_option), @extra_options)
     end
 
     def pluck_values(columns, result)
