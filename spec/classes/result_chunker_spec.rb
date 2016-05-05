@@ -60,5 +60,32 @@ module CassandraModel
       it { is_expected.to eq(chunker.to_a) }
     end
 
+    describe '#==' do
+      let(:enum) { Faker::Lorem.words }
+      let(:cluster) { Faker::Lorem.words }
+      let(:enum_two) { enum }
+      let(:cluster_two) { cluster }
+      let(:chunker_two) { ResultChunker.new(enum_two, cluster_two) }
+
+      subject { chunker == chunker_two }
+
+      it { is_expected.to eq(true) }
+
+      context 'with a different enum' do
+        let(:enum_two) { Faker::Lorem.words }
+        it { is_expected.to eq(false) }
+      end
+
+      context 'with a different cluster' do
+        let(:cluster_two) { Faker::Lorem.words }
+        it { is_expected.to eq(false) }
+      end
+
+      context 'when not a chunker' do
+        let(:chunker_two) { [] }
+        it { is_expected.to eq(false) }
+      end
+    end
+
   end
 end
