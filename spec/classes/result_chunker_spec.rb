@@ -52,5 +52,13 @@ module CassandraModel
       end
     end
 
+    describe '#get' do
+      let(:attributes) { {key: :value} }
+      let(:row) { model_klass.new(attributes) }
+      let(:enum) { [row] }
+      subject { chunker.get }
+      it { is_expected.to eq(chunker.to_a) }
+    end
+
   end
 end

@@ -13,5 +13,7 @@ module CassandraModel
       end.each(&block)
     end
 
+    alias :get :to_a
+
   end
 end
