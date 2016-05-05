@@ -246,6 +246,10 @@ module CassandraModel
         expect(enum).to eq(ResultChunker.new(result_paginator, cluster))
       end
 
+      it 'makes #each_slice raise a NotImplementedError' do
+        expect { subject.where(params).cluster(*cluster).each_slice(500) }.to raise_error(NotImplementedError)
+      end
+
       describe 'the results' do
         let(:enum_results) { [] }
         before { subject.where(params).cluster(*cluster).each { |cluster, rows| enum_results << [cluster, rows] } }

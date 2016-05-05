@@ -73,6 +73,7 @@ module CassandraModel
     end
 
     def each_slice(slice_size = nil, &block)
+      raise NotImplementedError if @extra_options[:cluster]
       paginate(slice_size).async.each_slice(&block)
     end
 
