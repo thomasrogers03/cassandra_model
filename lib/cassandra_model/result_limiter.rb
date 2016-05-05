@@ -15,5 +15,7 @@ module CassandraModel
         yield value
       end
     end
+
+    alias :get :to_a
   end
 end

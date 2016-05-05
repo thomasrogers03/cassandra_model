@@ -47,5 +47,11 @@ module CassandraModel
       end
     end
 
+    describe '#get' do
+      let(:enum) { Faker::Lorem.words }
+      subject { result_limiter.get }
+      it { is_expected.to eq(result_limiter.to_a) }
+    end
+
   end
 end
