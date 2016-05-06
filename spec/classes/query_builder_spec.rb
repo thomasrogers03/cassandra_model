@@ -18,11 +18,13 @@ module CassandraModel
     let(:create_result) { double(:record) }
     let(:create_result_future) { MockFuture.new(create_result) }
     let(:record_scopes) { {} }
+    let(:record_primary_key) { [] }
     let(:record) do
       double(:record_klass, request_async: result_paginator, request: results,
              first_async: single_result_future, first: results.first,
              create_async: create_result_future, create: create_result,
              scopes: record_scopes,
+             primary_key: record_primary_key,
              request_cql: nil)
     end
 
@@ -271,6 +273,20 @@ module CassandraModel
           expect(record).to receive(:request_async).with(params, {}).and_return(result_paginator)
           subject.where(params).cluster(*cluster).limit(limit).each
         end
+      end
+    end
+
+    describe '#cluster_except' do
+      let(:results) { [] }
+      let(:record_primary_key) { Faker::Lorem.words.map(&:to_sym) }
+      let(:key_size) { rand(0...record_primary_key.length) }
+      let(:except_keys) { record_primary_key.sample(key_size) }
+      let(:expected_query) do
+        subject.cluster(*(record_primary_key - except_keys))
+      end
+
+      it 'delegates to #cluster with the remaining columns no included in the except keys' do
+        expect(subject.cluster_except(*except_keys)).to eq(expected_query)
       end
     end
 

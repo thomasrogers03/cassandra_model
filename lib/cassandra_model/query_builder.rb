@@ -95,6 +95,10 @@ module CassandraModel
       new_instance(@params, @options, @extra_options.merge(cluster: columns))
     end
 
+    def cluster_except(*columns)
+      cluster(*(@record_klass.primary_key - columns))
+    end
+
     def where(params)
       new_instance(@params.merge(params.symbolize_keys), @options, @extra_options)
     end
@@ -127,7 +131,8 @@ module CassandraModel
       rhs.is_a?(QueryBuilder) &&
           rhs.record_klass == record_klass &&
           rhs.params == params &&
-          rhs.options == options
+          rhs.options == options &&
+          rhs.extra_options == extra_options
     end
 
     def method_missing(method, *args)
@@ -137,7 +142,7 @@ module CassandraModel
 
     protected
 
-    attr_reader :record_klass, :params, :options
+    attr_reader :record_klass, :params, :options, :extra_options
 
     private
 
