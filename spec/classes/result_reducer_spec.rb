@@ -47,6 +47,11 @@ module CassandraModel
                 let(:filter_keys) { [:key, :value] }
                 it { is_expected.to eq([row, row_two]) }
 
+                context 'with no results' do
+                  let(:enum) { [[0, []]] }
+                  it { is_expected.to eq([]) }
+                end
+
                 context 'with even more results' do
                   let(:value_two) { value }
 

@@ -25,10 +25,9 @@ module CassandraModel
 
     def filter_results(rows)
       prev_filter = []
-      row_iterator = rows.each
 
-      @filter_keys.length.times do |index|
-        row = row_iterator.next
+      rows.each.with_index do |row, index|
+        break if index >= @filter_keys.length
         next_filter = row_filter(row, index)
         break unless next_filter == prev_filter
         prev_filter = next_filter << row_filter_key(index, row)
