@@ -14,16 +14,7 @@ module CassandraModel
         if @filter_keys.one?
           yield rows.first
         elsif @filter_keys.any?
-          prev_filter = []
-          row_iterator = rows.each
-
-          @filter_keys.length.times do |index|
-            row = row_iterator.next
-            next_filter = row_filter(row, index)
-            break unless next_filter == prev_filter
-            prev_filter = next_filter << row_filter_key(index, row)
-            yield row
-          end
+          filter_results(rows, &block)
         else
           rows.each(&block)
         end
@@ -31,6 +22,19 @@ module CassandraModel
     end
 
     private
+
+    def filter_results(rows)
+      prev_filter = []
+      row_iterator = rows.each
+
+      @filter_keys.length.times do |index|
+        row = row_iterator.next
+        next_filter = row_filter(row, index)
+        break unless next_filter == prev_filter
+        prev_filter = next_filter << row_filter_key(index, row)
+        yield row
+      end
+    end
 
     def row_filter(row, filter_length)
       filter_length.times.map do |index|
