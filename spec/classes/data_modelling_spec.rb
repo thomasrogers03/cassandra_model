@@ -59,6 +59,40 @@ module CassandraModel
       data_model_class.generated_table_name = generated_table_name
     end
 
+    describe '#table_proprties=' do
+      let(:properties) { nil }
+      let(:table_attributes) do
+        {
+            name: generated_table_name,
+            partition_key: {rk_make: :text},
+            clustering_columns: {ck_model: :text},
+            remaining_columns: {},
+            properties: properties || {}
+        }
+      end
+      let(:table_definition) { TableDefinition.new(table_attributes) }
+
+      before do
+        data_model_class.table_properties = properties
+        data_model_class.model_data do |inquirer, data_set|
+          inquirer.knows_about(:make)
+          data_set.is_defined_by(:model)
+        end
+      end
+
+      it 'should create the meta table using the default properties' do
+        expect(data_model_class.table).to eq(MetaTable.new(connection_name, table_definition))
+      end
+
+      context 'with some properties' do
+        let(:properties) { {clustering_order: {value: :desc}, compaction: {class: 'LeveledCompactionStrategy'}} }
+
+        it 'should create the meta table using the default properties' do
+          expect(data_model_class.table).to eq(MetaTable.new(connection_name, table_definition))
+        end
+      end
+    end
+
     describe '#model_data' do
       let(:table_attributes) do
         {

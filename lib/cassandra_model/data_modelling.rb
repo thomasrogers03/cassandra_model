@@ -5,6 +5,10 @@ module CassandraModel
       base.send(:include, CompositeRecord)
     end
 
+    def table_properties=(value)
+      @table_properties = value
+    end
+
     def model_data
       inquirer = DataInquirer.new
       data_set = DataSet.new
@@ -44,7 +48,7 @@ module CassandraModel
     end
 
     def meta_table(table_name, inquirer, data_set)
-      table_definition = CassandraModel::TableDefinition.from_data_model(table_name, inquirer, data_set, {})
+      table_definition = CassandraModel::TableDefinition.from_data_model(table_name, inquirer, data_set, @table_properties)
       CassandraModel::MetaTable.new(table_config.connection_name, table_definition)
     end
 
