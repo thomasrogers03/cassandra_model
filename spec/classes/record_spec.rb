@@ -800,7 +800,8 @@ module CassandraModel
       let(:clustering_columns) { [] }
       let(:attributes) { {partition: 'Partition Key'} }
       let(:existence_check) { nil }
-      let(:query) { "INSERT INTO table (#{columns.join(', ')}) VALUES (#{(%w(?) * columns.size).join(', ')})#{existence_check}" }
+      let(:ttl_clause) { nil }
+      let(:query) { "INSERT INTO table (#{columns.join(', ')}) VALUES (#{(%w(?) * columns.size).join(', ')})#{existence_check}#{ttl_clause}" }
       let(:query_results) { [] }
       let(:page_results) { MockPage.new(true, nil, query_results) }
       let(:execution_info) { page_results.execution_info }
@@ -1014,10 +1015,20 @@ module CassandraModel
         expect(record.save_async.get).to eq(record)
       end
 
-      context 'when checking if the record already exists' do
+      describe 'setting a TTL (time-to-live) to a record' do
+        let(:ttl) { rand(1..999) }
+        let(:ttl_clause) { " USING TTL #{ttl}" }
+
+        it 'should save the record to the database using the specified TTL' do
+          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
+          klass.new(attributes).save_async(ttl: ttl)
+        end
+      end
+
+      describe 'checking if the record already exists' do
         let(:existence_check) { ' IF NOT EXISTS' }
 
-        it 'should save the record to the database' do
+        it 'should save the record to the database, checking if it had previously existed' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
           klass.new(attributes).save_async(check_exists: true)
         end

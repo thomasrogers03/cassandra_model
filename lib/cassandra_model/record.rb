@@ -413,10 +413,11 @@ module CassandraModel
 
       def query_for_save(options = {})
         existence_clause = options[:check_exists] && ' IF NOT EXISTS'
+        ttl_clause = options[:ttl] && " USING TTL #{options[:ttl]}"
         column_names = internal_columns.join(', ')
         column_sanitizers = (%w(?) * internal_columns.size).join(', ')
         save_query = "INSERT INTO #{table_name} (#{column_names}) VALUES (#{column_sanitizers})"
-        "#{save_query}#{existence_clause}"
+        "#{save_query}#{existence_clause}#{ttl_clause}"
       end
 
       def query_for_delete
