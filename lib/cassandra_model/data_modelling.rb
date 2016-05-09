@@ -44,7 +44,7 @@ module CassandraModel
     end
 
     def meta_table(table_name, inquirer, data_set)
-      table_definition = CassandraModel::TableDefinition.from_data_model(table_name, inquirer, data_set)
+      table_definition = CassandraModel::TableDefinition.from_data_model(table_name, inquirer, data_set, {})
       CassandraModel::MetaTable.new(table_config.connection_name, table_definition)
     end
 

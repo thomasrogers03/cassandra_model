@@ -4,7 +4,7 @@ module CassandraModel
 
     class << self
 
-      def from_data_model(table_name, inquirer, data_set)
+      def from_data_model(table_name, inquirer, data_set, properties)
         partition_key = inquirer_partition_key(inquirer)
         if inquirer.shard_column
           if inquirer.shard_column.is_a?(Hash)
@@ -18,7 +18,8 @@ module CassandraModel
         remaining_columns = table_set_remaining_columns(data_set)
         new(name: table_name, partition_key: partition_key,
             clustering_columns: clustering_columns,
-            remaining_columns: remaining_columns)
+            remaining_columns: remaining_columns,
+            properties: properties)
       end
 
       private

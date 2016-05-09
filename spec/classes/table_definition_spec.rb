@@ -45,11 +45,12 @@ module CassandraModel
             name: table_name,
             partition_key: rk_partition_key,
             clustering_columns: ck_clustering_columns,
-            remaining_columns: remaining_columns
+            remaining_columns: remaining_columns,
+            properties: properties
         }
       end
 
-      subject { TableDefinition.from_data_model(table_name, inquirer, data_set) }
+      subject { TableDefinition.from_data_model(table_name, inquirer, data_set, properties) }
 
       before do
         inquirer.knows_about(*partition_key.keys)
@@ -100,6 +101,14 @@ module CassandraModel
           it 'should override the type' do
             is_expected.to eq(TableDefinition.new(attributes))
           end
+        end
+      end
+
+      context 'with properties' do
+        let(:properties) { {clustering_order: {value: :desc}, compaction: {class: 'LeveledCompactionStrategy'}} }
+
+        it 'should override the type' do
+          is_expected.to eq(TableDefinition.new(attributes))
         end
       end
     end
