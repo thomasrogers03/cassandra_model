@@ -6,12 +6,14 @@ module CassandraModel
     let(:clustering_columns) { {series: :int} }
     let(:remaining_columns) { {body: :text} }
     let(:table_name) { :books }
+    let(:properties) { nil }
     let(:options) do
       {
           name: table_name,
           partition_key: partition_key,
           clustering_columns: clustering_columns,
-          remaining_columns: remaining_columns
+          remaining_columns: remaining_columns,
+          properties: properties
       }
     end
     let(:definition) { TableDefinition.new(options) }
@@ -163,6 +165,38 @@ module CassandraModel
         subject { TableDefinition.new(options).to_cql(check_exists: true) }
 
         it { is_expected.to eq("CREATE TABLE IF NOT EXISTS #{definition.name_in_cassandra} (title text, series int, body text, PRIMARY KEY ((title), series))") }
+      end
+
+      describe 'table properties' do
+        let(:partition_key) { {key: :text} }
+        let(:clustering_columns) { {value: :text} }
+        let(:remaining_columns) { {} }
+
+        describe 'compaction strategies' do
+          let(:properties) { {compaction: {class: 'DateTieredCompactionStrategy', base_time_seconds: '3600', max_sstable_age_days: '7'}} }
+          it { is_expected.to eq("CREATE TABLE #{definition.name_in_cassandra} (key text, value text, PRIMARY KEY ((key), value)) WITH COMPACTION = {'class': 'DateTieredCompactionStrategy', 'base_time_seconds': '3600', 'max_sstable_age_days': '7'}") }
+
+          context 'with a different compaction strategy configured' do
+            let(:properties) { {compaction: {class: 'LeveledCompactionStrategy'}} }
+            it { is_expected.to eq("CREATE TABLE #{definition.name_in_cassandra} (key text, value text, PRIMARY KEY ((key), value)) WITH COMPACTION = {'class': 'LeveledCompactionStrategy'}") }
+          end
+        end
+
+        describe 'clustering order' do
+          let(:properties) { {clustering_order: {value: :desc}} }
+          it { is_expected.to eq("CREATE TABLE #{definition.name_in_cassandra} (key text, value text, PRIMARY KEY ((key), value)) WITH CLUSTERING ORDER BY (value DESC)") }
+
+          context 'with a different clustering order' do
+            let(:clustering_columns) { {value: :text, other_value: :text} }
+            let(:properties) { {clustering_order: {value: :asc, other_value: :desc}} }
+            it { is_expected.to eq("CREATE TABLE #{definition.name_in_cassandra} (key text, value text, other_value text, PRIMARY KEY ((key), value, other_value)) WITH CLUSTERING ORDER BY (value ASC, other_value DESC)") }
+          end
+        end
+
+        context 'with multiple properties' do
+          let(:properties) { {clustering_order: {value: :desc}, compaction: {class: 'LeveledCompactionStrategy'}} }
+          it { is_expected.to eq("CREATE TABLE #{definition.name_in_cassandra} (key text, value text, PRIMARY KEY ((key), value)) WITH CLUSTERING ORDER BY (value DESC) AND COMPACTION = {'class': 'LeveledCompactionStrategy'}") }
+        end
       end
     end
 

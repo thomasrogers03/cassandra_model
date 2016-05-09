@@ -50,6 +50,7 @@ module CassandraModel
       @columns = options[:partition_key].merge(options[:clustering_columns].merge(options[:remaining_columns]))
       @table_id = generate_table_id
       @name_in_cassandra = "#{name}_#{table_id}"
+      @properties = options[:properties] || {}
     end
 
     def to_cql(options = {})
@@ -57,7 +58,18 @@ module CassandraModel
       exists = if options[:check_exists]
                  'IF NOT EXISTS '
                end
-      "CREATE TABLE #{exists}#{table_name} (#{columns}, PRIMARY KEY #{primary_key})"
+      properties = if @properties.present?
+                     property_values = @properties.map do |property, definition|
+                       case property
+                         when :compaction
+                           "COMPACTION = #{to_property_string(definition)}"
+                         when :clustering_order
+                           "CLUSTERING ORDER BY #{to_clustering_order_string(definition)}"
+                       end
+                     end * ' AND '
+                     " WITH #{property_values}"
+                   end
+      "CREATE TABLE #{exists}#{table_name} (#{columns}, PRIMARY KEY #{primary_key})#{properties}"
     end
 
     def ==(rhs)
@@ -65,6 +77,14 @@ module CassandraModel
     end
 
     private
+
+    def to_property_string(property)
+      "{#{property.map { |key, value| "'#{key}': '#{value}'" } * ', '}}"
+    end
+
+    def to_clustering_order_string(clustering_order)
+      "(#{clustering_order.map { |column, order| "#{column} #{order.upcase}" } * ', '})"
+    end
 
     def generate_table_id
       Digest::MD5.hexdigest(columns)
