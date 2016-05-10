@@ -148,5 +148,51 @@ module CassandraModel
       end
     end
 
+    describe '#sorts' do
+      let(:column) { Faker::Lorem.word.to_sym }
+      let(:column_order) { [:desc, :asc].sample }
+
+      context 'when the column is known' do
+        before { subject.knows_about(column) }
+
+        it 'should store the sorting order' do
+          subject.sorts(column => column_order)
+          expect(subject.clustering_order).to eq(column => column_order)
+        end
+
+        context 'with multiple columns' do
+          let(:column_two) { "#{Faker::Lorem.word}_#{Faker::Lorem.word}".to_sym }
+          let(:column_order_two) { [:desc, :asc].sample }
+
+          context 'when the second column is known' do
+            before { subject.knows_about(column_two) }
+
+            it 'should store the sorting order' do
+              subject.sorts(column => column_order, column_two => column_order_two)
+              expect(subject.clustering_order).to eq(column => column_order, column_two => column_order_two)
+            end
+
+            it 'supports consecutive calls' do
+              subject.sorts(column => column_order)
+              subject.sorts(column_two => column_order_two)
+              expect(subject.clustering_order).to eq(column => column_order, column_two => column_order_two)
+            end
+          end
+
+          context 'when the second column is NOT known' do
+            it 'should raise an error' do
+              expect { subject.sorts(column => column_order, column_two => column_order_two) }.to raise_error("Cannot sort unknown column #{column_two}")
+            end
+          end
+        end
+      end
+
+      context 'when the column is NOT known' do
+        it 'should raise an error' do
+          expect { subject.sorts(column => column_order) }.to raise_error("Cannot sort unknown column #{column}")
+        end
+      end
+    end
+
   end
 end

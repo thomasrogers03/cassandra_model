@@ -2,12 +2,13 @@ module CassandraModel
   class DataSet
     include TypeGuessing
 
-    attr_reader :columns, :data_rotation
+    attr_reader :columns, :data_rotation, :clustering_order
 
     def initialize
       @columns = Hash.new { |hash, key| hash[key] = :text }
       @data_rotation = {}
       @clustering_columns = []
+      @clustering_order = {}
     end
 
     def knows_about(*columns)
@@ -40,6 +41,12 @@ module CassandraModel
     def change_type_of(column)
       raise "Cannot retype unknown column #{column}" unless columns.include?(column)
       ColumnType.new(column, self)
+    end
+
+    def sorts(sorting)
+      unknown_column = sorting.keys.find { |column, _| !columns.include?(column) }
+      raise "Cannot sort unknown column #{unknown_column}" if unknown_column
+      clustering_order.merge!(sorting)
     end
 
     def clustering_columns
