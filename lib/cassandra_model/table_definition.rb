@@ -17,14 +17,7 @@ module CassandraModel
         clustering_columns = table_set_clustering_columns(data_set)
         remaining_columns = table_set_remaining_columns(data_set)
 
-        updated_properties = if data_set.clustering_order.present?
-                       updated_clustering_order = data_set.clustering_order.inject({}) do |memo, (column, order)|
-                         memo.merge!(:"ck_#{column}" => order)
-                       end
-                       properties.merge(clustering_order: updated_clustering_order)
-                     else
-                       properties
-                     end
+        updated_properties = table_properties_from_data_set(data_set, properties)
 
         new(name: table_name, partition_key: partition_key,
             clustering_columns: clustering_columns,
@@ -33,6 +26,17 @@ module CassandraModel
       end
 
       private
+
+      def table_properties_from_data_set(data_set, properties)
+        if data_set.clustering_order.present?
+          updated_clustering_order = data_set.clustering_order.inject({}) do |memo, (column, order)|
+            memo.merge!(:"ck_#{column}" => order)
+          end
+          properties.merge(clustering_order: updated_clustering_order)
+        else
+          properties
+        end
+      end
 
       def table_set_remaining_columns(data_set)
         data_set.columns.except(*data_set.clustering_columns)
