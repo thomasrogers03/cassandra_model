@@ -7,13 +7,14 @@ module CassandraModel
     let(:remaining_columns) { {body: :text} }
     let(:table_name) { :books }
     let(:properties) { nil }
+    let(:expected_properties) { properties }
     let(:options) do
       {
           name: table_name,
           partition_key: partition_key,
           clustering_columns: clustering_columns,
           remaining_columns: remaining_columns,
-          properties: properties
+          properties: expected_properties
       }
     end
     let(:definition) { TableDefinition.new(options) }
@@ -46,7 +47,7 @@ module CassandraModel
             partition_key: rk_partition_key,
             clustering_columns: ck_clustering_columns,
             remaining_columns: remaining_columns,
-            properties: properties
+            properties: expected_properties
         }
       end
 
@@ -105,10 +106,26 @@ module CassandraModel
       end
 
       context 'with properties' do
-        let(:properties) { {clustering_order: {value: :desc}, compaction: {class: 'LeveledCompactionStrategy'}} }
+        let(:properties) { {compaction: {class: 'LeveledCompactionStrategy'}} }
 
-        it 'should override the type' do
+        it 'should set the properties' do
           is_expected.to eq(TableDefinition.new(attributes))
+        end
+
+        context 'when a clustering order is provided by the model' do
+          let(:clustering_columns) { {model: :string, price: :double} }
+          let(:expected_properties) do
+            {
+                compaction: {class: 'LeveledCompactionStrategy'},
+                clustering_order: {ck_model: :desc, ck_price: :asc}
+            }
+          end
+
+          before { data_set.sorts(model: :desc, price: :asc) }
+
+          it 'should include clustering order within the properties' do
+            is_expected.to eq(TableDefinition.new(attributes))
+          end
         end
       end
     end
