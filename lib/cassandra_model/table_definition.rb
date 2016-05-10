@@ -51,7 +51,9 @@ module CassandraModel
       @columns = options[:partition_key].merge(options[:clustering_columns].merge(options[:remaining_columns]))
       @table_id = generate_table_id
       @name_in_cassandra = "#{name}_#{table_id}"
-      @properties = options[:properties] || {}
+      @properties = (options[:properties] || {}).select do |name, _|
+        [:compaction, :clustering_order].include?(name)
+      end
     end
 
     def to_cql(options = {})

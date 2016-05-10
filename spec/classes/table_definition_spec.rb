@@ -206,6 +206,11 @@ module CassandraModel
           let(:properties) { {clustering_order: {value: :desc}, compaction: {class: 'LeveledCompactionStrategy'}} }
           it { is_expected.to eq("CREATE TABLE #{definition.name_in_cassandra} (key text, value text, PRIMARY KEY ((key), value)) WITH CLUSTERING ORDER BY (value DESC) AND COMPACTION = {'class': 'LeveledCompactionStrategy'}") }
         end
+
+        context 'with an unknown property' do
+          let(:properties) { {prop: :value} }
+          it { is_expected.to eq("CREATE TABLE #{definition.name_in_cassandra} (key text, value text, PRIMARY KEY ((key), value))") }
+        end
       end
     end
 
