@@ -112,7 +112,7 @@ module CassandraModel
       end
     end
 
-    describe '#retype' do
+    describe '#change_type_of' do
       let(:column) { :series }
 
       context 'when the column is known' do
