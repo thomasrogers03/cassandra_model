@@ -197,7 +197,7 @@ module CassandraModel
       context 'when overridden' do
         let(:connection_name) { :counters }
 
-        before { klass.connection_name = :counters }
+        before { klass.connection_name = connection_name }
 
         it 'should use the specified connection' do
           expect(klass.table.connection).to eq(ConnectionCache[:counters])
@@ -209,6 +209,22 @@ module CassandraModel
       it 'should allow the user to overwrite the default table behaviour' do
         klass.table = TableRedux.new('week 1 table')
         expect(klass.table_name).to eq('week 1 table')
+      end
+    end
+
+    describe '.predecessor' do
+      it 'should be nil' do
+        expect(klass.predecessor).to be_nil
+      end
+
+      context 'when overridden' do
+        let(:predecessor) { image_data_klass }
+
+        before { klass.predecessor = predecessor }
+
+        it 'should use the specified connection' do
+          expect(klass.predecessor).to eq(image_data_klass)
+        end
       end
     end
 

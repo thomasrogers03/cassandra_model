@@ -33,6 +33,7 @@ module CassandraModel
     ConfigureableAttributes = Struct.new(
         :table_name,
         :connection_name,
+        :predecessor,
 
         :write_consistency,
         :serial_consistency,
@@ -364,7 +365,11 @@ module CassandraModel
       def_delegator :table, :primary_key, :internal_primary_key
       def_delegator :table, :name, :table_name
       def_delegator :table, :columns, :internal_columns
-      def_delegators :table_config, :write_consistency, :serial_consistency, :read_consistency, :write_consistency=, :serial_consistency=, :read_consistency=
+      def_delegators :table_config,
+                     :write_consistency, :write_consistency=,
+                     :serial_consistency, :serial_consistency=,
+                     :read_consistency, :read_consistency=,
+                     :predecessor, :predecessor=
 
       alias :partition_key :internal_partition_key
       alias :clustering_columns :internal_clustering_columns
