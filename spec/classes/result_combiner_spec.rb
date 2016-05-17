@@ -50,5 +50,34 @@ module CassandraModel
 
     end
 
+    describe '#==' do
+      let(:enum) { Faker::Lorem.words }
+      let(:enum_two) { Faker::Lorem.words }
+      let(:other_enum) { enum }
+      let(:other_enum_two) { enum_two }
+      let(:other_combiner) { ResultCombiner.new(other_enum, other_enum_two) }
+
+      subject { combiner == other_combiner }
+
+      context 'when the combiners have the same enums' do
+        it { is_expected.to eq(true) }
+
+        context 'when the first one is different' do
+          let(:other_enum) { Faker::Lorem.words }
+          it { is_expected.to eq(false) }
+        end
+
+        context 'when the second one is different' do
+          let(:other_enum_two) { Faker::Lorem.words }
+          it { is_expected.to eq(false) }
+        end
+      end
+
+      context 'when the second combiner is of the wrong type' do
+        let(:other_combiner) { ResultLimiter.new(enum, 5) }
+        it { is_expected.to eq(false) }
+      end
+    end
+
   end
 end
