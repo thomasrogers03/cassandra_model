@@ -19,12 +19,14 @@ module CassandraModel
     let(:create_result_future) { MockFuture.new(create_result) }
     let(:record_scopes) { {} }
     let(:record_primary_key) { [] }
+    let(:predecessor_record) { nil }
     let(:record) do
       double(:record_klass, request_async: result_paginator, request: results,
              first_async: single_result_future, first: results.first,
              create_async: create_result_future, create: create_result,
              scopes: record_scopes,
              primary_key: record_primary_key,
+             predecessor: predecessor_record,
              request_cql: nil)
     end
 
@@ -232,6 +234,34 @@ module CassandraModel
         it 'should return an enumerator' do
           expect(subject.each).to be_a_kind_of(Enumerator)
         end
+      end
+
+      context 'when the record class has a predecessor' do
+        let(:predecessor_record) { double(:record_klass) }
+        let(:params) { {} }
+        let(:options) { {} }
+        let(:extra_options) { {} }
+        let(:query_builder) { QueryBuilder.new(record, params, options, extra_options) }
+        let(:query_builder_two) { double(:query_builder) }
+        let(:query_builder_three) { QueryBuilder.new(record, params, options, extra_options.merge(skip_predecessor: true)) }
+        let(:combiner_enum) { double(:combiner_enum) }
+        let(:combiner) { double(:combiner) }
+        let(:block_result) { double(:proc) }
+        let(:block) { ->() { block_result } }
+
+        subject { QueryBuilder.new(record).each(&block) }
+
+        before do
+          allow(QueryBuilder).to receive(:new).and_call_original
+          allow(QueryBuilder).to receive(:new).with(predecessor_record, params, options, extra_options).and_return(query_builder_two)
+          allow(ResultCombiner).to receive(:new).with(query_builder_three, query_builder_two).and_return(combiner)
+          allow(combiner).to(receive(:each)) do |&block|
+            expect(block.call).to eq(block_result)
+            combiner_enum
+          end
+        end
+
+        it { is_expected.to eq(combiner_enum) }
       end
     end
 
