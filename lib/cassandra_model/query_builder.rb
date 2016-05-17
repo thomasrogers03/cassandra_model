@@ -31,11 +31,11 @@ module CassandraModel
 
     def first_async
       if @record_klass.predecessor
-        @record_klass.first_async(@params, @options).then do |result|
+        record_first_async.then do |result|
           result ? result : @record_klass.predecessor.first_async(@params, @options)
         end
       else
-        @record_klass.first_async(@params, @options)
+        record_first_async
       end
     end
 
@@ -148,6 +148,10 @@ module CassandraModel
     attr_reader :record_klass, :params, :options, :extra_options
 
     private
+
+    def record_first_async
+      @record_klass.first_async(@params, @options)
+    end
 
     def each_internal(&block)
       if @extra_options[:cluster]
