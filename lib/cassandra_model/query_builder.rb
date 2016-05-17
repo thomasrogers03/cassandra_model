@@ -84,17 +84,7 @@ module CassandraModel
             self.class.new(@record_klass.predecessor, @params, @options, @extra_options)
         ).each(&block)
       else
-        if @extra_options[:cluster]
-          enum = ResultChunker.new(async, @extra_options[:cluster])
-          enum = if @extra_options[:cluster_limit]
-                   ResultLimiter.new(enum, @extra_options[:cluster_limit])
-                 else
-                   enum
-                 end
-          block_given? ? enum.each(&block) : enum
-        else
-          async.each(&block)
-        end
+        each_internal(&block)
       end
     end
 
@@ -152,6 +142,20 @@ module CassandraModel
     attr_reader :record_klass, :params, :options, :extra_options
 
     private
+
+    def each_internal(&block)
+      if @extra_options[:cluster]
+        enum = ResultChunker.new(async, @extra_options[:cluster])
+        enum = if @extra_options[:cluster_limit]
+                 ResultLimiter.new(enum, @extra_options[:cluster_limit])
+               else
+                 enum
+               end
+        block_given? ? enum.each(&block) : enum
+      else
+        async.each(&block)
+      end
+    end
 
     def new_instance(params, options, extra_options)
       self.class.new(record_klass, params, options, extra_options)
