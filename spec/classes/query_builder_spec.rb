@@ -49,9 +49,28 @@ module CassandraModel
     end
 
     describe '#first_async' do
+      let(:results) { Faker::Lorem.words }
+      let(:params) { Faker::Lorem.words }
+      let(:options) { Faker::Lorem.words }
+
+      subject { QueryBuilder.new(record, params, options) }
+
       it 'should execute the built query asynchronously' do
-        expect(record).to receive(:first_async).with({}, {})
+        expect(record).to receive(:first_async).with(params, options)
         subject.first_async
+      end
+
+      context 'with a predecessor record class' do
+        let(:predecessor_record) { double(:record_klass) }
+
+        before do
+          allow(record).to receive(:first_async).with(params, options).and_return(Cassandra::Future.value(nil))
+          allow(predecessor_record).to receive(:first_async).with(params, options).and_return(single_result_future)
+        end
+
+        it 'should grab the first available record' do
+          expect(subject.first).to eq(results.first)
+        end
       end
     end
 

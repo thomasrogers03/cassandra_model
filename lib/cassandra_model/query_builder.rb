@@ -30,7 +30,13 @@ module CassandraModel
     end
 
     def first_async
-      @record_klass.first_async(@params, @options)
+      if @record_klass.predecessor
+        @record_klass.first_async(@params, @options).then do |result|
+          result ? result : @record_klass.predecessor.first_async(@params, @options)
+        end
+      else
+        @record_klass.first_async(@params, @options)
+      end
     end
 
     def first
