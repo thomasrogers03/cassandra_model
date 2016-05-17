@@ -34,7 +34,7 @@ module CassandraModel
     end
 
     def first
-      @record_klass.first(@params, @options)
+      first_async.get
     end
 
     def create_async(attributes = {}, create_options = {})

@@ -56,9 +56,10 @@ module CassandraModel
     end
 
     describe '#first' do
-      it 'should execute the built query' do
-        expect(record).to receive(:first).with({}, {})
-        subject.first
+      let(:results) { Faker::Lorem.words }
+
+      it 'should return the resolved result of #first_async' do
+        expect(subject.first).to eq(results.first)
       end
     end
 
@@ -369,7 +370,6 @@ module CassandraModel
       it_behaves_like 'a where query', :request_async, :async
       it_behaves_like 'a where query', :request, :get
       it_behaves_like 'a where query', :first_async, :first_async
-      it_behaves_like 'a where query', :first, :first
     end
 
     shared_examples_for 'an option query' do |method, option, request_method, query_method|
@@ -391,7 +391,6 @@ module CassandraModel
         it_behaves_like 'an option query', method, option, :request_async, :async
         it_behaves_like 'an option query', method, option, :request, :get
         it_behaves_like 'an option query', method, option, :first_async, :first_async
-        it_behaves_like 'an option query', method, option, :first, :first
 
         it "should be able to chain #{method}s asynchronously" do
           expect(record).to receive(:request_async).with({}, option => params)
