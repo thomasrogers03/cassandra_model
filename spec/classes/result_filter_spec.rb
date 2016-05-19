@@ -26,6 +26,13 @@ module CassandraModel
 
           it { is_expected.to eq(enum) }
 
+          context 'with items yield blocks with higher arity' do
+            let(:words) { Faker::Lorem.words }
+            let(:enum) { [words] }
+
+            it { is_expected.to eq([words.last]) }
+          end
+
           context 'with a filter' do
             let(:filter_list) { enum.sample(2) }
             let(:filter_block) { ->(value) { !filter_list.include?(value) } }

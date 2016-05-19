@@ -10,7 +10,7 @@ module CassandraModel
     def each(&block)
       return to_enum(:each) unless block_given?
 
-      enum.each do |value|
+      enum.each do |*_, value|
         block[value] if filter[value]
       end
     end
