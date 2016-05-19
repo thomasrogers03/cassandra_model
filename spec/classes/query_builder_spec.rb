@@ -302,6 +302,10 @@ module CassandraModel
         expect { subject.where(params).cluster(*cluster).each_slice(500) }.to raise_error(NotImplementedError)
       end
 
+      it 'makes #first_async raise a NotImplementedError' do
+        expect { subject.where(params).cluster(*cluster).first_async }.to raise_error(NotImplementedError)
+      end
+
       describe 'the results' do
         let(:enum_results) { [] }
         before { subject.where(params).cluster(*cluster).each { |cluster, rows| enum_results << [cluster, rows] } }
@@ -343,6 +347,10 @@ module CassandraModel
         expect { subject.where(params).filter(&filter_block).each_slice(753) }.to raise_error(NotImplementedError)
       end
 
+      it 'makes #first_async raise a NotImplementedError' do
+        expect { subject.where(params).filter(&filter_block).first_async }.to raise_error(NotImplementedError)
+      end
+
       describe 'the results' do
         let(:enum_results) { [] }
         before { subject.where(params).filter(&filter_block).each { |rows| enum_results << rows } }
@@ -382,6 +390,10 @@ module CassandraModel
 
       it 'makes #each_slice raise a NotImplementedError' do
         expect { subject.where(params).reduce_by_columns(*keys).each_slice(753) }.to raise_error(NotImplementedError)
+      end
+
+      it 'makes #first_async raise a NotImplementedError' do
+        expect { subject.where(params).reduce_by_columns(*keys).first_async }.to raise_error(NotImplementedError)
       end
 
       describe 'the results' do
