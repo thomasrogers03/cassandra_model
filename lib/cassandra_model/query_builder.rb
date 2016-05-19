@@ -79,7 +79,7 @@ module CassandraModel
     end
 
     def each_slice(slice_size = nil, &block)
-      raise NotImplementedError if @extra_options[:cluster]
+      raise NotImplementedError if @extra_options[:cluster] || @extra_options[:filter]
       paginate(slice_size).async.each_slice(&block)
     end
 
@@ -102,6 +102,10 @@ module CassandraModel
       cluster(*(@record_klass.primary_key - columns))
     end
 
+    def filter(&block)
+      new_instance(@params, @options, @extra_options.merge(filter: block))
+    end
+
     def where(params)
       new_instance(@params.merge(params.symbolize_keys), @options, @extra_options)
     end
@@ -115,7 +119,7 @@ module CassandraModel
     end
 
     def limit(limit)
-      if @extra_options[:cluster]
+      if @extra_options[:cluster] || @extra_options[:filter]
         new_instance(@params, @options, @extra_options.merge(cluster_limit: limit))
       else
         new_instance(@params, @options.merge(limit: limit), @extra_options)
@@ -156,6 +160,14 @@ module CassandraModel
     def each_internal(&block)
       if @extra_options[:cluster]
         enum = ResultChunker.new(async, @extra_options[:cluster])
+        enum = if @extra_options[:cluster_limit]
+                 ResultLimiter.new(enum, @extra_options[:cluster_limit])
+               else
+                 enum
+               end
+        block_given? ? enum.each(&block) : enum
+      elsif @extra_options[:filter]
+        enum = ResultFilter.new(async, &@extra_options[:filter])
         enum = if @extra_options[:cluster_limit]
                  ResultLimiter.new(enum, @extra_options[:cluster_limit])
                else

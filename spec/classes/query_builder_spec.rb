@@ -326,6 +326,47 @@ module CassandraModel
       end
     end
 
+    describe '#filter' do
+      let(:results_klass) { Struct.new(:attributes) }
+      let(:results) { [results_klass.new(Faker::Lorem.word => Faker::Lorem.sentence)] }
+      let(:filter_block) { ->(_) { true } }
+      let(:cluster_key) { Faker::Lorem.word.to_sym }
+      let(:cluster_key_two) { Faker::Lorem.word.to_sym }
+      let(:params) { {cluster_key => Faker::Lorem.sentence, cluster_key_two => Faker::Lorem.sentence} }
+
+      it 'changes the enumerator provided by #each to a ResultChunker' do
+        enum = subject.where(params).filter(&filter_block).each
+        expect(enum).to eq(ResultFilter.new(result_paginator, &filter_block))
+      end
+
+      it 'makes #each_slice raise a NotImplementedError' do
+        expect { subject.where(params).filter(&filter_block).each_slice(753) }.to raise_error(NotImplementedError)
+      end
+
+      describe 'the results' do
+        let(:enum_results) { [] }
+        before { subject.where(params).filter(&filter_block).each { |rows| enum_results << rows } }
+
+        it 'supports passing a block' do
+          expect(enum_results).to eq(ResultFilter.new(result_paginator, &filter_block).to_a)
+        end
+      end
+
+      context 'when a limit is provided after the filter' do
+        let(:limit) { rand(1..10) }
+
+        it 'changes the enumerator provided by #each to a ResultChunker wrapped in a ResultLimiter' do
+          enum = subject.where(params).filter(&filter_block).limit(limit).each
+          expect(enum).to eq(ResultLimiter.new(ResultFilter.new(result_paginator, &filter_block), limit))
+        end
+
+        it 'should not limit the query' do
+          expect(record).to receive(:request_async).with(params, {}).and_return(result_paginator)
+          subject.where(params).cluster(*cluster).limit(limit).each
+        end
+      end
+    end
+
     describe '#cluster_except' do
       let(:results) { [] }
       let(:record_primary_key) { Faker::Lorem.words.map(&:to_sym) }
