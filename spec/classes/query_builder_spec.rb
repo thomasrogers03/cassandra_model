@@ -362,7 +362,49 @@ module CassandraModel
 
         it 'should not limit the query' do
           expect(record).to receive(:request_async).with(params, {}).and_return(result_paginator)
-          subject.where(params).cluster(*cluster).limit(limit).each
+          subject.where(params).filter(&filter_block).limit(limit).each
+        end
+      end
+    end
+
+    describe '#reduce_by_columns' do
+      let(:results_klass) { Struct.new(:attributes) }
+      let(:results) { [results_klass.new(Faker::Lorem.word => Faker::Lorem.sentence)] }
+      let(:cluster_key) { Faker::Lorem.word.to_sym }
+      let(:cluster_key_two) { Faker::Lorem.word.to_sym }
+      let(:params) { {cluster_key => Faker::Lorem.sentence, cluster_key_two => Faker::Lorem.sentence} }
+      let(:keys) { [cluster_key, cluster_key_two] }
+
+      it 'changes the enumerator provided by #each to a ResultChunker' do
+        enum = subject.where(params).reduce_by_columns(*keys).each
+        expect(enum).to eq(ResultReducerByKeys.new(result_paginator, keys))
+      end
+
+      it 'makes #each_slice raise a NotImplementedError' do
+        expect { subject.where(params).reduce_by_columns(*keys).each_slice(753) }.to raise_error(NotImplementedError)
+      end
+
+      describe 'the results' do
+        let(:results_klass) { Struct.new(cluster_key, cluster_key_two) }
+        let(:enum_results) { [] }
+        before { subject.where(params).reduce_by_columns(*keys).each { |rows| enum_results << rows } }
+
+        it 'supports passing a block' do
+          expect(enum_results).to eq(ResultReducerByKeys.new(result_paginator, keys).to_a)
+        end
+      end
+
+      context 'when a limit is provided after the filter' do
+        let(:limit) { rand(1..10) }
+
+        it 'changes the enumerator provided by #each to a ResultChunker wrapped in a ResultLimiter' do
+          enum = subject.where(params).reduce_by_columns(*keys).limit(limit).each
+          expect(enum).to eq(ResultLimiter.new(ResultReducerByKeys.new(result_paginator, keys), limit))
+        end
+
+        it 'should not limit the query' do
+          expect(record).to receive(:request_async).with(params, {}).and_return(result_paginator)
+          subject.where(params).reduce_by_columns(*keys).limit(limit).each
         end
       end
     end
