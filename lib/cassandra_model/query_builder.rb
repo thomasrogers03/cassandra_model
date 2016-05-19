@@ -158,25 +158,11 @@ module CassandraModel
     end
 
     def each_internal(&block)
-      if @extra_options[:cluster]
-        enum = ResultChunker.new(async, @extra_options[:cluster])
-        enum = if @extra_options[:cluster_limit]
-                 ResultLimiter.new(enum, @extra_options[:cluster_limit])
-               else
-                 enum
-               end
-        block_given? ? enum.each(&block) : enum
-      elsif @extra_options[:filter]
-        enum = ResultFilter.new(async, &@extra_options[:filter])
-        enum = if @extra_options[:cluster_limit]
-                 ResultLimiter.new(enum, @extra_options[:cluster_limit])
-               else
-                 enum
-               end
-        block_given? ? enum.each(&block) : enum
-      else
-        async.each(&block)
-      end
+      enum = async
+      enum = ResultChunker.new(enum, @extra_options[:cluster]) if @extra_options[:cluster]
+      enum = ResultFilter.new(enum, &@extra_options[:filter]) if @extra_options[:filter]
+      enum = ResultLimiter.new(enum, @extra_options[:cluster_limit]) if @extra_options[:cluster_limit]
+      block_given? ? enum.each(&block) : enum
     end
 
     def new_instance(params, options, extra_options)

@@ -252,7 +252,7 @@ module CassandraModel
 
       context 'when no block provided' do
         it 'should return an enumerator' do
-          expect(subject.each).to be_a_kind_of(Enumerator)
+          expect(subject.each).to be_a_kind_of(Enumerable)
         end
       end
 
