@@ -10,10 +10,20 @@ module CassandraModel
     def each(&block)
       return to_enum(:each) unless block_given?
 
-      @enum.each do |value|
-        block[value] if @filter[value]
+      enum.each do |value|
+        block[value] if filter[value]
       end
     end
+
+    def ==(rhs)
+      rhs.is_a?(ResultFilter) &&
+          rhs.filter == filter &&
+          rhs.enum == enum
+    end
+
+    protected
+
+    attr_reader :enum, :filter
 
   end
 end

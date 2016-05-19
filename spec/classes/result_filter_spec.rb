@@ -49,6 +49,31 @@ module CassandraModel
 
     end
 
+    describe '#==' do
+      let(:enum) { Faker::Lorem.words }
+      let(:enum_two) { enum }
+      let(:filter_block_two) { filter_block }
+      let(:filter_two) { ResultFilter.new(enum_two, &filter_block_two) }
+
+      subject { filter == filter_two }
+
+      it { is_expected.to eq(true) }
+
+      context 'with a different enum' do
+        let(:enum_two) { Faker::Lorem.words }
+        it { is_expected.to eq(false) }
+      end
+
+      context 'with a different filter block' do
+        let(:filter_two) { ->(_) { false } }
+        it { is_expected.to eq(false) }
+      end
+
+      context 'when the rhs is not a filter' do
+        let(:filter_two) { Faker::Lorem.words }
+        it { is_expected.to eq(false) }
+      end
+    end
 
   end
 end
