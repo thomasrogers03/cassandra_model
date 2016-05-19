@@ -162,11 +162,18 @@ module CassandraModel
     end
 
     def each_internal(&block)
-      enum = async
-      enum = ResultChunker.new(enum, @extra_options[:cluster]) if @extra_options[:cluster]
-      enum = ResultFilter.new(enum, &@extra_options[:filter]) if @extra_options[:filter]
-      enum = ResultReducerByKeys.new(enum, @extra_options[:reducing_columns]) if @extra_options[:reducing_columns]
-      enum = ResultLimiter.new(enum, @extra_options[:cluster_limit]) if @extra_options[:cluster_limit]
+      enum = @extra_options.inject(async) do |memo, (type, value)|
+        case type
+          when :cluster
+            ResultChunker.new(memo, value)
+          when :filter
+            ResultFilter.new(memo, &value)
+          when :reducing_columns
+            ResultReducerByKeys.new(memo, value)
+          when :cluster_limit
+            ResultLimiter.new(memo, value)
+        end
+      end
       block_given? ? enum.each(&block) : enum
     end
 
