@@ -31,6 +31,12 @@ module CassandraModel
 
           it { is_expected.to eq([row]) }
 
+          context 'with no grouping provided' do
+            let(:enum) { [[[row]]] }
+
+            it { is_expected.to eq([row]) }
+          end
+
           context 'with a filter' do
             let(:filter_keys) { [:key] }
 

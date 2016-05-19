@@ -10,7 +10,7 @@ module CassandraModel
     def each(&block)
       return to_enum(:each) unless block_given?
 
-      @enum.each do |_, rows|
+      @enum.each do |*_, rows|
         if @filter_keys.one?
           yield rows.first
         elsif @filter_keys.any?
