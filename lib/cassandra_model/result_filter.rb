@@ -7,11 +7,11 @@ module CassandraModel
       @filter = filter
     end
 
-    def each(&block)
+    def each
       return to_enum(:each) unless block_given?
 
       enum.each do |*_, value|
-        block[value] if filter[value]
+        yield value if filter[value]
       end
     end
 
