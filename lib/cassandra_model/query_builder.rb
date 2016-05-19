@@ -79,7 +79,7 @@ module CassandraModel
     end
 
     def each_slice(slice_size = nil, &block)
-      raise NotImplementedError if @extra_options[:cluster] || @extra_options[:filter] || @extra_options[:reducing_columns]
+      raise NotImplementedError if has_result_modifier?
       paginate(slice_size).async.each_slice(&block)
     end
 
@@ -123,7 +123,7 @@ module CassandraModel
     end
 
     def limit(limit)
-      if @extra_options[:cluster] || @extra_options[:filter] || @extra_options[:reducing_columns]
+      if has_result_modifier?
         new_instance(@params, @options, @extra_options.merge(cluster_limit: limit))
       else
         new_instance(@params, @options.merge(limit: limit), @extra_options)
@@ -156,6 +156,10 @@ module CassandraModel
     attr_reader :record_klass, :params, :options, :extra_options
 
     private
+
+    def has_result_modifier?
+      @extra_options[:cluster] || @extra_options[:filter] || @extra_options[:reducing_columns]
+    end
 
     def record_first_async
       @record_klass.first_async(@params, @options)
