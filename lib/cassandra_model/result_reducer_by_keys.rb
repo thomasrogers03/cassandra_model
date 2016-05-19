@@ -10,20 +10,30 @@ module CassandraModel
     def each(&block)
       return to_enum(:each) unless block_given?
 
-      if @keys.any?
+      if keys.any?
         seen = Set.new
 
-        @enum.each do |row|
-          row_key = @keys.map { |column| row.public_send(column) }
+        enum.each do |row|
+          row_key = keys.map { |column| row.public_send(column) }
           unless seen.include?(row_key)
             yield row
             seen << row_key
           end
         end
       else
-        @enum.each(&block)
+        enum.each(&block)
       end
     end
+
+    def ==(rhs)
+      rhs.is_a?(ResultReducerByKeys) &&
+          rhs.enum == enum &&
+          rhs.keys == keys
+    end
+
+    protected
+
+    attr_reader :enum, :keys
 
   end
 end

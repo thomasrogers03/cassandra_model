@@ -52,7 +52,33 @@ module CassandraModel
 
           it { is_expected.to eq([record_klass.new('hello')]) }
         end
+      end
+    end
 
+    describe '#==' do
+      let(:keys) { Faker::Lorem.words }
+      let(:enum) { Faker::Lorem.words }
+      let(:keys_two) { keys }
+      let(:enum_two) { enum }
+      let(:reducer_two) { ResultReducerByKeys.new(enum_two, keys_two) }
+
+      subject { reducer == reducer_two }
+
+      it { is_expected.to eq(true) }
+
+      describe 'when keys are not equal' do
+        let(:keys_two) { Faker::Lorem.words }
+        it { is_expected.to eq(false) }
+      end
+
+      describe 'when enums are not equal' do
+        let(:enum_two) { Faker::Lorem.words }
+        it { is_expected.to eq(false) }
+      end
+
+      describe 'when the rhs is not a reducer' do
+        let(:reducer_two) { Faker::Lorem.words }
+        it { is_expected.to eq(false) }
       end
     end
 
