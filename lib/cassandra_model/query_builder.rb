@@ -10,6 +10,7 @@ module CassandraModel
       @params = params
       @options = options
       @extra_options = extra_options
+      @extra_options[:result_modifiers] ||= []
     end
 
     def async
@@ -97,7 +98,7 @@ module CassandraModel
     end
 
     def cluster(*columns)
-      new_instance(@params, @options, @extra_options.merge(cluster: columns))
+      new_instance(@params, @options, extra_options_with_additional_modifier(ResultChunker, columns))
     end
 
     def cluster_except(*columns)
@@ -105,11 +106,11 @@ module CassandraModel
     end
 
     def filter(&block)
-      new_instance(@params, @options, @extra_options.merge(filter: block))
+      new_instance(@params, @options, extra_options_with_additional_modifier(ResultFilter, block))
     end
 
     def reduce_by_columns(*columns)
-      new_instance(@params, @options, @extra_options.merge(reducing_columns: columns))
+      new_instance(@params, @options, extra_options_with_additional_modifier(ResultReducerByKeys, columns))
     end
 
     def where(params)
@@ -126,7 +127,7 @@ module CassandraModel
 
     def limit(limit)
       if has_result_modifier?
-        new_instance(@params, @options, @extra_options.merge(cluster_limit: limit))
+        new_instance(@params, @options, extra_options_with_additional_modifier(ResultLimiter, limit))
       else
         new_instance(@params, @options.merge(limit: limit), @extra_options)
       end
@@ -160,7 +161,12 @@ module CassandraModel
     private
 
     def has_result_modifier?
-      @extra_options[:cluster] || @extra_options[:filter] || @extra_options[:reducing_columns]
+      @extra_options[:result_modifiers].any?
+    end
+
+    def extra_options_with_additional_modifier(modifier, value)
+      modifiers = @extra_options[:result_modifiers] + [[modifier, value]]
+      @extra_options.merge(result_modifiers: modifiers)
     end
 
     def record_first_async
@@ -168,17 +174,8 @@ module CassandraModel
     end
 
     def each_internal(&block)
-      enum = @extra_options.inject(async) do |memo, (type, value)|
-        case type
-          when :cluster
-            ResultChunker.new(memo, value)
-          when :filter
-            ResultFilter.new(memo, value)
-          when :reducing_columns
-            ResultReducerByKeys.new(memo, value)
-          when :cluster_limit
-            ResultLimiter.new(memo, value)
-        end
+      enum = @extra_options[:result_modifiers].inject(async) do |memo, (modifier, value)|
+        modifier.new(memo, value)
       end
       block_given? ? enum.each(&block) : enum
     end

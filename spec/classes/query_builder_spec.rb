@@ -260,10 +260,12 @@ module CassandraModel
         let(:predecessor_record) { double(:record_klass) }
         let(:params) { {} }
         let(:options) { {} }
-        let(:extra_options) { {} }
+        let(:extra_options) { {result_modifiers: []} }
         let(:query_builder) { QueryBuilder.new(record, params, options, extra_options) }
         let(:query_builder_two) { double(:query_builder) }
-        let(:query_builder_three) { QueryBuilder.new(record, params, options, extra_options.merge(skip_predecessor: true)) }
+        let(:query_builder_three) do
+          QueryBuilder.new(record, params, options, extra_options.merge(skip_predecessor: true, result_modifiers: []))
+        end
         let(:combiner_enum) { double(:combiner_enum) }
         let(:combiner) { double(:combiner) }
         let(:block_result) { double(:proc) }
