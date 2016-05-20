@@ -2,7 +2,7 @@ module CassandraModel
   class ResultFilter
     include Enumerable
 
-    def initialize(enum, &filter)
+    def initialize(enum, filter)
       @enum = enum
       @filter = filter
     end

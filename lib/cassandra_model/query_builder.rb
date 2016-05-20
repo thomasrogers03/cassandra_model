@@ -173,7 +173,7 @@ module CassandraModel
           when :cluster
             ResultChunker.new(memo, value)
           when :filter
-            ResultFilter.new(memo, &value)
+            ResultFilter.new(memo, value)
           when :reducing_columns
             ResultReducerByKeys.new(memo, value)
           when :cluster_limit

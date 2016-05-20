@@ -5,7 +5,7 @@ module CassandraModel
 
     let(:enum) { [] }
     let(:filter_block) { ->(_) { true } }
-    let(:filter) { ResultFilter.new(enum, &filter_block) }
+    let(:filter) { ResultFilter.new(enum, filter_block) }
 
     subject { filter }
 
@@ -60,7 +60,7 @@ module CassandraModel
       let(:enum) { Faker::Lorem.words }
       let(:enum_two) { enum }
       let(:filter_block_two) { filter_block }
-      let(:filter_two) { ResultFilter.new(enum_two, &filter_block_two) }
+      let(:filter_two) { ResultFilter.new(enum_two, filter_block_two) }
 
       subject { filter == filter_two }
 

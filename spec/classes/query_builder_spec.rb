@@ -340,7 +340,7 @@ module CassandraModel
 
       it 'changes the enumerator provided by #each to a ResultChunker' do
         enum = subject.where(params).filter(&filter_block).each
-        expect(enum).to eq(ResultFilter.new(result_paginator, &filter_block))
+        expect(enum).to eq(ResultFilter.new(result_paginator, filter_block))
       end
 
       it 'makes #each_slice raise a NotImplementedError' do
@@ -356,7 +356,7 @@ module CassandraModel
         before { subject.where(params).filter(&filter_block).each { |rows| enum_results << rows } }
 
         it 'supports passing a block' do
-          expect(enum_results).to eq(ResultFilter.new(result_paginator, &filter_block).to_a)
+          expect(enum_results).to eq(ResultFilter.new(result_paginator, filter_block).to_a)
         end
       end
 
@@ -365,7 +365,7 @@ module CassandraModel
 
         it 'changes the enumerator provided by #each to a ResultChunker wrapped in a ResultLimiter' do
           enum = subject.where(params).filter(&filter_block).limit(limit).each
-          expect(enum).to eq(ResultLimiter.new(ResultFilter.new(result_paginator, &filter_block), limit))
+          expect(enum).to eq(ResultLimiter.new(ResultFilter.new(result_paginator, filter_block), limit))
         end
 
         it 'should not limit the query' do
