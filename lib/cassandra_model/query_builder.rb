@@ -83,7 +83,14 @@ module CassandraModel
 
     def each_slice(slice_size = nil, &block)
       raise NotImplementedError if has_result_modifier?
-      paginate(slice_size).async.each_slice(&block)
+      if @record_klass.predecessor && !@extra_options[:skip_predecessor]
+        ResultCombiner.new(
+            new_instance(@params, @options, @extra_options.merge(skip_predecessor: true)).each_slice(slice_size),
+            self.class.new(@record_klass.predecessor, @params, @options, @extra_options).each_slice(slice_size)
+        ).each(&block)
+      else
+        paginate(slice_size).async.each_slice(&block)
+      end
     end
 
     def each(&block)

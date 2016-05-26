@@ -461,6 +461,51 @@ module CassandraModel
           subject.each_slice(3500) {}
         end
       end
+
+      context 'when the record class has a predecessor' do
+        let(:predecessor_record) { double(:record_klass) }
+        let(:params) { {} }
+        let(:options) { {} }
+        let(:extra_options) { {result_modifiers: []} }
+        let(:query_builder) { QueryBuilder.new(record, params, options, extra_options) }
+        let(:query_slice_two) { double(:query_slice) }
+        let(:query_builder_two) do
+          double(:query_builder).tap { |query| allow(query).to receive(:each_slice).with(slice_size).and_return(query_slice_two) }
+        end
+        let(:query_slice_three) { double(:query_slice) }
+        let(:query_builder_three) do
+          double(:query_builder).tap { |query| allow(query).to receive(:each_slice).with(slice_size).and_return(query_slice_three) }
+        end
+        let(:combiner_enum) { double(:combiner_enum) }
+        let(:combiner) { double(:combiner) }
+        let(:block_result) { double(:proc) }
+        let(:block) { ->() { block_result } }
+        let(:slice_size) { rand(2..500) }
+
+        subject { QueryBuilder.new(record).each_slice(slice_size, &block) }
+
+        before do
+          allow(QueryBuilder).to receive(:new).and_call_original
+          allow(QueryBuilder).to receive(:new).with(predecessor_record, params, options, extra_options).and_return(query_builder_two)
+          allow(QueryBuilder).to receive(:new).with(record, params, options, extra_options.merge(skip_predecessor: true)).and_return(query_builder_three)
+          allow(ResultCombiner).to receive(:new).with(query_slice_three, query_slice_two).and_return(combiner)
+          allow(combiner).to(receive(:each)) do |&block|
+            expect(block.call).to eq(block_result)
+            combiner_enum
+          end
+        end
+
+        it { is_expected.to eq(combiner_enum) }
+
+        context 'when skip predecessor is specified' do
+          subject { QueryBuilder.new(record, {}, {}, skip_predecessor: true) }
+
+          it 'behaves as usual' do
+            expect(record).to receive(:request_async).with({}, page_size: slice_size)
+            subject.each_slice(slice_size) {}
+          end
+        end
+      end
     end
 
     describe '#where' do
