@@ -27,14 +27,14 @@ module CassandraModel
       future = if batch_reactor
                  execute_async_in_batch(statement, column_values)
                else
-                 session.execute_async(statement, *column_values, write_query_options)
+                 cassandra_future = session.execute_async(statement, *column_values, write_query_options)
+                 Observable.create_observation(cassandra_future)
                end
       future.on_success { execute_callback(:record_saved) }
-      future = future.on_failure do |error|
+      future.on_failure do |error|
         Logging.logger.error("Error incrementing #{self.class}: #{error}")
         execute_callback(:save_record_failed, error, statement, column_values)
       end.then { self }
-      Observable.create_observation(future)
     end
 
     private

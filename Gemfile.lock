@@ -1,9 +1,9 @@
 GIT
   remote: git://github.com/thomasrogers03/batch_reactor.git
-  revision: e3cd2ebd332d94bdfb010568b4a6dc503b92a7a8
+  revision: 8f3b6939b9d40b25f5524bbb55a4ab2d0e546d8a
   specs:
-    batch_reactor (0.0.2)
-      ione (~> 1.2)
+    batch_reactor (0.1.0)
+      thomas_utils (~> 0.2.4)
 
 GIT
   remote: git://github.com/thomasrogers03/cassandra_mocks.git
@@ -26,7 +26,7 @@ PATH
   specs:
     cassandra_model (1.1.0)
       activesupport (~> 4.0)
-      batch_reactor (~> 0.0.1)
+      batch_reactor (~> 0.1.0)
       cassandra-driver (>= 1.1, <= 2.0.1)
       concurrent-ruby (~> 1.0.0)
       thomas_utils (>= 0.2.4, <= 0.3)

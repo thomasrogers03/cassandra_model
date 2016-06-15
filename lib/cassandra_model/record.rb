@@ -173,9 +173,10 @@ module CassandraModel
       future = if batch_reactor
                  execute_async_in_batch(statement, column_values)
                else
-                 session.execute_async(statement, *column_values, write_query_options)
+                 cassandra_future = session.execute_async(statement, *column_values, write_query_options)
+                 Observable.create_observation(cassandra_future)
                end
-      Observable.create_observation(future.then { self })
+      future.then { self }
     end
 
     def internal_save_async(options = {})
@@ -216,13 +217,13 @@ module CassandraModel
       future = if batch_reactor
                  execute_async_in_batch(statement, new_attributes.values + column_values)
                else
-                 session.execute_async(statement, *new_attributes.values, *column_values, write_query_options)
+                 cassandra_future = session.execute_async(statement, *new_attributes.values, *column_values, write_query_options)
+                 Observable.create_observation(cassandra_future)
                end
-      future = future.then do
+      future.then do
         self.attributes.merge!(new_attributes)
         self
       end
-      Observable.create_observation(future)
     end
 
     def write_query_options(options = {})
@@ -260,12 +261,12 @@ module CassandraModel
       future = if batch_reactor
                  execute_async_in_batch(statement, save_column_values)
                else
-                 session.execute_async(statement, *save_column_values, write_query_options(options))
+                 cassandra_future = session.execute_async(statement, *save_column_values, write_query_options(options))
+                 Observable.create_observation(cassandra_future)
                end
       future.on_failure do |error|
         handle_save_error(error, save_column_values, statement)
       end
-      Observable.create_observation(future)
     end
 
     def validate_primary_key!(statement, save_column_values)

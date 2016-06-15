@@ -61,7 +61,7 @@ module CassandraModel
       mock_reactor(cluster, batch_klass, {})
       allow(global_reactor).to receive(:perform_within_batch).with(bound_statement) do |&block|
         result = block.call(batch)
-        Cassandra::Future.value(result)
+        ThomasUtils::Future.value(result)
       end
       subject.save_in_batch batch_type
     end

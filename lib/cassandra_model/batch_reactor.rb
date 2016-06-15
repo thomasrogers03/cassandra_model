@@ -10,11 +10,6 @@ module CassandraModel
       super(cluster.hosts.count, options, &method(:batch_callback))
     end
 
-    def perform_within_batch(statement)
-      ione_future = super(statement)
-      Future.new(ione_future)
-    end
-
     private
 
     def partition(statement)

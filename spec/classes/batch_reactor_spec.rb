@@ -62,7 +62,7 @@ module CassandraModel
           futures = statements.map do |statement|
             subject.perform_within_batch(statement) { |batch| batch << statement }
           end
-          Ione::Future.all(futures).get
+          ThomasUtils::Future.all(futures).get
         end
       end
 
@@ -70,8 +70,8 @@ module CassandraModel
         expect(host_buffers).to match_array([[0], [1], [2]])
       end
 
-      it 'should return a Ione::Future -> Cassandra::Future wrapper' do
-        expect(subject.perform_within_batch(0) {}).to be_a_kind_of(BatchReactor::Future)
+      it 'should return a ThomasUtils::Observation' do
+        expect(subject.perform_within_batch(0) {}).to be_a_kind_of(ThomasUtils::Observation)
       end
 
       describe 'batch execution' do

@@ -12,7 +12,7 @@ data modelling for Cassandra tables easy, fast, and stable}
   s.homepage = 'https://www.github.com/thomasrogers03/cassandra_model'
   s.add_runtime_dependency 'cassandra-driver', '>= 1.1', '<= 2.0.1'
   s.add_runtime_dependency 'activesupport', '~> 4.0'
-  s.add_runtime_dependency 'batch_reactor', '~> 0.0.1'
+  s.add_runtime_dependency 'batch_reactor', '~> 0.1.0'
   s.add_runtime_dependency 'thomas_utils', '>= 0.2.4', '<= 0.3'
   s.add_runtime_dependency 'concurrent-ruby', '~> 1.0.0'
 end
