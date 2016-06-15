@@ -481,6 +481,7 @@ module CassandraModel
         query_options[:trace] = trace if trace
 
         future = session.execute_async(statement, *where_values, query_options)
+        future = Observable.create_observation(future)
         if options[:limit] == 1
           single_result_row_future(future, invalidated_result)
         else
