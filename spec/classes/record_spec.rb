@@ -33,13 +33,13 @@ module CassandraModel
 
     context 'when mixing in query methods' do
       let(:base_results) { MockPage.new(true, nil, ['OK']) }
-      let(:base_future) { MockFuture.new(base_results) }
+      let(:base_future) { Cassandra::Future.value(base_results) }
 
       subject { klass }
 
       before do
         klass.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
-        klass.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) { MockFuture.new(nil) }
+        klass.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) { Cassandra::Future.value(nil) }
         allow(connection).to receive(:execute_async).and_return(base_future)
       end
 
@@ -281,7 +281,7 @@ module CassandraModel
     describe '.create_async' do
       let(:attributes) { {partition: 'Partition Key'} }
       let(:record) { klass.new(attributes) }
-      let(:future_record) { MockFuture.new(record) }
+      let(:future_record) { Cassandra::Future.value(record) }
       let(:options) { {} }
 
       before do
@@ -382,8 +382,8 @@ module CassandraModel
       let(:order_clause) { nil }
       let(:query) { "SELECT #{select_clause} FROM #{table_name}#{where_clause}#{order_clause}#{limit_clause}" }
       let(:page_results) { ['partition' => 'Partition Key'] }
-      let(:result_page) { MockPage.new(true, MockFuture.new([]), page_results) }
-      let(:results) { MockFuture.new(result_page) }
+      let(:result_page) { MockPage.new(true, Cassandra::Future.value([]), page_results) }
+      let(:results) { Cassandra::Future.value(result_page) }
       let(:execution_info) { result_page.execution_info }
       let(:record) { klass.new(partition: 'Partition Key') }
       let(:remaining_columns) { [:time_stamp] }
@@ -460,7 +460,7 @@ module CassandraModel
       context 'when restricting by multiple values' do
         let(:clause) { {partition: ['Partition Key', 'Other Partition Key']} }
         let(:where_clause) { ' WHERE partition IN (?, ?)' }
-        let(:results) { MockFuture.new([{'partition' => 'Partition Key'}, {'partition' => 'Other Partition Key'}]) }
+        let(:results) { Cassandra::Future.value([{'partition' => 'Partition Key'}, {'partition' => 'Other Partition Key'}]) }
 
         it 'should query using an IN' do
           expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Other Partition Key', {}).and_return(results)
@@ -553,7 +553,7 @@ module CassandraModel
       context 'with multiple results' do
         let(:options) { {limit: 2} }
         let(:where_clause) { ' LIMIT 2' }
-        let(:results) { MockFuture.new([{'partition' => 'Partition Key 1'}, {'partition' => 'Partition Key 2'}]) }
+        let(:results) { Cassandra::Future.value([{'partition' => 'Partition Key 1'}, {'partition' => 'Partition Key 2'}]) }
 
         it 'should support limits' do
           expect(connection).to receive(:execute_async).with(statement, {}).and_return(results)
@@ -609,7 +609,7 @@ module CassandraModel
         let(:options) { {page_size: 2} }
         let(:first_page_results) { [{'partition' => 'Partition Key 1'}, {'partition' => 'Partition Key 2'}] }
         let(:first_page) { MockPage.new(true, nil, first_page_results) }
-        let(:first_page_future) { MockFuture.new(first_page) }
+        let(:first_page_future) { Cassandra::Future.value(first_page) }
 
         it 'should return an enumerable capable of producing all the records' do
           allow(connection).to receive(:execute_async).with(statement, page_size: 2).and_return(first_page_future)
@@ -646,8 +646,8 @@ module CassandraModel
 
       let(:query) { 'SELECT partition FROM records WHERE partition = ? LIMIT 1' }
       let(:page_results) { ['partition' => 'Partition Key'] }
-      let(:result_page) { MockPage.new(true, MockFuture.new([]), page_results) }
-      let(:results) { MockFuture.new(result_page) }
+      let(:result_page) { MockPage.new(true, Cassandra::Future.value([]), page_results) }
+      let(:results) { Cassandra::Future.value(result_page) }
 
       before do
         klass.table_name = table_name
@@ -679,7 +679,7 @@ module CassandraModel
     shared_examples_for 'a method creating a record' do |method|
       let(:attributes) { {partition: 'Partition Key'} }
       let(:record) { klass.new(attributes) }
-      let(:future_record) { MockFuture.new(record) }
+      let(:future_record) { Cassandra::Future.value(record) }
       let(:options) { {} }
 
       before do
@@ -706,7 +706,7 @@ module CassandraModel
       let(:clause) { {} }
       let(:options) { {limit: 1} }
       let(:record) { klass.new(partition: 'Partition Key') }
-      let(:future_record) { MockFuture.new([record]) }
+      let(:future_record) { Cassandra::Future.value([record]) }
 
       it 'should resolve the future provided by request_async' do
         allow(klass).to receive(:request_async).with(clause, options).and_return(future_record)
@@ -718,7 +718,7 @@ module CassandraModel
       let(:clause) { {} }
       let(:options) { {select: :partition} }
       let(:record) { double(:record) }
-      let(:future_record) { MockFuture.new(record) }
+      let(:future_record) { Cassandra::Future.value(record) }
 
       it 'should resolve the future provided by first_async' do
         allow(klass).to receive(:first_async).with(clause, options).and_return(future_record)
@@ -823,7 +823,9 @@ module CassandraModel
       let(:execution_info) { page_results.execution_info }
       let(:future_result) { page_results }
       let(:future_error) { nil }
-      let(:results) { MockFuture.new(error: future_error, result: page_results) }
+      let(:results) do
+        future_error ? Cassandra::Future.error(future_error) : Cassandra::Future.value(page_results)
+      end
 
       before do
         klass.table_name = table_name
@@ -870,7 +872,7 @@ module CassandraModel
           expect(ThomasUtils::Future).to receive(:new) do |&block|
             expect(klass).to receive(:save_deferred_columns).with(record).and_return([])
             expect(klass).to receive(:save_async_deferred_columns).with(record).and_return([])
-            ThomasUtils::Future.immediate(&block).then { MockFuture.new(record) }
+            ThomasUtils::Future.immediate(&block).then { Cassandra::Future.value(record) }
           end
           record.save_async
         end
@@ -989,7 +991,7 @@ module CassandraModel
       end
 
       context 'when an error occurs' do
-        let(:future_error) { 'IOError: Connection Closed' }
+        let(:future_error) { StandardError.new('IOError: Connection Closed') }
         let(:record_instance) { klass.new(attributes) }
         let(:column_values) { record_instance.attributes.values }
 
@@ -1004,7 +1006,7 @@ module CassandraModel
         end
 
         context 'with a different error' do
-          let(:future_error) { 'Error, received only 2 responses' }
+          let(:future_error) { StandardError.new('Error, received only 2 responses') }
 
           it 'should log the error' do
             expect(Logging.logger).to receive(:error).with('Error saving CassandraModel::Record: Error, received only 2 responses')
@@ -1092,7 +1094,7 @@ module CassandraModel
     shared_examples_for 'a method saving a record' do |method|
       let(:attributes) { {partition: 'Partition Key'} }
       let(:record) { klass.new(attributes) }
-      let(:record_future) { MockFuture.new(record) }
+      let(:record_future) { Cassandra::Future.value(record) }
       let(:options) { {} }
 
       before { allow(record).to receive(:save_async).with(options).and_return(record_future) }
@@ -1133,7 +1135,7 @@ module CassandraModel
       let(:table_name) { :table }
       let(:where_clause) { (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ') }
       let(:query) { "DELETE FROM #{table_name} WHERE #{where_clause}" }
-      let(:results) { MockFuture.new([]) }
+      let(:results) { Cassandra::Future.value([]) }
 
       before do
         klass.table_name = table_name
@@ -1216,7 +1218,7 @@ module CassandraModel
     describe '#delete' do
       let(:attributes) { {partition: 'Partition Key'} }
       let(:record) { klass.new(attributes) }
-      let(:record_future) { MockFuture.new(record) }
+      let(:record_future) { Cassandra::Future.value(record) }
 
       it 'should delete the record' do
         expect(record).to receive(:delete_async).and_return(record_future)
@@ -1239,7 +1241,7 @@ module CassandraModel
       let(:where_clause) { (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ') }
       let(:new_attributes) { {meta_data: 'Some Data'} }
       let(:query) { "UPDATE #{table_name} SET meta_data = ? WHERE #{where_clause}" }
-      let(:results) { MockFuture.new([]) }
+      let(:results) { Cassandra::Future.value([]) }
 
       before do
         klass.table_name = table_name
@@ -1349,7 +1351,7 @@ module CassandraModel
       let(:attributes) { {partition: 'Partition Key'} }
       let(:new_attributes) { {meta_data: 'meta-data', misc_data: 'Some additional information'} }
       let(:record) { klass.new(attributes) }
-      let(:record_future) { MockFuture.new(record) }
+      let(:record_future) { Cassandra::Future.value(record) }
 
       it 'should update the record' do
         expect(record).to receive(:update_async).with(new_attributes).and_return(record_future)
