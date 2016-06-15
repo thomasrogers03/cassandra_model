@@ -17,7 +17,7 @@ module CassandraModel
     before do
       allow(Concurrent::Future).to receive(:execute) do |&block|
         result = block.call
-        double(:future, value: result)
+        double(:future, value: result, add_observer: nil)
       end
       mock_simple_table(table_name, partition_key, clustering_columns, columns)
       mock_simple_table(:image_data, partition_key, clustering_columns, columns)
