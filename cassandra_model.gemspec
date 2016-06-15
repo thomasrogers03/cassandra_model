@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'cassandra_model'
-  s.version = '1.0.21'
+  s.version = '1.0.22'
   s.license = 'Apache License 2.0'
   s.summary = 'Cassandra data modelling framework for Ruby'
   s.description = %q{Cassandra data modelling framework for Ruby that makes
@@ -13,6 +13,6 @@ data modelling for Cassandra tables easy, fast, and stable}
   s.add_runtime_dependency 'cassandra-driver', '>= 1.1', '<= 2.0.1'
   s.add_runtime_dependency 'activesupport', '~> 4.0'
   s.add_runtime_dependency 'batch_reactor', '~> 0.0.1'
-  s.add_runtime_dependency 'thomas_utils', '>= 0.1.19', '<= 0.3'
+  s.add_runtime_dependency 'thomas_utils', '>= 0.2.4', '<= 0.3'
   s.add_runtime_dependency 'concurrent-ruby', '~> 1.0.0'
 end
