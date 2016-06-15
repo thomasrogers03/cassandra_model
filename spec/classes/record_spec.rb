@@ -860,11 +860,7 @@ module CassandraModel
 
         before do
           allow(ThomasUtils::Future).to(receive(:new)) do |&block|
-            begin
-              block.call
-            rescue Exception
-              nil
-            end
+            ThomasUtils::Future.immediate(&block)
           end
           klass.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: save_block
           klass.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: save_block
@@ -874,8 +870,8 @@ module CassandraModel
           expect(ThomasUtils::Future).to receive(:new) do |&block|
             expect(klass).to receive(:save_deferred_columns).with(record).and_return([])
             expect(klass).to receive(:save_async_deferred_columns).with(record).and_return([])
-            block.call
-          end.and_return(MockFuture.new(record))
+            ThomasUtils::Future.immediate(&block).then { MockFuture.new(record) }
+          end
           record.save_async
         end
 

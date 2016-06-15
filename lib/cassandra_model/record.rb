@@ -183,15 +183,9 @@ module CassandraModel
 
       self.class.before_save_callbacks.map { |proc| instance_eval(&proc) }
       if !options[:skip_deferred_columns] && (self.class.deferred_column_writers || self.class.async_deferred_column_writers)
-        promise = Cassandra::Future.promise
         ThomasUtils::Future.new do
-          begin
-            promise.fulfill(save_deferred_columns)
-          rescue Exception => e
-            promise.break(e)
-          end
-        end
-        promise.future.then { save_row_async(options) }.then do |result|
+          save_deferred_columns
+        end.then { save_row_async(options) }.then do |result|
           @execution_info = result.execution_info
           execute_callback(:record_saved)
           self
