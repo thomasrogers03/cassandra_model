@@ -11,6 +11,13 @@ module CassandraModel
 
     subject { observable }
 
+    describe '.create_observation' do
+      subject { Observable.create_observation(future) }
+
+      it { is_expected.to be_a_kind_of(ThomasUtils::Observation) }
+      its(:get) { is_expected.to eq(value) }
+    end
+
     describe '#value' do
       its(:value) { is_expected.to eq(value) }
 

@@ -15,6 +15,11 @@ module CassandraModel
       end
     end
 
+    def self.create_observation(cassandra_future)
+      observable = new(cassandra_future)
+      ThomasUtils::Observation.new(ThomasUtils::Future::IMMEDIATE_EXECUTOR, observable)
+    end
+
     def initialize(cassandra_future)
       @future = cassandra_future
     end
