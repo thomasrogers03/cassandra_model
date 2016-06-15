@@ -832,6 +832,10 @@ module CassandraModel
         allow(connection).to receive(:execute_async).and_return(results)
       end
 
+      it 'should return a ThomasUtils::Observation' do
+        expect(klass.new(attributes).save_async).to be_a_kind_of(ThomasUtils::Observation)
+      end
+
       it 'should save the record to the database' do
         expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
         klass.new(attributes).save_async
@@ -866,6 +870,10 @@ module CassandraModel
           end
           klass.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: save_block
           klass.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: save_block
+        end
+
+        it 'should return a ThomasUtils::Observation' do
+          expect(klass.new(attributes).save_async).to be_a_kind_of(ThomasUtils::Observation)
         end
 
         it 'should wrap everything in a future' do

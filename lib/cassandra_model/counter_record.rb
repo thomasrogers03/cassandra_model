@@ -30,10 +30,11 @@ module CassandraModel
                  session.execute_async(statement, *column_values, write_query_options)
                end
       future.on_success { execute_callback(:record_saved) }
-      future.on_failure do |error|
+      future = future.on_failure do |error|
         Logging.logger.error("Error incrementing #{self.class}: #{error}")
         execute_callback(:save_record_failed, error, statement, column_values)
       end.then { self }
+      Observable.create_observation(future)
     end
 
     private

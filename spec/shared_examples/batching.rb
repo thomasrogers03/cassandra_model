@@ -66,6 +66,11 @@ module CassandraModel
       subject.save_in_batch batch_type
     end
 
+    it 'should return a ThomasUtils::Observation' do
+      allow(batch).to receive(:add).and_return(batch)
+      expect(subject.new(attributes).public_send(method, *args)).to be_a_kind_of(ThomasUtils::Observation)
+    end
+
     it 'should add the record to the batch' do
       expect(batch).to receive(:add).with(bound_statement).and_return(batch)
       subject.new(attributes).public_send(method, *args).get

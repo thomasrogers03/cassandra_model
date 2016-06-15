@@ -63,6 +63,10 @@ module CassandraModel
         allow(connection).to receive(:execute_async).and_return(results)
       end
 
+      it 'should return a ThomasUtils::Observation' do
+        expect(CounterRecord.new(attributes).increment_async!(counter: 1)).to be_a_kind_of(ThomasUtils::Observation)
+      end
+
       it 'should increment the specified counter by the specified amount' do
         expect(connection).to receive(:execute_async).with(statement, 1, 'Partition Key', {})
         CounterRecord.new(attributes).increment_async!(counter: 1)
