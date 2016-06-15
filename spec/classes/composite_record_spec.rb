@@ -23,7 +23,6 @@ module CassandraModel
     let(:remaining_columns) { [:meta_data] }
     let(:query) { '' }
     let!(:statement) { mock_prepare(query) }
-    let(:result_future) { MockFuture.new([]) }
     let(:defaults) { [{model: ''}, {model: '', series: ''}] }
 
     subject { record_klass.new(model: 'AABBCCDD', series: '91A', meta_data: {}) }
@@ -38,7 +37,7 @@ module CassandraModel
     shared_examples_for 'an instance query method' do |method, params|
 
       describe 'resulting future' do
-        let(:future) { MockFuture.new(nil) }
+        let(:future) { ThomasUtils::Future.value(nil) }
 
         before do
           args = params.empty? ? [no_args] : params

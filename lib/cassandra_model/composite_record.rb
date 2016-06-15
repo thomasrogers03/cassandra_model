@@ -4,7 +4,7 @@ module CassandraModel
       futures = composite_rows.map { |record| record.internal_increment_async!(counts) }
 
       futures << internal_increment_async!(counts)
-      Cassandra::Future.all(futures).then { self }
+      ThomasUtils::Future.all(futures).then { self }
     end
   end
 
@@ -18,21 +18,21 @@ module CassandraModel
       futures = composite_rows.map { |record| record.internal_save_async(options) }
 
       futures << internal_save_async(options)
-      Cassandra::Future.all(futures).then { self }
+      ThomasUtils::Future.all(futures).then { self }
     end
 
     def delete_async
       futures = composite_rows.map { |record| record.internal_delete_async }
 
       futures << internal_delete_async
-      Cassandra::Future.all(futures).then { self }
+      ThomasUtils::Future.all(futures).then { self }
     end
 
     def update_async(new_attributes)
       futures = composite_rows.map { |record| record.internal_update_async(new_attributes) }
 
       futures << internal_update_async(new_attributes)
-      Cassandra::Future.all(futures).then { self }
+      ThomasUtils::Future.all(futures).then { self }
     end
 
     private
