@@ -1,5 +1,6 @@
 module CassandraModel
   class BatchReactor < ::BatchReactor::ReactorCluster
+    include ThomasUtils::PerformanceMonitorMixin
 
     def initialize(cluster, session, batch_klass, options)
       @cluster = cluster
@@ -20,7 +21,8 @@ module CassandraModel
     def batch_callback(_)
       batch = @batch_klass.new
       yield batch
-      @session.execute_async(batch).then { |result| batch.result = result }
+      future = @session.execute_async(batch).then { |result| batch.result = result }
+      monitor_performance(__method__, batch.statements.count, Observable.create_observation(future))
     end
 
   end

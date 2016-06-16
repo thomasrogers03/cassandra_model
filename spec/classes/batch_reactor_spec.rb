@@ -6,6 +6,10 @@ module CassandraModel
 
     class MockBatch < Array
       attr_accessor :result
+
+      def statements
+        self
+      end
     end
 
     let(:hosts) { [:host1, :host2, :host3] }
