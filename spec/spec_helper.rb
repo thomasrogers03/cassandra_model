@@ -30,6 +30,7 @@ Dir['./spec/support/**.rb'].each { |file| require file }
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
 RSpec.configure do |config|
+  config.include PerformanceHelper
   config.include ConnectionHelper
   config.include BatchHelper
 

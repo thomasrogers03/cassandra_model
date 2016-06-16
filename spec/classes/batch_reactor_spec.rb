@@ -60,8 +60,12 @@ module CassandraModel
 
     describe '#perform_within_batch' do
       let(:statements) { [0, 1, 2] }
+      let(:time_one) { Time.now }
+      let(:time_two) { time_one + 5.minutes }
 
       before do
+        allow_any_instance_of(ThomasUtils::Observation).to receive(:initialized_at).and_return(time_one)
+        allow_any_instance_of(ThomasUtils::Observation).to receive(:resolved_at).and_return(time_two)
         unless statements.empty?
           futures = statements.map do |statement|
             subject.perform_within_batch(statement) { |batch| batch << statement }
@@ -84,6 +88,26 @@ module CassandraModel
 
         it 'should execute the batch on the provided session' do
           expect(execution_result).to eq([[0]])
+        end
+
+        describe 'performance tracking' do
+          let(:statements) { (0..rand(1..10)).to_a }
+          let(:log_item) do
+            {
+                sender: subject,
+                method: :batch_callback,
+                name: :batching,
+                size: statements.count,
+                started_at: time_one,
+                completed_at: time_two,
+                duration: time_two - time_one,
+                error: nil
+            }
+          end
+
+          it 'should keep track of the performance' do
+            expect(performance_logger.log).to include(log_item)
+          end
         end
 
         describe 'batch results' do
