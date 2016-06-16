@@ -32,7 +32,6 @@ require 'cassandra_model/single_token_unlogged_batch'
 require 'cassandra_model/single_token_logged_batch'
 require 'cassandra_model/single_token_counter_batch'
 require 'cassandra_model/batch_reactor'
-require 'cassandra_model/batch_reactor/future'
 require 'cassandra_model/observable'
 require 'cassandra_model/raw_connection'
 require 'cassandra_model/mock_connection' if Cassandra.const_defined?('Mocks')
