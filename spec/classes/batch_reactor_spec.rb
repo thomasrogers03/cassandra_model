@@ -61,11 +61,14 @@ module CassandraModel
     describe '#perform_within_batch' do
       let(:statements) { [0, 1, 2] }
       let(:time_one) { Time.now }
-      let(:time_two) { time_one + 5.minutes }
+      let(:duration) { rand * 60 }
+      let(:time_two) { time_one + duration }
 
       before do
-        allow_any_instance_of(ThomasUtils::Observation).to receive(:initialized_at).and_return(time_one)
-        allow_any_instance_of(ThomasUtils::Observation).to receive(:resolved_at).and_return(time_two)
+        allow_any_instance_of(ThomasUtils::Observation).to receive(:on_timed) do |observation, &block|
+          block[time_one, time_two, duration, nil, nil]
+          observation
+        end
         unless statements.empty?
           futures = statements.map do |statement|
             subject.perform_within_batch(statement) { |batch| batch << statement }

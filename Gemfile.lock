@@ -29,7 +29,7 @@ PATH
       batch_reactor (~> 0.1.0)
       cassandra-driver (>= 1.1, <= 2.0.1)
       concurrent-ruby (~> 1.0.0)
-      thomas_utils (>= 0.2.4, <= 0.3)
+      thomas_utils (>= 0.2.5, <= 0.3)
 
 GEM
   remote: https://rubygems.org/
