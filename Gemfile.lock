@@ -7,11 +7,12 @@ GIT
 
 GIT
   remote: git://github.com/thomasrogers03/cassandra_mocks.git
-  revision: 1c762d6812ff69aeb5cb44da66a6c689b549d141
+  revision: 8bba03a1055d70e71c65d46bfb26c1aeb56bdfe4
   specs:
-    cassandra_mocks (1.0.1)
+    cassandra_mocks (1.0.9)
       activesupport (~> 4.0)
       cassandra-driver (>= 1.1, <= 2.0.1)
+      concurrent-ruby (~> 1.0.0)
 
 GIT
   remote: git://github.com/thomasrogers03/thomas_utils.git
