@@ -1,4 +1,4 @@
-require 'rspec'
+require 'raw_connection_spec_helper'
 
 module CassandraModel
   describe RawConnection do
