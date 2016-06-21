@@ -38,41 +38,21 @@ module ConnectionHelper
     end
   end
 
-  let(:keyspace) { double(:keyspace, table: nil) }
+  let(:connection_name) { nil }
+  let(:keyspace_name) { 'default_keyspace' }
   let(:query_results) { [] }
   let(:paginated_result) { MockPage.new(true, nil, query_results) }
   let(:paginated_result_future) { MockFuture.new(paginated_result) }
-  let(:connection) do
-    double(:connection, execute_async: paginated_result_future, execute: paginated_result).tap do |connection|
-      allow(connection).to receive(:prepare) do |query|
-        DummyStatement.new(query)
-      end
-    end
-  end
-  let(:cluster) { double(:cassandra_cluster, connect: connection, keyspace: keyspace, close: nil) }
+  let(:global_cluster) { CassandraModel::ConnectionCache[connection_name].cluster }
+  let(:global_keyspace) { CassandraModel::ConnectionCache[connection_name].keyspace }
+  let(:global_session) { CassandraModel::ConnectionCache[connection_name].session }
 
   before do
     CassandraModel::ConnectionCache.reset!
-    allow(Cassandra).to receive(:cluster).with(hash_including(hosts: %w(localhost))).and_return(cluster)
-  end
-
-  def mock_cluster(hosts)
-    cluster = double(:cluster)
-    allow(Cassandra).to receive(:cluster).with(hash_including(hosts: hosts)).and_return(cluster)
-    cluster
-  end
-
-  def mock_connection(hosts, keyspace)
-    cluster = mock_cluster(hosts)
-    connection = double(:connection)
-    allow(cluster).to receive(:connect).with(keyspace.to_s).and_return(connection)
-    connection
   end
 
   def mock_prepare(query)
-    statement = MockStatement.new(query)
-    allow(connection).to receive(:prepare).with(query).and_return(statement)
-    statement
+    CassandraModel::ConnectionCache[connection_name].statement(query) if query
   end
 
   def mock_query_pages(results)
@@ -92,21 +72,21 @@ module ConnectionHelper
   end
 
   def mock_table(name, partition_key, clustering_columns, remaining_columns)
-    mock_table_for_keyspace(keyspace, name, partition_key, clustering_columns, remaining_columns)
+    mock_table_for_keyspace(keyspace_name, name, partition_key, clustering_columns, remaining_columns)
   end
 
   def mock_table_for_keyspace(keyspace, name, partition_key, clustering_columns, remaining_columns)
-    table_pk = partition_key.map { |name, type| MockColumn.new(name.to_s, type) }
-    table_ck = clustering_columns.map { |name, type| MockColumn.new(name.to_s, type) }
-    table_columns = (partition_key.merge(clustering_columns.merge(remaining_columns))).map do |name, type|
-      MockColumn.new(name.to_s, type)
-    end
-    table = double(:table, partition_key: table_pk, clustering_columns: table_ck, columns: table_columns)
-    allow(keyspace).to receive(:table).with(name.to_s).and_return(table)
+    raise 'Invalid keyspace' unless keyspace.is_a?(String)
+    CassandraModel::ConnectionCache[connection_name].keyspace.add_table(
+        name.to_s,
+        [partition_key.keys.map(&:to_s), *clustering_columns.keys.map(&:to_s)],
+        partition_key.merge(clustering_columns).merge(remaining_columns).stringify_keys,
+        true
+    )
   end
 
   def mock_simple_table(name, partition_columns, clustering_columns, column_names)
-    mock_simple_table_for_keyspace(keyspace, name, partition_columns, clustering_columns, column_names)
+    mock_simple_table_for_keyspace(keyspace_name, name, partition_columns, clustering_columns, column_names)
   end
 
   def mock_simple_table_for_keyspace(keyspace, name, partition_columns, clustering_columns, column_names)

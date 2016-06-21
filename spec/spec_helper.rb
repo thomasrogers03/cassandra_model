@@ -7,8 +7,8 @@ if ENV['COVERAGE'].to_i > 0
 end
 
 require 'bundler'
-Bundler.require(:default, :development, :test)
 require 'cassandra_mocks'
+Bundler.require(:default, :development, :test)
 Dir['./spec/helpers/**.rb'].each { |file| require file }
 Dir['./spec/shared_examples/**.rb'].each { |file| require file }
 Dir['./spec/support/**.rb'].each { |file| require file }
@@ -57,7 +57,11 @@ RSpec.configure do |config|
     mocks.verify_partial_doubles = true
   end
 
-  config.order = :random
+  config.before :each do
+    CassandraModel::ConnectionCache.reset!
+  end
+
+  #config.order = :random
 
 # The settings below are suggested to provide a good initial experience
 # with RSpec, but feel free to customize to your heart's content.

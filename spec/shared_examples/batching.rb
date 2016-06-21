@@ -49,7 +49,7 @@ module CassandraModel
     end
   end
 
-  shared_examples_for 'a query running in a batch' do |method, args, statement_args|
+  shared_examples_for 'a query running in a batch' do |method, args|
     let(:batch_type) { :logged }
     let(:batch_klass) { SingleTokenLoggedBatch }
     let(:query_result) { MockPage.new(true, nil, []) }
@@ -58,7 +58,7 @@ module CassandraModel
 
     before do
       allow(statement).to receive(:bind).with(*statement_args).and_return(bound_statement)
-      mock_reactor(cluster, batch_klass, {})
+      mock_reactor(global_cluster, global_session, batch_klass, {})
       allow(global_reactor).to receive(:perform_within_batch).with(bound_statement) do |&block|
         result = block.call(batch)
         ThomasUtils::Future.value(result)

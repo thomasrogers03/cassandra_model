@@ -2,13 +2,40 @@ require 'spec_helper'
 
 module CassandraModel
   describe Record do
+    def generate_columns(prefix)
+      Faker::Lorem.words.map { |word| :"#{prefix}_#{word}" }
+    end
+
+    def generate_partition_key
+      generate_columns(:part)
+    end
+
+    def generate_clustering_columns
+      generate_columns(:cluster)
+    end
+
+    def generate_fields
+      generate_columns(:field)
+    end
+
+    def generate_attributes
+      columns.inject({}) { |memo, column| memo.merge!(column => Faker::Lorem.sentence) }
+    end
+
+    def generate_options
+      Faker::Lorem.words.inject({}) { |memo, key| memo.merge!(key.to_sym => Faker::Lorem.sentence) }
+    end
+
     let(:table_name) { :records }
-    let(:query) { nil }
+
     let(:partition_key) { [:partition] }
     let(:clustering_columns) { [:cluster] }
-    let(:primary_key) { partition_key + clustering_columns }
+    let(:attributes) { generate_attributes }
     let(:remaining_columns) { [] }
-    let(:columns) { primary_key + remaining_columns }
+    let(:primary_key) { partition_key + clustering_columns }
+    let(:columns) { (primary_key + remaining_columns).map(&:to_sym) }
+
+    let(:query) { nil }
     let(:base_record_klass) { NamedClass.create('CassandraModel::Record', Record) {} }
     let(:image_data_klass) { NamedClass.create('CassandraModel::ImageData', base_record_klass) {} }
     let(:klass) { base_record_klass }
@@ -40,7 +67,7 @@ module CassandraModel
       before do
         klass.deferred_column :fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) {}
         klass.async_deferred_column :async_fake_column, on_load: ->(attributes) {}, on_save: ->(attributes, value) { Cassandra::Future.value(nil) }
-        allow(connection).to receive(:execute_async).and_return(base_future)
+        allow(global_session).to receive(:execute_async).and_return(base_future)
       end
 
       it_behaves_like 'a query helper'
@@ -373,24 +400,23 @@ module CassandraModel
       it { is_expected.to eq(column_type_map) }
     end
 
+    shared_examples_for 'recording execution info' do
+      let(:execution_info) { Faker::Lorem.words }
+
+      before { allow_any_instance_of(Cassandra::Mocks::ResultPage).to receive(:execution_info).and_return(execution_info) }
+
+      it 'should assign the execution_info for this record' do
+        expect(subject.execution_info).to eq(execution_info)
+      end
+    end
+
     describe '.request_async' do
       let(:clause) { {} }
-      let(:where_clause) { nil }
-      let(:limit_clause) { nil }
-      let(:table_name) { :table }
-      let(:select_clause) { '*' }
-      let(:order_clause) { nil }
-      let(:query) { "SELECT #{select_clause} FROM #{table_name}#{where_clause}#{order_clause}#{limit_clause}" }
-      let(:page_results) { ['partition' => 'Partition Key'] }
-      let(:result_page) { MockPage.new(true, Cassandra::Future.value([]), page_results) }
-      let(:results) { Cassandra::Future.value(result_page) }
-      let(:execution_info) { result_page.execution_info }
-      let(:record) { klass.new(partition: 'Partition Key') }
-      let(:remaining_columns) { [:time_stamp] }
+      let(:record) { klass.new(attributes) }
 
       before do
         klass.table_name = table_name
-        allow(connection).to receive(:execute_async).with(statement, *clause.values, {}).and_return(results)
+        klass.create(attributes)
       end
 
       it 'should create a Record instance for each returned result' do
@@ -404,78 +430,94 @@ module CassandraModel
           expect(klass.request_async(clause, limit: 1)).to be_a_kind_of(ThomasUtils::Observation)
         end
 
-        it 'should save the execution info from the query result when querying for one record' do
-          expect(klass.request_async(clause, limit: 1).get.execution_info).to eq(execution_info)
+        describe 'tracking query execution info' do
+          subject { klass.request_async(clause, limit: 1).get }
+
+          it_behaves_like 'recording execution info'
         end
       end
 
-      it 'should save the execution info from the query result when querying for multiple record' do
-        expect(klass.request_async(clause).get.first.execution_info).to eq(execution_info)
+      describe 'tracking query execution info' do
+        subject { klass.request_async(clause).get.first }
+
+        it_behaves_like 'recording execution info'
       end
 
       context 'when the restriction key is a KeyComparer' do
-        let(:clause) { {:partition.gt => 'Partition Key'} }
-        let(:where_clause) { ' WHERE partition > ?' }
+        let(:partition_key) { [:part] }
+        let(:clustering_columns) { [:cluster] }
+        let(:remaining_columns) { [] }
 
-        it 'should query using the specified comparer' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
-          klass.request_async(clause)
+        let(:attributes) { {part: 'A', cluster: 'A'} }
+        let(:attributes_two) { {part: 'A', cluster: 'B'} }
+        let(:attributes_three) { {part: 'A', cluster: 'C'} }
+
+        let(:expected_records) { [attributes_two, attributes_three].map { |attributes| klass.new(attributes) } }
+
+        let(:clause) { {part: 'A', :cluster.gt => 'A'} }
+
+        before { expected_records.map(&:save) }
+
+        it 'should return everything matching that restriction' do
+          expect(klass.request_async(clause).get).to eq(expected_records)
         end
 
         context 'when the KeyComparer maps to an array' do
-          let(:clustering_columns) { [:price, :model] }
-          let(:clause) { {[:price, :model].gt => [999.98, 'ATF50']} }
-          let(:where_clause) { ' WHERE (price,model) > (?, ?)' }
+          let(:clustering_columns) { [:cluster, :cluster_two] }
+          let(:clause) { {part: 'A', [:cluster, :cluster_two].gt => ['A', 'A']} }
 
-          it 'should query using all params' do
-            expect(connection).to receive(:execute_async).with(statement, 999.98, 'ATF50', {}).and_return(results)
-            klass.request_async(clause)
+          let(:attributes) { {part: 'A', cluster: 'A', cluster_two: 'A'} }
+          let(:attributes_two) { {part: 'A', cluster: 'A', cluster_two: 'B'} }
+          let(:attributes_three) { {part: 'A', cluster: 'B', cluster_two: 'C'} }
+
+          it 'should restrict all columns' do
+            expect(klass.request_async(clause).get).to eq(expected_records)
           end
         end
       end
 
       context 'with a read consistency configured' do
-        let(:consistency) { :quorum }
+        let(:consistency) { [:one, :all, :quorum].sample }
 
         before { klass.read_consistency = consistency }
 
         it 'should query using the specified consistency' do
-          expect(connection).to receive(:execute_async).with(statement, consistency: consistency).and_return(results)
-          klass.request_async(clause)
-        end
-
-        context 'with a different consistency' do
-          let(:consistency) { :all }
-
-          it 'should query using the specified consistency' do
-            expect(connection).to receive(:execute_async).with(statement, consistency: consistency).and_return(results)
-            klass.request_async(clause)
-          end
+          record = klass.request_async(clause).get.first
+          expect(record.execution_info).to include(consistency: consistency)
         end
       end
 
       context 'when tracing is specified' do
         it 'should forward tracing to the underlying query execution' do
-          expect(connection).to receive(:execute_async).with(statement, trace: true).and_return(results)
-          klass.request_async(clause, trace: true)
+          record = klass.request_async(clause, trace: true).get.first
+          expect(record.execution_info).to include(trace: true)
         end
       end
 
       context 'when restricting by multiple values' do
-        let(:clause) { {partition: ['Partition Key', 'Other Partition Key']} }
-        let(:where_clause) { ' WHERE partition IN (?, ?)' }
-        let(:results) { Cassandra::Future.value([{'partition' => 'Partition Key'}, {'partition' => 'Other Partition Key'}]) }
+        let(:partition_key) { [:part] }
+        let(:clustering_columns) { [] }
+        let(:remaining_columns) { [] }
+
+        let(:attributes) { {part: 'A'} }
+        let(:attributes_two) { {part: 'B'} }
+        let(:attributes_three) { {part: 'C'} }
+
+        let(:expected_records) { [attributes_two, attributes_three].map { |attributes| klass.new(attributes) } }
+
+        let(:clause) { {part: %w(C B)} }
+
+        before { expected_records.map(&:save) }
 
         it 'should query using an IN' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Other Partition Key', {}).and_return(results)
-          klass.request_async(clause)
+          expect(klass.request_async(clause).get).to eq(expected_records)
         end
       end
 
       context 'when selecting a subset of columns' do
-        let(:options) { {select: :partition} }
-        let(:select_clause) { :partition }
-        let(:record) { klass.new(partition: 'Partition Key') }
+        let(:selected_column) { columns.sample }
+        let(:options) { {select: selected_column} }
+        let(:record) { klass.new(attributes.slice(selected_column)) }
 
         it 'should return a new instance of the klass with only that attribute assigned' do
           expect(klass.request_async({}, options).get.first).to eq(record)
@@ -486,10 +528,9 @@ module CassandraModel
         end
 
         context 'with multiple columns selected' do
-          let(:options) { {select: [:partition, :cluster]} }
-          let(:select_clause) { %w(partition cluster).join(', ') }
-          let(:page_results) { [{'partition' => 'Partition Key', cluster: 'Cluster Key'}] }
-          let(:record) { klass.new(partition: 'Partition Key', cluster: 'Cluster Key') }
+          let(:selected_columns) { columns.sample(3) }
+          let(:options) { {select: selected_columns} }
+          let(:record) { klass.new(attributes.slice(*selected_columns)) }
 
           it 'should select all the specified columns' do
             expect(klass.request_async({}, options).get.first).to eq(record)
@@ -498,50 +539,47 @@ module CassandraModel
       end
 
       context 'when ordering by a subset of columns' do
-        let(:options) { {order_by: :cluster} }
-        let(:order_clause) { ' ORDER BY cluster' }
-        let(:page_results) do
-          [
-              {'partition' => 'Partition Key', cluster: 'Cluster Key', other_cluster: 'Other Cluster Key'},
-              {'partition' => 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key'},
-              {'partition' => 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key 2'}
-          ]
-        end
-        let(:record_one) { klass.new(partition: 'Partition Key', cluster: 'Cluster Key', other_cluster: 'Other Cluster Key') }
-        let(:record_two) { klass.new(partition: 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key') }
-        let(:record_three) { klass.new(partition: 'Partition Key', cluster: 'Cluster Key 2', other_cluster: 'Other Cluster Key 2') }
+        let(:partition_key) { [:part] }
         let(:clustering_columns) { [:cluster, :other_cluster] }
         let(:remaining_columns) { [] }
 
+        let(:attributes) { {part: 'A', cluster: 'A', other_cluster: '1'} }
+        let(:attributes_two) { {part: 'A', cluster: 'A', other_cluster: '2'} }
+        let(:attributes_three) { {part: 'A', cluster: 'B', other_cluster: '3'} }
+
+        let(:expected_records) do
+          [attributes, attributes_two, attributes_three].map { |attributes| klass.new(attributes) }
+        end
+
+        let(:options) { {order_by: :cluster} }
+
+        before { expected_records.map(&:save) }
+
         it 'should order the results by the specified column' do
-          expect(klass.request_async({}, options).get).to eq([record_one, record_two, record_three])
+          expect(klass.request_async({}, options).get).to eq(expected_records)
         end
 
         context 'with a direction specified' do
-          let(:direction) { :desc }
-          let(:options) { {order_by: [{cluster: direction}]} }
-          let(:order_clause) { ' ORDER BY cluster DESC' }
+          let(:options) { {order_by: [{cluster: :desc}]} }
 
           it 'should order the results  the specified direction' do
-            expect(klass.request_async({}, options).get).to eq([record_one, record_two, record_three])
+            expect(klass.request_async({}, options).get).to eq([expected_records[2], expected_records[0], expected_records[1]])
           end
 
           context 'with a different direction' do
-            let(:direction) { :asc }
-            let(:order_clause) { ' ORDER BY cluster ASC' }
+            let(:options) { {order_by: [{cluster: :asc}]} }
 
             it 'should order the results  the specified direction' do
-              expect(klass.request_async({}, options).get).to eq([record_one, record_two, record_three])
+              expect(klass.request_async({}, options).get).to eq(expected_records)
             end
           end
         end
 
-        context 'with multiple columns selected' do
-          let(:options) { {order_by: [:cluster, :other_cluster]} }
-          let(:order_clause) { ' ORDER BY cluster, other_cluster' }
+        context 'with multiple ordering columns' do
+          let(:options) { {order_by: [{cluster: :desc}, {other_cluster: :desc}]} }
 
           it 'should order by all the specified columns' do
-            expect(klass.request_async({}, options).get).to eq([record_one, record_two, record_three])
+            expect(klass.request_async({}, options).get).to eq(expected_records.reverse)
           end
         end
       end
@@ -555,13 +593,21 @@ module CassandraModel
       end
 
       context 'with multiple results' do
-        let(:options) { {limit: 2} }
+        let(:record_count) { 10 }
+        let(:query_limit) { rand(2..record_count) }
+        let(:options) { {limit: query_limit} }
         let(:where_clause) { ' LIMIT 2' }
         let(:results) { Cassandra::Future.value([{'partition' => 'Partition Key 1'}, {'partition' => 'Partition Key 2'}]) }
+        let(:extra_attributes) do
+          record_count.times.map do
+            columns.inject({}) { |memo, column| memo.merge!(column => Faker::Lorem.sentence) }
+          end
+        end
+
+        before { extra_attributes.each { |attributes| klass.create(attributes) } }
 
         it 'should support limits' do
-          expect(connection).to receive(:execute_async).with(statement, {}).and_return(results)
-          klass.request_async({}, options)
+          expect(klass.request_async({}, options).get.count).to eq(query_limit)
         end
 
         context 'with a strange limit' do
@@ -574,38 +620,44 @@ module CassandraModel
       end
 
       context 'with no clause' do
+        let(:extra_attributes) do
+          10.times.map do
+            columns.inject({}) { |memo, column| memo.merge!(column => Faker::Lorem.sentence) }
+          end
+        end
+        let(:expected_records) { [attributes, *extra_attributes].map { |attributes| klass.new(attributes) } }
+
+        before { expected_records.map(&:save) }
+
         it 'should query for everything' do
-          expect(connection).to receive(:execute_async).with(statement, {}).and_return(results)
-          klass.request_async(clause)
+          expect(klass.request_async(clause).get).to match_array(expected_records)
         end
       end
 
-      context 'using only the partition key' do
-        let(:clause) do
-          {
-              partition: 'Partition Key'
-          }
-        end
-        let(:where_clause) { ' WHERE partition = ?' }
+      describe 'restricting the data-set' do
+        let(:partition_key) { [:part] }
+        let(:clustering_columns) { [:cluster] }
+        let(:remaining_columns) { [:luster] }
+        let(:attributes) { {part: 'A', cluster: '1'} }
+        let(:attributes_two) { {part: 'A', cluster: '2'} }
+
+        let(:expected_records) { [attributes, attributes_two].map { |attributes| klass.new(attributes) } }
+
+        let(:clause) { {part: 'A'} }
+
+        before { klass.create(attributes_two) }
 
         it 'should return the result of a select query given a restriction' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
-          klass.request_async(clause)
+          expect(klass.request_async(clause).get).to eq(expected_records)
         end
-      end
 
-      context 'using a clustering key' do
-        let(:clause) do
-          {
-              partition: 'Partition Key',
-              cluster: 'Cluster Key'
-          }
-        end
-        let(:where_clause) { ' WHERE partition = ? AND cluster = ?' }
+        context 'with a more specific restriction' do
+          let(:clause) { {part: 'A', cluster: '2'} }
+          let(:expected_records) { [attributes_two].map { |attributes| klass.new(attributes) } }
 
-        it 'should return the result of a select query given a restriction' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {}).and_return(results)
-          klass.request_async(clause)
+          it 'should return the result of a select query given a restriction' do
+            expect(klass.request_async(clause).get).to eq(expected_records)
+          end
         end
       end
 
@@ -616,7 +668,7 @@ module CassandraModel
         let(:first_page_future) { Cassandra::Future.value(first_page) }
 
         it 'should return an enumerable capable of producing all the records' do
-          allow(connection).to receive(:execute_async).with(statement, page_size: 2).and_return(first_page_future)
+          allow(global_session).to receive(:execute_async).with(anything, page_size: 2).and_return(first_page_future)
           results = []
           klass.request_async({}, options).each do |result|
             results << result
@@ -630,58 +682,51 @@ module CassandraModel
       end
 
       context 'when using options and restrictions' do
-        let(:clause) { {partition: 'Partition Key', cluster: 'Cluster Key'} }
-        let(:options) { {select: [:partition, :cluster], order_by: :cluster, limit: 100} }
-        let(:where_clause) { ' WHERE partition = ? AND cluster = ? ORDER BY cluster LIMIT 100' }
-        let(:select_clause) { 'partition, cluster' }
+        let(:partition_key) { [:part] }
+        let(:clustering_columns) { [:cluster, :cluster_two] }
+        let(:remaining_columns) { [] }
+
+        let(:attributes) { {part: 'A', cluster: 'A', cluster_two: '1'} }
+        let(:attributes_two) { {part: 'A', cluster: 'B', cluster_two: '1'} }
+        let(:attributes_three) { {part: 'A', cluster: 'B', cluster_two: '2'} }
+
+        let(:clause) { {part: 'A', cluster: 'B'} }
+        let(:options) { {select: [:part, :cluster], order_by: [cluster: :desc, cluster_two: :desc], limit: 100} }
+
+        let(:expected_records) do
+          [
+              klass.new(attributes_two.slice(:part, :cluster)),
+              klass.new(attributes_three.slice(:part, :cluster)),
+          ]
+        end
+
+        before { [attributes_two, attributes_three].map { |attributes| klass.create(attributes) } }
 
         it 'should order options and restrictions in the query properly' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {}).and_return(results)
-          klass.request_async(clause, options)
+          expect(klass.request_async(clause, options).get).to eq(expected_records)
         end
       end
     end
 
     describe '.first_async' do
-      let(:request_attributes) { ['Partition Key'] }
-      let(:clause) { {partition: 'Partition Key'} }
-      let(:options) { {select: :partition} }
-      let(:record) { klass.new(partition: 'Partition Key') }
-
-      let(:query) { 'SELECT partition FROM records WHERE partition = ? LIMIT 1' }
-      let(:page_results) { ['partition' => 'Partition Key'] }
-      let(:result_page) { MockPage.new(true, Cassandra::Future.value([]), page_results) }
-      let(:results) { Cassandra::Future.value(result_page) }
-
-      before do
-        klass.table_name = table_name
-        allow(connection).to receive(:execute_async).with(statement, *request_attributes, {}).and_return(results)
-      end
+      let(:clause) { generate_attributes }
+      let(:options) { generate_options }
+      let(:request_result) { double(:future) }
 
       it 'should delegate to request using a limit of 1' do
-        expect(klass.first_async(clause, options).get).to eq(record)
-      end
-
-      context 'when the request returns no results' do
-        let(:page_results) { [] }
-
-        it 'should return nil' do
-          expect(klass.first_async(clause, options).get).to be_nil
-        end
+        allow(klass).to receive(:request_async).with(clause, options.merge(limit: 1)).and_return(request_result)
+        expect(klass.first_async(clause, options)).to eq(request_result)
       end
 
       context 'when the request clause is omitted' do
-        let(:request_attributes) { [] }
-        let(:query) { 'SELECT * FROM records LIMIT 1' }
-
         it 'should default the request clause to {}' do
-          expect(klass.first_async.get).to eq(record)
+          allow(klass).to receive(:request_async).with({}, limit: 1).and_return(request_result)
+          expect(klass.first_async).to eq(request_result)
         end
       end
     end
 
     shared_examples_for 'a method creating a record' do |method|
-      let(:attributes) { {partition: 'Partition Key'} }
       let(:record) { klass.new(attributes) }
       let(:future_record) { Cassandra::Future.value(record) }
       let(:options) { {} }
@@ -695,7 +740,7 @@ module CassandraModel
       end
 
       context 'when options are provided' do
-        let(:options) { {check_exists: true} }
+        let(:options) { generate_options }
 
         it 'should resolve the future returned by .create_async' do
           expect(klass.public_send(method, attributes, options)).to eq(record)
@@ -707,36 +752,50 @@ module CassandraModel
     describe('.create!') { it_behaves_like 'a method creating a record', :create! }
 
     describe '.request' do
-      let(:clause) { {} }
-      let(:options) { {limit: 1} }
-      let(:record) { klass.new(partition: 'Partition Key') }
-      let(:future_record) { Cassandra::Future.value([record]) }
+      let(:clause) { generate_attributes }
+      let(:options) { generate_options }
+      let(:record_result) { double(:record) }
+      let(:request_result) { double(:future, get: record_result) }
 
       it 'should resolve the future provided by request_async' do
-        allow(klass).to receive(:request_async).with(clause, options).and_return(future_record)
-        expect(klass.request(clause, options)).to eq([record])
+        allow(klass).to receive(:request_async).with(clause, options).and_return(request_result)
+        expect(klass.request(clause, options)).to eq(record_result)
       end
     end
 
     describe '.first' do
-      let(:clause) { {} }
-      let(:options) { {select: :partition} }
-      let(:record) { double(:record) }
-      let(:future_record) { Cassandra::Future.value(record) }
+      let(:clause) { generate_attributes }
+      let(:options) { generate_options }
+      let(:record_result) { double(:record) }
+      let(:request_result) { double(:future, get: record_result) }
 
       it 'should resolve the future provided by first_async' do
-        allow(klass).to receive(:first_async).with(clause, options).and_return(future_record)
-        expect(klass.first(clause, options)).to eq(record)
+        allow(klass).to receive(:first_async).with(clause, options).and_return(request_result)
+        expect(klass.first(clause, options)).to eq(record_result)
       end
 
       it 'should default the request clause to {}' do
-        expect(klass).to receive(:first_async).with({}, {}).and_return(future_record)
+        allow(klass).to receive(:first_async).with({}, {}).and_return(request_result)
         klass.first
       end
     end
 
     describe 'sharding' do
+      let(:klass) { NamedClass.create('CassandraModel::ShardingRecord', Record) {} }
       let(:sharding_column) { :shard }
+      let(:partition_key_types) do
+        partition_key.inject({}) { |memo, column| memo.merge!(column => :int) }
+      end
+      let(:clustering_column_types) do
+        clustering_columns.inject({}) { |memo, column| memo.merge!(column => :text) }
+      end
+      let(:remaining_column_types) do
+        remaining_columns.inject({}) { |memo, column| memo.merge!(column => :text) }
+      end
+
+      before do
+        mock_table(klass.table_name, partition_key_types, clustering_column_types, remaining_column_types)
+      end
 
       it_behaves_like 'a sharding model'
     end
@@ -816,12 +875,14 @@ module CassandraModel
     end
 
     describe '#save_async' do
-      let(:table_name) { :table }
-      let(:clustering_columns) { [] }
-      let(:attributes) { {partition: 'Partition Key'} }
+      let(:table_name) { Faker::Lorem.word }
+      let(:partition_key) { generate_partition_key }
+      let(:clustering_columns) { generate_clustering_columns }
+      let(:remaining_columns) { generate_fields }
+
       let(:existence_check) { nil }
       let(:ttl_clause) { nil }
-      let(:query) { "INSERT INTO table (#{columns.join(', ')}) VALUES (#{(%w(?) * columns.size).join(', ')})#{existence_check}#{ttl_clause}" }
+      let(:query) { "INSERT INTO #{table_name} (#{columns.join(', ')}) VALUES (#{(%w(?) * columns.size).join(', ')})#{existence_check}#{ttl_clause}" }
       let(:query_results) { [] }
       let(:page_results) { MockPage.new(true, nil, query_results) }
       let(:execution_info) { page_results.execution_info }
@@ -833,7 +894,6 @@ module CassandraModel
 
       before do
         klass.table_name = table_name
-        allow(connection).to receive(:execute_async).and_return(results)
       end
 
       it 'should return a ThomasUtils::Observation' do
@@ -841,8 +901,8 @@ module CassandraModel
       end
 
       it 'should save the record to the database' do
-        expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
-        klass.new(attributes).save_async
+        klass.new(attributes).save_async.get
+        expect(global_keyspace.table(table_name).rows).to include(attributes.stringify_keys)
       end
 
       it 'should call the associated global callback' do
@@ -853,16 +913,17 @@ module CassandraModel
 
       context 'with tracing specified' do
         it 'should execute the query with tracing enabled' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', trace: true).and_return(results)
-          klass.new(attributes).save_async(trace: true)
+          record = klass.new(attributes).save_async(trace: true).get
+          expect(record.execution_info).to include(trace: true)
         end
       end
 
-      it 'should assign the execution_info for this record' do
-        record = klass.new(attributes)
-        record.save_async
-        expect(record.execution_info).to eq(execution_info)
+      shared_examples_for 'a record recording execution info' do
+        subject { klass.new(attributes).save_async.get }
+        it_behaves_like 'recording execution info'
       end
+
+      it_behaves_like 'a record recording execution info'
 
       context 'when the Record class has deferred columns' do
         let(:record) { klass.new(attributes) }
@@ -895,11 +956,7 @@ module CassandraModel
             allow(klass).to receive(:save_async_deferred_columns).with(record).and_return([])
           end
 
-          it 'should assign the execution_info for this record' do
-            record = klass.new(attributes)
-            record.save_async
-            expect(record.execution_info).to eq(execution_info)
-          end
+          it_behaves_like 'a record recording execution info'
 
           it 'should call the associated global callback' do
             record = klass.new(attributes)
@@ -935,28 +992,20 @@ module CassandraModel
         end
       end
 
-      context 'when configured to use a batch' do
-        subject { klass }
-        it_behaves_like 'a query running in a batch', :save_async, [], ['Partition Key']
-      end
+      #context 'when configured to use a batch' do
+      #  let(:statement_args) { attributes.values }
+      #  subject { klass }
+      #  it_behaves_like 'a query running in a batch', :save_async, []
+      #end
 
       context 'when a consistency is specified' do
-        let(:consistency) { :quorum }
+        let(:consistency) { [:one, :all, :quorum].sample }
 
         before { klass.write_consistency = consistency }
 
         it 'should save the record to the database' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', consistency: consistency).and_return(results)
-          klass.new(attributes).save_async
-        end
-
-        context 'with a different consistency' do
-          let(:consistency) { :all }
-
-          it 'should save the record to the database' do
-            expect(connection).to receive(:execute_async).with(statement, 'Partition Key', consistency: consistency).and_return(results)
-            klass.new(attributes).save_async
-          end
+          record = klass.new(attributes).save_async.get
+          expect(record.execution_info).to include(consistency: consistency)
         end
       end
 
@@ -1007,6 +1056,8 @@ module CassandraModel
         let(:record_instance) { klass.new(attributes) }
         let(:column_values) { record_instance.attributes.values }
 
+        before { allow(global_session).to receive(:execute_async).and_return(Cassandra::Future.error(future_error)) }
+
         it 'should log the error' do
           expect(Logging.logger).to receive(:error).with('Error saving CassandraModel::Record: IOError: Connection Closed')
           record_instance.save_async
@@ -1037,7 +1088,7 @@ module CassandraModel
       end
 
       it 'should return a future resolving to the record instance' do
-        record = klass.new(partition: 'Partition Key')
+        record = klass.new(attributes)
         expect(record.save_async.get).to eq(record)
       end
 
@@ -1046,18 +1097,13 @@ module CassandraModel
         let(:ttl_clause) { " USING TTL #{ttl}" }
 
         it 'should save the record to the database using the specified TTL' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
-          klass.new(attributes).save_async(ttl: ttl)
+          expect(global_session).to receive(:execute_async).with(statement, *attributes.values, {}).and_call_original
+          record = klass.new(attributes).save_async(ttl: ttl).get
         end
       end
 
       describe 'checking if the record already exists' do
         let(:existence_check) { ' IF NOT EXISTS' }
-
-        it 'should save the record to the database, checking if it had previously existed' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', {}).and_return(results)
-          klass.new(attributes).save_async(check_exists: true)
-        end
 
         context 'when a consistency is specified' do
           let(:consistency) { :local_serial }
@@ -1065,16 +1111,16 @@ module CassandraModel
           before { klass.serial_consistency = consistency }
 
           it 'should save the record to the database' do
-            expect(connection).to receive(:execute_async).with(statement, 'Partition Key', serial_consistency: consistency).and_return(results)
             klass.new(attributes).save_async(check_exists: true)
+            expect(global_keyspace.table(table_name).rows).to include(attributes.stringify_keys)
           end
 
           context 'with a different consistency' do
             let(:consistency) { :serial }
 
             it 'should save the record to the database' do
-              expect(connection).to receive(:execute_async).with(statement, 'Partition Key', serial_consistency: consistency).and_return(results)
-              klass.new(attributes).save_async(check_exists: true)
+              record = klass.new(attributes).save_async(check_exists: true).get
+              expect(record.execution_info).to include(serial_consistency: :serial)
             end
           end
         end
@@ -1084,21 +1130,10 @@ module CassandraModel
         end
 
         context 'when the record already exists' do
-          let(:query_results) { [{'[applied]' => false}] }
-
           it 'should invalidate the record if it already exists' do
+            klass.new(attributes).save_async(check_exists: true).get
             expect(klass.new(attributes).save_async(check_exists: true).get.valid).to eq(false)
           end
-        end
-      end
-
-      context 'with different columns' do
-        let(:clustering_columns) { [:cluster] }
-        let(:attributes) { {partition: 'Partition Key', cluster: 'Cluster Key'} }
-
-        it 'should save the record to the database using the specified attributes' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {}).and_return(results)
-          klass.new(attributes).save_async
         end
       end
     end
@@ -1141,88 +1176,55 @@ module CassandraModel
     end
 
     describe '#delete_async' do
-      let(:partition_key) { [:partition] }
-      let(:clustering_columns) { [:cluster] }
-      let(:attributes) { {partition: 'Partition Key', cluster: 'Cluster Key'} }
-      let(:table_name) { :table }
-      let(:where_clause) { (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ') }
-      let(:query) { "DELETE FROM #{table_name} WHERE #{where_clause}" }
-      let(:results) { Cassandra::Future.value([]) }
+      let(:table_name) { Faker::Lorem.word }
 
-      before do
-        klass.table_name = table_name
-        allow(klass).to receive(:partition_key).and_return(partition_key)
-        allow(klass).to receive(:clustering_columns).and_return(clustering_columns)
-        allow(connection).to receive(:execute_async).and_return(results)
-      end
+      before { klass.table_name = table_name }
 
-      it 'should delete the record from the database' do
-        expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {})
-        klass.new(attributes).delete_async
-      end
-
-      context 'when configured to use a batch' do
-        subject { klass }
-        it_behaves_like 'a query running in a batch', :delete_async, [], ['Partition Key', 'Cluster Key']
-      end
-
-      context 'when a consistency is specified' do
-        let(:consistency) { :quorum }
-
-        before { klass.write_consistency = consistency }
+      describe 'deleting the record' do
+        let(:attributes_two) { columns.inject({}) { |memo, column| memo.merge!(column => Faker::Lorem.sentence) } }
+        let!(:record) { klass.create(attributes) }
+        let!(:record_two) { klass.create(attributes_two) }
 
         it 'should delete the record from the database' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', consistency: consistency)
-          klass.new(attributes).delete_async
+          klass.new(attributes).delete_async.get
+          expect(global_keyspace.table(table_name).rows).not_to include(attributes.stringify_keys)
         end
 
-        context 'with a different consistency' do
-          let(:consistency) { :all }
+        it 'should not delete other records' do
+          klass.new(attributes).delete_async.get
+          expect(global_keyspace.table(table_name).rows).to include(attributes_two.stringify_keys)
+        end
 
-          it 'should delete the record from the database' do
-            expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', consistency: consistency)
-            klass.new(attributes).delete_async
+        #context 'when configured to use a batch' do
+        #  let(:statement_args) { attributes.slice(primary_key).values }
+        #  subject { klass }
+        #  it_behaves_like 'a query running in a batch', :delete_async, []
+        #end
+
+        describe 'tracking query execution info' do
+          subject { klass.new(attributes).delete_async.get }
+
+          it_behaves_like 'recording execution info'
+        end
+
+        context 'when a consistency is specified' do
+          let(:consistency) { [:quorum, :all, :one].sample }
+
+          before { klass.write_consistency = consistency }
+
+          it 'should use the specified consistency for deleting the record' do
+            record = klass.new(attributes).delete_async.get
+            expect(record.execution_info).to include(consistency: consistency)
           end
         end
-      end
 
-      it 'should return a future resolving to the record instance' do
-        record = klass.new(partition: 'Partition Key')
-        expect(record.delete_async.get).to eq(record)
-      end
-
-      it 'should invalidate the record instance' do
-        record = klass.new(partition: 'Partition Key')
-        record.delete_async
-        expect(record.valid).to eq(false)
-      end
-
-      context 'with different attributes' do
-        let(:attributes) { {partition: 'Different Partition Key', cluster: 'Different Cluster Key'} }
-
-        it 'should delete the record from the database' do
-          expect(connection).to receive(:execute_async).with(statement, 'Different Partition Key', 'Different Cluster Key', {})
-          klass.new(attributes).delete_async
+        it 'should return a future resolving to the record instance' do
+          expect(record.delete_async.get).to eq(record)
         end
-      end
 
-      context 'with a different table name' do
-        let(:table_name) { :image_data }
-
-        it 'should delete the record from the database' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {})
-          klass.new(attributes).delete_async
-        end
-      end
-
-      context 'with different partition and clustering keys' do
-        let(:partition_key) { [:different_partition] }
-        let(:clustering_columns) { [:different_cluster] }
-        let(:attributes) { {different_partition: 'Partition Key', different_cluster: 'Cluster Key'} }
-
-        it 'should delete the record from the database' do
-          expect(connection).to receive(:execute_async).with(statement, 'Partition Key', 'Cluster Key', {})
-          klass.new(attributes).delete_async
+        it 'should invalidate the record instance' do
+          record.delete_async.get
+          expect(record.valid).to eq(false)
         end
       end
     end
@@ -1244,117 +1246,60 @@ module CassandraModel
     end
 
     describe '#update_async' do
-      let(:partition_key) { [:partition] }
-      let(:clustering_columns) { [:cluster] }
-      let(:remaining_columns) { [:meta_data, :misc_data] }
-      let(:columns) { partition_key + clustering_columns + remaining_columns }
-      let(:attributes) { {partition: 'Partition Key', cluster: 'Cluster Key'} }
-      let(:table_name) { :table }
-      let(:where_clause) { (partition_key + clustering_columns).map { |column| "#{column} = ?" }.join(' AND ') }
-      let(:new_attributes) { {meta_data: 'Some Data'} }
-      let(:query) { "UPDATE #{table_name} SET meta_data = ? WHERE #{where_clause}" }
-      let(:results) { Cassandra::Future.value([]) }
+      let(:table_name) { Faker::Lorem.word }
+      let(:partition_key) { generate_partition_key }
+      let(:clustering_columns) { generate_clustering_columns }
+      let(:remaining_columns) { generate_fields }
 
-      before do
-        klass.table_name = table_name
-        allow(connection).to receive(:execute_async).and_return(results)
-        mock_simple_table(:records, partition_key, clustering_columns, columns)
-      end
+      before { klass.table_name = table_name }
 
-      it 'should update the record in the database' do
-        expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', {})
-        klass.new(attributes).update_async(new_attributes)
-      end
-
-      context 'when configured to use a batch' do
-        subject { klass }
-        it_behaves_like 'a query running in a batch', :update_async, [meta_data: 'Some Data'], ['Some Data', 'Partition Key', 'Cluster Key']
-      end
-
-      context 'when a consistency is specified' do
-        let(:consistency) { :quorum }
-
-        before { klass.write_consistency = consistency }
+      describe 'updating the record' do
+        let(:new_attributes) { remaining_columns.inject({}) { |memo, column| memo.merge!(column => Faker::Lorem.sentence) } }
+        let!(:record) { klass.create(attributes) }
 
         it 'should update the record in the database' do
-          expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', consistency: consistency)
-          klass.new(attributes).update_async(new_attributes)
+          klass.new(attributes).update_async(new_attributes).get
+          expect(global_keyspace.table(table_name).rows).to include(attributes.merge(new_attributes).stringify_keys)
         end
 
-        context 'with a different consistency' do
-          let(:consistency) { :all }
+        #context 'when configured to use a batch' do
+        #  subject { klass }
+        #  it_behaves_like 'a query running in a batch', :update_async, [meta_data: 'Some Data'], ['Some Data', 'Partition Key', 'Cluster Key']
+        #end
 
-          it 'should update the record in the database' do
-            expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', consistency: consistency)
-            klass.new(attributes).update_async(new_attributes)
+        describe 'tracking query execution info' do
+          subject { klass.new(attributes).update_async(new_attributes).get }
+
+          it_behaves_like 'recording execution info'
+        end
+
+        context 'when a consistency is specified' do
+          let(:consistency) { [:quorum, :all, :one].sample }
+
+          before { klass.write_consistency = consistency }
+
+          it 'should use the specified consistency for deleting the record' do
+            record = klass.new(attributes).update_async(new_attributes).get
+            expect(record.execution_info).to include(consistency: consistency)
+          end
+
+          let(:consistency) { :quorum }
+        end
+
+        context 'with an invalid column' do
+          let(:new_attributes) { {fake_column: 'Some Fake Data'} }
+
+          it 'should raise an error' do
+            expect { klass.new(attributes).update_async(new_attributes) }.to raise_error("Invalid column 'fake_column' specified")
           end
         end
-      end
 
-      context 'with an invalid column' do
-        let(:new_attributes) { {fake_column: 'Some Fake Data'} }
-
-        it 'should raise an error' do
-          expect { klass.new(attributes).update_async(new_attributes) }.to raise_error("Invalid column 'fake_column' specified")
+        it 'should return a future resolving to the record instance' do
+          expect(record.update_async(new_attributes).get).to eq(record)
         end
-      end
 
-      context 'when updating a single key of a map' do
-        let(:new_attributes) { {:meta_data.index('Location') => 'North America'} }
-        let(:query) { "UPDATE #{table_name} SET meta_data['Location'] = ? WHERE #{where_clause}" }
-
-        it 'should update only the value of that key for the map' do
-          expect(connection).to receive(:execute_async).with(statement, 'North America', 'Partition Key', 'Cluster Key', {})
-          klass.new(attributes).update_async(new_attributes)
-        end
-      end
-
-      context 'with multiple new attributes' do
-        let(:new_attributes) { {meta_data: 'meta-data', misc_data: 'Some additional information'} }
-        let(:query) { "UPDATE #{table_name} SET meta_data = ?, misc_data = ? WHERE #{where_clause}" }
-
-        it 'should update the record in the database with those attributes' do
-          expect(connection).to receive(:execute_async).with(statement, 'meta-data', 'Some additional information', 'Partition Key', 'Cluster Key', {})
-          klass.new(attributes).update_async(new_attributes)
-        end
-      end
-
-      it 'should return a future resolving to the record instance' do
-        record = klass.new(partition: 'Partition Key')
-        expect(record.update_async(new_attributes).get).to eq(record)
-      end
-
-      it 'should include the new attributes in the updated Record' do
-        record = klass.new(partition: 'Partition Key')
-        expect(record.update_async(new_attributes).get.attributes).to include(new_attributes)
-      end
-
-      context 'with different attributes' do
-        let(:attributes) { {partition: 'Different Partition Key', cluster: 'Different Cluster Key'} }
-
-        it 'should update the record in the database' do
-          expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Different Partition Key', 'Different Cluster Key', {})
-          klass.new(attributes).update_async(new_attributes)
-        end
-      end
-
-      context 'with a different table name' do
-        let(:table_name) { :image_data }
-
-        it 'should update the record in the database' do
-          expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', {})
-          klass.new(attributes).update_async(new_attributes)
-        end
-      end
-
-      context 'with different partition and clustering keys' do
-        let(:partition_key) { [:different_partition] }
-        let(:clustering_columns) { [:different_cluster] }
-        let(:attributes) { {different_partition: 'Partition Key', different_cluster: 'Cluster Key'} }
-
-        it 'should update the record in the database' do
-          expect(connection).to receive(:execute_async).with(statement, 'Some Data', 'Partition Key', 'Cluster Key', {})
-          klass.new(attributes).update_async(new_attributes)
+        it 'should include the new attributes in the updated Record' do
+          expect(record.update_async(new_attributes).get.attributes).to include(new_attributes)
         end
       end
     end

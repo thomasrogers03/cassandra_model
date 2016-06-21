@@ -176,7 +176,10 @@ module CassandraModel
                  cassandra_future = session.execute_async(statement, *column_values, write_query_options)
                  Observable.create_observation(cassandra_future)
                end
-      future.then { self }
+      future.then do |result|
+        @execution_info = result.execution_info
+        self
+      end
     end
 
     def internal_save_async(options = {})
@@ -220,7 +223,8 @@ module CassandraModel
                  cassandra_future = session.execute_async(statement, *new_attributes.values, *column_values, write_query_options)
                  Observable.create_observation(cassandra_future)
                end
-      future.then do
+      future.then do |result|
+        @execution_info = result.execution_info
         self.attributes.merge!(new_attributes)
         self
       end
