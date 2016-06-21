@@ -33,6 +33,7 @@ RSpec.configure do |config|
   config.include PerformanceHelper
   config.include ConnectionHelper
   config.include BatchHelper
+  config.include DataGeneration
 
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest
