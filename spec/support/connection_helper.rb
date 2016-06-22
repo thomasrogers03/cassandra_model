@@ -55,22 +55,6 @@ module ConnectionHelper
     CassandraModel::ConnectionCache[connection_name].statement(query) if query
   end
 
-  def mock_query_pages(results)
-    page = MockPage.new(true, nil, results.shift || [])
-    result_future = MockFuture.new(page)
-    while (current_result = results.shift)
-      page = MockPage.new(false, result_future, current_result)
-      result_future = MockFuture.new(page)
-    end
-    result_future
-  end
-
-  def mock_query_result(args, results = [])
-    result_future = mock_query_pages(results)
-    allow(connection).to receive(:execute_async).with(*args).and_return(result_future)
-    allow(connection).to receive(:execute).with(*args).and_return(result_future.get)
-  end
-
   def mock_table(name, partition_key, clustering_columns, remaining_columns)
     mock_table_for_keyspace(keyspace_name, name, partition_key, clustering_columns, remaining_columns)
   end

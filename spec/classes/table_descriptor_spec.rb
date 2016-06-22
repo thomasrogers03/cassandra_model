@@ -21,10 +21,32 @@ module CassandraModel
 
     before { TableDescriptor.reset! }
 
+    context 'when the descriptor table does not already exist' do
+      describe '.create_descriptor_table' do
+        subject { TableDescriptor }
+
+        before { TableDescriptor.create_descriptor_table }
+
+        its(:partition_key) { is_expected.to eq([:name]) }
+        its(:clustering_columns) { is_expected.to eq([:id]) }
+        its(:cassandra_columns) do
+          is_expected.to eq(name: :ascii,
+                            id: :ascii,
+                            created_at: :timestamp)
+        end
+      end
+
+      describe '.drop_descriptor_table' do
+        it 'should drop the table from cassandra' do
+          expect(global_session).not_to receive(:execute)
+          TableDescriptor.drop_descriptor_table
+        end
+      end
+    end
+
     context 'when the descriptor table already exists' do
       before do
-        mock_simple_table(:table_descriptors, [:name], [:created_at], [:id])
-        mock_query_result([anything], [query_results])
+        TableDescriptor.create_descriptor_table
       end
 
       it { is_expected.to be_a_kind_of(Record) }
@@ -65,7 +87,7 @@ module CassandraModel
         end
 
         context 'when the entry already exists' do
-          let(:query_results) { [{'[applied]' => false}] }
+          before { TableDescriptor.create_async(definition).get }
 
           it 'should invalidate the entry' do
             expect(TableDescriptor.create_async(definition).get.valid).to eq(false)
@@ -88,34 +110,17 @@ module CassandraModel
 
       describe '.create_descriptor_table' do
         it 'should not create the table in cassandra' do
-          expect(connection).not_to receive(:execute)
+          expect(global_session).not_to receive(:execute)
           TableDescriptor.create_descriptor_table
         end
       end
 
       describe '.drop_descriptor_table' do
-        it 'should drop the table from cassandra' do
-          expected_query = 'DROP TABLE table_descriptors'
-          expect(connection).to receive(:execute).with(expected_query)
-          TableDescriptor.drop_descriptor_table
-        end
-      end
-    end
+        subject { TableDescriptor.table.connection.keyspace.table(TableDescriptor.table_name) }
 
-    context 'when the descriptor table does not already exist' do
-      describe '.create_descriptor_table' do
-        it 'should create the table in cassandra' do
-          expected_query = 'CREATE TABLE table_descriptors (name ascii, id ascii, created_at timestamp, PRIMARY KEY ((name), id))'
-          expect(connection).to receive(:execute).with(expected_query)
-          TableDescriptor.create_descriptor_table
-        end
-      end
+        before { TableDescriptor.drop_descriptor_table }
 
-      describe '.drop_descriptor_table' do
-        it 'should drop the table from cassandra' do
-          expect(connection).not_to receive(:execute)
-          TableDescriptor.drop_descriptor_table
-        end
+        it { is_expected.to be_nil }
       end
     end
 
