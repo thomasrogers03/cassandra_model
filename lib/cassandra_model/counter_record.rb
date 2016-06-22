@@ -34,7 +34,10 @@ module CassandraModel
       future.on_failure do |error|
         Logging.logger.error("Error incrementing #{self.class}: #{error}")
         execute_callback(:save_record_failed, error, statement, column_values)
-      end.then { self }
+      end.then do |result|
+        @execution_info = result.execution_info
+        self
+      end
     end
 
     private

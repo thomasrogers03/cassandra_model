@@ -7,12 +7,32 @@ module DataGeneration
     generate_columns(:part)
   end
 
+  def generate_partition_key_with_types
+    generate_partition_key.inject({}) { |memo, column| memo.merge!(column => :text) }
+  end
+
   def generate_clustering_columns
     generate_columns(:cluster)
   end
 
+  def generate_clustering_columns_with_types
+    generate_clustering_columns.inject({}) { |memo, column| memo.merge!(column => :text) }
+  end
+
   def generate_fields
     generate_columns(:field)
+  end
+
+  def generate_fields_with_types
+    generate_fields.inject({}) { |memo, column| memo.merge!(column => :text) }
+  end
+
+  def generate_counter_fields(columns)
+    columns.inject({}) { |memo, column| memo.merge!(column => :counter) }
+  end
+
+  def generate_primary_key
+    (partition_key + clustering_columns).inject({}) { |memo, column| memo.merge!(column => Faker::Lorem.sentence) }
   end
 
   def generate_attributes
