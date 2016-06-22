@@ -5,9 +5,10 @@ module CassandraModel
     let(:connection_name) { nil }
     let(:table_name) { :records }
     let(:table) { TableRedux.new(connection_name, table_name) }
-    let(:partition_key) { [:partition_key] }
-    let(:clustering_columns) { [:clustering_columns] }
-    let(:remaining_columns) { [:misc] }
+    let(:partition_key) { generate_partition_key }
+    let(:clustering_columns) { generate_clustering_columns }
+    let(:remaining_columns) { generate_fields }
+    let(:columns) { partition_key + clustering_columns + remaining_columns }
 
     subject { table }
 
@@ -48,7 +49,6 @@ module CassandraModel
       context 'with a different connection name' do
         let(:connection_name) { :counters }
         let(:hosts) { %w(cassandra.one cassandra.two) }
-        let!(:connection) { mock_connection(hosts, 'keyspace') }
 
         before { ConnectionCache[:counters].config = {hosts: hosts, keyspace: 'keyspace'} }
 
@@ -60,20 +60,24 @@ module CassandraModel
 
     describe '#truncate!' do
       let(:allow_truncate) { true }
+      let(:internal_table) { table.connection.keyspace.table(table.name) }
 
-      before { subject.allow_truncation! if allow_truncate }
+      before do
+        internal_table.insert(generate_attributes.stringify_keys)
+        subject.allow_truncation! if allow_truncate
+      end
 
       it 'should truncate the table' do
-        expect(connection).to receive(:execute).with("TRUNCATE #{table_name}")
         subject.truncate!
+        expect(internal_table.rows).to be_empty
       end
 
       context 'with a different table name' do
         let(:table_name) { :images }
 
         it 'should truncate the table' do
-          expect(connection).to receive(:execute).with("TRUNCATE #{table_name}")
           subject.truncate!
+          expect(internal_table.rows).to be_empty
         end
       end
 
@@ -96,9 +100,11 @@ module CassandraModel
 
     describe 'table column names' do
       shared_examples_for 'a method caching column names' do |method, table_method|
+        let(:table_name) { Faker::Lorem.word }
+
         it 'should cache the columns names' do
           subject.public_send(method)
-          expect(keyspace.table(table_name.to_s)).not_to receive(table_method)
+          expect(table.connection.keyspace.table(table_name)).not_to receive(table_method)
           subject.public_send(method)
         end
       end
@@ -163,21 +169,22 @@ module CassandraModel
     end
 
     describe '#reset_local_schema!' do
-      let(:updated_partition_key) { [:updated_partition_key] }
-      let(:updated_clustering_columns) { [:updated_clustering_columns] }
-      let(:updated_remaining_columns) { [:misc, :extra] }
+      let(:updated_partition_key) { generate_partition_key }
+      let(:updated_clustering_columns) { generate_clustering_columns }
+      let(:updated_remaining_columns) { generate_fields }
       let(:expected_columns) do
         updated_partition_key + updated_clustering_columns + updated_remaining_columns
       end
-      let(:updated_keyspace) { double(:keyspace) }
+      let(:table_name) { Faker::Lorem.word }
 
       before do
-        mock_simple_table_for_keyspace(updated_keyspace,
-                                       table_name,
-                                       updated_partition_key,
-                                       updated_clustering_columns,
-                                       updated_remaining_columns)
-        allow(cluster).to receive(:keyspace).and_return(keyspace, updated_keyspace)
+        table.connection.keyspace.drop_table(table_name)
+        mock_simple_table(
+            table_name,
+            updated_partition_key,
+            updated_clustering_columns,
+            updated_remaining_columns
+        )
 
         table.partition_key
         table.clustering_columns

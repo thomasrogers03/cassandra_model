@@ -81,7 +81,7 @@ module ConnectionHelper
         name.to_s,
         [partition_key.keys.map(&:to_s), *clustering_columns.keys.map(&:to_s)],
         partition_key.merge(clustering_columns).merge(remaining_columns).stringify_keys,
-        true
+        false
     )
   end
 
