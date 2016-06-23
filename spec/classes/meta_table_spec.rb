@@ -2,16 +2,24 @@ require 'spec_helper'
 
 module CassandraModel
   describe MetaTable do
-    TABLE_POSTFIX = '_50306970412fc32e13cfe807ba6426de'
-
     let(:connection_name) { nil }
     let(:table_name) { :records }
-    let(:real_table_name) { "#{table_name}#{TABLE_POSTFIX}".to_sym }
+    let(:real_table_name) { definition.name_in_cassandra }
+
+    let(:partition_key_types) { generate_partition_key_with_random_types }
+    let(:partition_key) { partition_key_types.keys }
+    let(:clustering_columns_types) { generate_clustering_columns_with_random_types }
+    let(:clustering_columns) { clustering_columns_types.keys }
+    let(:remaining_columns_types) { generate_fields_with_random_types }
+    let(:remaining_columns) { remaining_columns_types.keys }
+    let(:columns_types) { partition_key_types.merge(clustering_columns_types).merge(remaining_columns_types) }
+    let(:columns) { columns_types.keys }
+
     let(:table_definition) do
       {name: table_name,
-       partition_key: {partition_key: :text},
-       clustering_columns: {cluster: :text},
-       remaining_columns: {meta_data: 'map<text, text>'}}
+       partition_key: partition_key_types,
+       clustering_columns: clustering_columns_types,
+       remaining_columns: remaining_columns_types}
     end
     let(:definition) { TableDefinition.new(table_definition) }
     let(:klass) { MetaTable }
@@ -20,18 +28,12 @@ module CassandraModel
        created_at: Time.now,
        id: definition.table_id}
     end
-    let(:valid) { true }
-    let(:descriptor) do
-      TableDescriptor.new(attributes).tap { |desc| desc.invalidate! unless valid }
-    end
     let(:table) { klass.new(connection_name, definition) }
 
     subject { table }
 
     before do
-      mock_simple_table(:table_descriptors, [:name], [:created_at], [:id])
-      mock_simple_table(real_table_name, [:partition], [], [])
-      allow(TableDescriptor).to receive(:create).with(definition).and_return(descriptor)
+      TableDescriptor.create_descriptor_table
       allow_any_instance_of(MetaTable).to receive(:sleep)
     end
 
@@ -79,7 +81,6 @@ module CassandraModel
       context 'with a different connection name' do
         let(:connection_name) { :counters }
         let(:hosts) { %w(cassandra.one cassandra.two) }
-        let!(:connection) { mock_connection(hosts, 'keyspace') }
 
         before { ConnectionCache[:counters].config = {hosts: hosts, keyspace: 'keyspace'} }
 
@@ -105,49 +106,56 @@ module CassandraModel
 
     shared_examples_for 'a method requiring the table to exist' do |method|
       describe "#{method}" do
-        let(:cql) { definition.to_cql(check_exists: true) }
-        let(:bad_keyspace) { double(:keyspace, table: nil) }
-
         before do
-          allow(cluster).to receive(:keyspace) do
-            allow(cluster).to receive(:keyspace).and_return(keyspace)
-            bad_keyspace
+          allow(global_keyspace).to receive(:table).and_call_original
+          allow(global_keyspace).to receive(:table).with(real_table_name) do
+            allow(global_keyspace).to receive(:table).and_call_original
+            nil
           end
         end
 
         context 'when the table does not yet exist' do
-          it 'should create the table' do
-            expect(connection).to receive(:execute).with(cql)
-            subject.public_send(method)
+          describe 'creating the table' do
+            let(:internal_table) { TableRedux.new(connection_name, real_table_name) }
+
+            before { subject.public_send(method) }
+
+            it { expect(internal_table.partition_key).to eq(partition_key) }
+            it { expect(internal_table.clustering_columns).to eq(clustering_columns) }
+            it { expect(internal_table.columns).to eq(columns) }
+            it { expect(global_keyspace.table(real_table_name).columns.map(&:type)).to match_array(columns_types.values) }
           end
         end
 
         context 'when the table already exists in the descriptors table' do
-          let(:valid) { false }
+          before { TableDescriptor.new(attributes).save }
 
           it 'should not create the table' do
-            expect(connection).not_to receive(:execute).with(cql)
-            subject.public_send(method)
+            expect(global_session).not_to receive(:execute)
+            subject.public_send(method) rescue nil
           end
         end
 
         context 'when the table already exists in the keyspace' do
-          before { allow(cluster).to receive(:keyspace).and_return(keyspace) }
+          before do
+            allow(global_keyspace).to receive(:table).and_call_original
+            global_keyspace.add_table(real_table_name, [[partition_key], *clustering_columns], columns_types, true)
+          end
 
           it 'should not attempt to create an entry into the descriptor table' do
-            expect(connection).not_to receive(:execute)
-            subject.public_send(method)
+            expect(global_session).not_to receive(:execute)
+            subject.public_send(method) rescue nil
           end
         end
 
         context 'when creating the table raises an error' do
           let(:error) { StandardError.new('Could not create table!') }
 
-          before { allow(connection).to receive(:execute).and_raise(error) }
+          before { allow(global_session).to receive(:execute).and_raise(error) }
 
           it 'should remove the created TableDescriptor' do
-            expect(descriptor).to receive(:delete)
             subject.public_send(method) rescue nil
+            expect(TableDescriptor.first).to be_nil
           end
 
           it 'should re-raise the error' do
@@ -156,24 +164,16 @@ module CassandraModel
         end
 
         describe 'consistency' do
-          it 'should wait until the schema says the table exists' do
-            allow(cluster).to receive(:keyspace).and_return(bad_keyspace, bad_keyspace, keyspace)
-            expect(subject.columns).to eq([:partition])
-          end
-
           context 'when the table takes too long to create' do
-            before do
-              allow(cluster).to receive(:keyspace).and_return(bad_keyspace)
-              allow(descriptor).to receive(:delete)
-            end
+            before { allow(global_keyspace).to receive(:table).with(real_table_name).and_return(nil) }
 
             it 'should raise an error' do
-              expect { subject.columns }.to raise_error("Could not verify the creation of table #{definition.name_in_cassandra}")
+              expect { subject.public_send(method) }.to raise_error("Could not verify the creation of table #{definition.name_in_cassandra}")
             end
 
-            it 'should raise an error' do
-              expect(descriptor).to receive(:delete)
-              expect { subject.columns }.to raise_error("Could not verify the creation of table #{definition.name_in_cassandra}")
+            it 'should delete the descriptor' do
+              subject.public_send(method) rescue nil
+              expect(TableDescriptor.first).to be_nil
             end
           end
 

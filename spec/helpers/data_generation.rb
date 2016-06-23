@@ -11,6 +11,10 @@ module DataGeneration
     generate_partition_key.inject({}) { |memo, column| memo.merge!(column => :text) }
   end
 
+  def generate_partition_key_with_random_types
+    generate_partition_key.inject({}) { |memo, column| memo.merge!(column => random_type) }
+  end
+
   def generate_clustering_columns
     generate_columns(:cluster)
   end
@@ -19,12 +23,20 @@ module DataGeneration
     generate_clustering_columns.inject({}) { |memo, column| memo.merge!(column => :text) }
   end
 
+  def generate_clustering_columns_with_random_types
+    generate_clustering_columns.inject({}) { |memo, column| memo.merge!(column => random_type) }
+  end
+
   def generate_fields
     generate_columns(:field)
   end
 
   def generate_fields_with_types
     generate_fields.inject({}) { |memo, column| memo.merge!(column => :text) }
+  end
+
+  def generate_fields_with_random_types
+    generate_fields.inject({}) { |memo, column| memo.merge!(column => random_type) }
   end
 
   def generate_counter_fields(columns)
@@ -41,5 +53,9 @@ module DataGeneration
 
   def generate_options
     Faker::Lorem.words.inject({}) { |memo, key| memo.merge!(key.to_sym => Faker::Lorem.sentence) }
+  end
+
+  def random_type
+    [:text, :blob, :int, :double].sample
   end
 end
