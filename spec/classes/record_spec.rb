@@ -561,7 +561,7 @@ module CassandraModel
       end
 
       context 'with a different record type' do
-        let(:table_name) { :image_data }
+        let(:klass) { image_data_klass }
 
         it 'should return records of that type' do
           expect(image_data_klass.request_async(clause).get.first).to be_a_kind_of(image_data_klass)
