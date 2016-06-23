@@ -25,13 +25,12 @@ module CassandraModel
     let(:clustering_columns) { [:ck_price, :ck_model] }
     let(:remaining_columns) { [:meta_data] }
     let(:columns) { partition_key + clustering_columns + remaining_columns }
-    let(:query) { '' }
-    let!(:statement) { mock_prepare(query) }
+    let(:table_name) { Faker::Lorem.word }
 
     before do
       MockRecordStatic.reset!
-      MockRecordStatic.table_name = :mock_records
-      mock_simple_table(:mock_records, partition_key, clustering_columns, columns)
+      MockRecordStatic.table_name = table_name
+      mock_simple_table(table_name, partition_key, clustering_columns, columns)
     end
 
     describe 'column name methods' do
@@ -356,33 +355,65 @@ module CassandraModel
     end
 
     describe '.request_async' do
-      let(:query) { 'SELECT * FROM mock_records WHERE rk_model = ? AND rk_series = ? AND ck_price = ?' }
       let(:defaults) { [{model: ''}, {model: '', series: ''}] }
+
+      let(:raw_attributes) do
+        {
+            'rk_model' => 'AABBCCDD',
+            'rk_series' => '91A',
+            'ck_price' => '9.99',
+            'ck_model' => 'AABBCCDD',
+        }
+      end
 
       before do
         MockRecordStatic.composite_defaults = defaults
+        global_keyspace.table(MockRecordStatic.table_name).insert(raw_attributes)
       end
 
-      it 'should query by mapping composite columns to the real ones' do
-        expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 9.99, {})
-        MockRecordStatic.request_async(model: 'AABBCCDD', series: '91A', price: 9.99)
+      describe 'mapping de-normalized columns to normalized ones' do
+        let(:result) { MockRecordStatic.request_async(model: 'AABBCCDD', series: '91A', price: '9.99').get.first }
+
+        subject { result }
+
+        its(:model) { is_expected.to eq('AABBCCDD') }
+        its(:series) { is_expected.to eq('91A') }
+        its(:price) { is_expected.to eq('9.99') }
       end
 
-      context 'when restricting the clustering column by a non-equal restriction' do
-        let(:query) { 'SELECT * FROM mock_records WHERE rk_model = ? AND rk_series = ? AND ck_price > ?' }
+      describe 'restricting the clustering column by a non-equal restriction' do
+        let(:raw_attributes_two) { raw_attributes.merge('ck_price' => '7.90') }
 
-        it 'should map the clustering column properly' do
-          expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 9.99, {})
-          MockRecordStatic.request_async(model: 'AABBCCDD', series: '91A', :price.gt => 9.99)
-        end
+        before { global_keyspace.table(MockRecordStatic.table_name).insert(raw_attributes_two) }
 
-        context 'when the KeyComparer represents an array of columns' do
-          let(:clustering_columns) { [:ck_price, :ck_version] }
-          let(:query) { 'SELECT * FROM mock_records WHERE rk_model = ? AND rk_series = ? AND (ck_price,ck_version) > (?, ?)' }
+        describe 'the result' do
+          let(:result) { MockRecordStatic.request_async(model: 'AABBCCDD', series: '91A', :price.lt => '9.99').get.first }
 
-          it 'should map the clustering column properly' do
-            expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 9.99, '003', {})
-            MockRecordStatic.request_async(model: 'AABBCCDD', series: '91A', [:price, :version].gt => [9.99, '003'])
+          subject { result }
+
+          its(:model) { is_expected.to eq('AABBCCDD') }
+          its(:series) { is_expected.to eq('91A') }
+          its(:price) { is_expected.to eq('7.90') }
+
+          context 'when the KeyComparer represents an array of columns' do
+            let(:clustering_columns) { [:ck_price, :ck_version] }
+            let(:raw_attributes) do
+              {
+                  'rk_model' => 'AABBCCDD',
+                  'rk_series' => '91A',
+                  'ck_price' => '9.99',
+                  'ck_version' => '003',
+              }
+            end
+            let(:raw_attributes_three) { raw_attributes.merge('ck_price' => '7.90', 'ck_version' => '001') }
+            let(:result) { MockRecordStatic.request_async(model: 'AABBCCDD', series: '91A', [:price, :version].lt => %w(7.90 003)).get.first }
+
+            before { global_keyspace.table(MockRecordStatic.table_name).insert(raw_attributes_three) }
+
+            its(:model) { is_expected.to eq('AABBCCDD') }
+            its(:series) { is_expected.to eq('91A') }
+            its(:price) { is_expected.to eq('7.90') }
+            its(:version) { is_expected.to eq('001') }
           end
         end
 
@@ -391,11 +422,23 @@ module CassandraModel
           let(:truth_table) { [[:model], [:series]] }
           let(:partition_key) { [:rk_model, :rk_series] }
           let(:clustering_columns) { [:ck_series] }
-          let(:query) { 'SELECT * FROM mock_records WHERE rk_model = ? AND ck_series > ? AND rk_series = ?' }
 
-          it 'should not compare on the partition key' do
-            expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', '', {})
-            MockRecordStatic.request_async(model: 'AABBCCDD', :series.gt => '91A')
+          let(:raw_attributes) do
+            {
+                'rk_model' => 'AABBCCDD',
+                'rk_series' => '',
+                'ck_series' => '91A',
+            }
+          end
+          let(:raw_attributes_two) { raw_attributes.merge('ck_series' => '97B') }
+
+          describe 'the result' do
+            let(:result) { MockRecordStatic.request_async(model: 'AABBCCDD', :series.gt => '91A').get.first }
+
+            subject { result }
+
+            its(:model) { is_expected.to eq('AABBCCDD') }
+            its(:series) { is_expected.to eq('97B') }
           end
         end
       end
@@ -403,35 +446,49 @@ module CassandraModel
       context 'when a composite column is part of the remaining columns' do
         let(:partition_key) { [:rk_model, :rk_series] }
         let(:clustering_columns) { [:ck_series] }
-        let(:remaining_columns) { [] }
+        let(:remaining_columns) { [:model] }
         let(:defaults) { [{model: ''}] }
-        let(:results) { [['rk_model' => '', 'rk_series' => '91A', 'ck_series' => '91A', 'model' => 'EEFFGG']] }
-        let(:query) { 'SELECT * FROM mock_records WHERE rk_series = ? AND rk_model = ?' }
-        let(:execute_params) { [statement, '91A', '', {}] }
 
-        before { mock_query_result(execute_params, results) }
+        let(:raw_attributes) do
+          {
+              'rk_model' => '',
+              'rk_series' => '91A',
+              'ck_series' => '91A',
+              'model' => 'EEFFGG',
+          }
+        end
 
-        it 'should not re-map the composite column to the real one' do
+        it 'should use the proper value for the de-normalized column' do
           record = MockRecordStatic.request_async(series: '91A').get.first
-          expect(record.attributes).not_to include(:rk_model)
+          expect(record.model).to eq('EEFFGG')
         end
       end
 
-      context 'when selecting composite columns' do
-        let(:query) { 'SELECT ck_model FROM mock_records WHERE rk_model = ? AND rk_series = ? AND ck_price = ?' }
+      describe 'selecting composite columns' do
+        let(:meta_data) { Faker::Lorem.sentence }
+        let(:raw_attributes) do
+          {
+              'rk_model' => '',
+              'rk_series' => '91A',
+              'ck_price' => '9.99',
+              'ck_model' => 'AABBCCDD',
+              'meta_data' => meta_data
+          }
+        end
 
         it 'should map the composite column to the clustering column' do
-          expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 9.99, {})
-          MockRecordStatic.request_async({model: 'AABBCCDD', series: '91A', price: 9.99}, select: [:model])
+          result = MockRecordStatic.request_async({series: '91A', price: '9.99'}, select: [:model]).get.first
+          expect(result.model).to eq('AABBCCDD')
         end
 
         context 'with a different columns selected' do
-          let(:query) { 'SELECT ck_model, rk_series, meta_data FROM mock_records WHERE rk_model = ? AND rk_series = ? AND ck_price = ?' }
+          let(:result) { MockRecordStatic.request_async({series: '91A', price: '9.99'}, select: [:model, :series, :meta_data]).get.first }
 
-          it 'should map the composite column to the clustering column' do
-            expect(connection).to receive(:execute_async).with(statement, 'AABBCCDD', '91A', 9.99, {})
-            MockRecordStatic.request_async({model: 'AABBCCDD', series: '91A', price: 9.99}, select: [:model, :series, :meta_data])
-          end
+          subject { result }
+
+          its(:model) { is_expected.to eq('AABBCCDD') }
+          its(:series) { is_expected.to eq('91A') }
+          its(:meta_data) { is_expected.to eq(meta_data) }
         end
       end
 
