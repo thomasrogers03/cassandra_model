@@ -33,7 +33,7 @@ module CassandraModel
     def first_async
       raise NotImplementedError if has_result_modifier?
 
-      if @record_klass.predecessor
+      if @record_klass.respond_to?(:predecessor) && @record_klass.predecessor
         record_first_async.then do |result|
           result ? result : @record_klass.predecessor.first_async(@params, @options)
         end

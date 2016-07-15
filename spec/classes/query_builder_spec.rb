@@ -20,17 +20,21 @@ module CassandraModel
     let(:record_scopes) { {} }
     let(:record_primary_key) { [] }
     let(:predecessor_record) { nil }
+    let(:supports_predecessor) { true }
     let(:record) do
       double(:record_klass, request_async: result_paginator, request: results,
              first_async: single_result_future, first: results.first,
              create_async: create_result_future, create: create_result,
              scopes: record_scopes,
              primary_key: record_primary_key,
-             predecessor: predecessor_record,
              request_cql: nil)
     end
 
     subject { QueryBuilder.new(record) }
+
+    before do
+      allow(record).to receive(:predecessor).and_return(predecessor_record) if supports_predecessor
+    end
 
     it { is_expected.to be_a_kind_of(Enumerable) }
 
@@ -70,6 +74,15 @@ module CassandraModel
 
         it 'should grab the first available record' do
           expect(subject.first).to eq(results.first)
+        end
+
+        context 'when a predecessor is no supported' do
+          let(:supports_predecessor) { false }
+
+          it 'should execute the built query asynchronously' do
+            expect(record).to receive(:first_async).with(params, options)
+            subject.first_async
+          end
         end
       end
     end
