@@ -199,7 +199,9 @@ module CassandraModel
         end
         new_option.concat(columns)
       else
-        new_option.concat(columns.map(&:to_sym))
+        # new_option.concat(columns.map(&:to_sym))
+        columns = columns.map { |column| column.respond_to?(:to_sym) ? column.to_sym : column }
+        new_option.concat(columns)
       end
       new_instance(@params, @options.merge(option => new_option), @extra_options)
     end

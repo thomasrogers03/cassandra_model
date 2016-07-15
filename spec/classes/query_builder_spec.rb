@@ -568,6 +568,15 @@ module CassandraModel
           subject.send(method, params[0].to_s).send(method, params[1].to_s).get
         end
 
+        describe 'misc options' do
+          let(:params) { [hello: :world] }
+
+          it "supports other types that cannot be converted to symbols #{method}" do
+            expect(record).to receive(:request).with({}, option => [params])
+            subject.send(method, params).get
+          end
+        end
+
       end
 
     end
