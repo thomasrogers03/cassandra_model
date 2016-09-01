@@ -7,11 +7,13 @@ GIT
 
 GIT
   remote: git://github.com/thomasrogers03/cassandra_mocks.git
-  revision: 1c762d6812ff69aeb5cb44da66a6c689b549d141
+  revision: c773dcdafc43c076bfffbbab7002918c82016c2a
   specs:
-    cassandra_mocks (1.0.1)
+    cassandra_mocks (1.0.9)
       activesupport (~> 4.0)
       cassandra-driver (>= 1.1, <= 2.0.1)
+      concurrent-ruby (~> 1.0.0)
+      thomas_utils (>= 0.2.5, <= 0.3)
 
 GIT
   remote: git://github.com/thomasrogers03/thomas_utils.git
@@ -158,4 +160,4 @@ DEPENDENCIES
   timecop
 
 BUNDLED WITH
-   1.11.2
+   1.12.5

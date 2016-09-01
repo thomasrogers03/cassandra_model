@@ -1,8 +1,8 @@
 require 'bundler'
 Bundler.require(:default, :development, :test)
-Dir['./spec/helpers/**.rb'].each { |file| require file }
-Dir['./spec/shared_examples/**.rb'].each { |file| require file }
-Dir['./spec/support/**.rb'].each { |file| require file }
+Dir['./integration/helpers/**.rb'].each { |file| require file }
+Dir['./integration/shared_examples/**.rb'].each { |file| require file }
+Dir['./integration/support/**.rb'].each { |file| require file }
 
 def setup_keyspace(connection_name)
   base_query = %q{CREATE KEYSPACE integration
@@ -43,8 +43,6 @@ end
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
 RSpec.configure do |config|
-  require_relative '../../lib/cassandra_model'
-
   CassandraModel::ConnectionCache[:replicating].config = {
       hosts: %w(cassandra.dev), consistency: :quorum,
       compressor: :snappy, keyspace: 'integration'

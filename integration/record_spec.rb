@@ -1,4 +1,4 @@
-require 'rspec'
+require 'integration_spec_helper'
 
 module CassandraModel
   describe 'Basic Record Insertion' do
