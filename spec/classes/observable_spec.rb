@@ -16,6 +16,11 @@ module CassandraModel
 
       it { is_expected.to be_a_kind_of(ThomasUtils::Observation) }
       its(:get) { is_expected.to eq(value) }
+
+      context 'when the input itself is already an Observation' do
+        let(:future) { ThomasUtils::Future.none }
+        it { is_expected.to eq(future) }
+      end
     end
 
     describe '#value' do

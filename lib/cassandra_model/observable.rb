@@ -16,8 +16,12 @@ module CassandraModel
     end
 
     def self.create_observation(cassandra_future)
-      observable = new(cassandra_future)
-      ThomasUtils::Observation.new(ThomasUtils::Future::IMMEDIATE_EXECUTOR, observable)
+      if cassandra_future.is_a?(ThomasUtils::Observation)
+        cassandra_future
+      else
+        observable = new(cassandra_future)
+        ThomasUtils::Observation.new(ThomasUtils::Future::IMMEDIATE_EXECUTOR, observable)
+      end
     end
 
     def initialize(cassandra_future)
