@@ -178,5 +178,16 @@ module CassandraModel
 
     end
 
+    describe '#prepare' do
+      let(:prepared_statement) { double(:statement) }
+      let(:query) { Faker::Lorem.sentence }
+
+      before { allow(session).to receive(:prepare).with(query).and_return(prepared_statement) }
+
+      it 'delegates to the provided session' do
+        expect(subject.prepare(query)).to eq(prepared_statement)
+      end
+    end
+
   end
 end

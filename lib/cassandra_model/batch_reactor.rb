@@ -1,6 +1,9 @@
 module CassandraModel
   class BatchReactor < ::BatchReactor::ReactorCluster
     include ThomasUtils::PerformanceMonitorMixin
+    extend Forwardable
+
+    def_delegator :@session, :prepare
 
     def initialize(cluster, session, batch_klass, options)
       @cluster = cluster
