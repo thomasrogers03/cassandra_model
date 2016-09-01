@@ -15,7 +15,7 @@ end
 guard :rspec, cmd: 'bundle exec rspec', spec_paths: %w(spec/v2) do
   watch(%r{^spec/v2/.+_spec\.rb$})
   watch(%r{^lib/cassandra_model\.rb$}) { 'spec/v2' }
-  watch(%r{^lib/cassandra_model/v2/(.+)\.rb}) { |m| "spec/classes/#{m[1]}_spec.rb" }
+  watch(%r{^lib/cassandra_model/v2/(.+)\.rb}) { |m| "spec/v2/classes/#{m[1]}_spec.rb" }
   watch('spec/v2_spec_helper.rb') { 'spec/v2' }
   watch(%r{^spec/v2/shared_examples/(.+)\.rb}) { 'spec/v2' }
   watch(%r{^spec/v2/helpers/(.+)\.rb}) { 'spec/v2' }

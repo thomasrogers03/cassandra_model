@@ -62,3 +62,5 @@ require 'cassandra_model/type_guessing'
 require 'cassandra_model/data_inquirer'
 require 'cassandra_model/data_set'
 require 'cassandra_model/data_modelling'
+
+require 'cassandra_model/v2'
