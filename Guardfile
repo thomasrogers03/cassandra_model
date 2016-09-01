@@ -1,42 +1,20 @@
-# A sample Guardfile
-# More info at https://github.com/guard/guard#readme
-
-# Note: The cmd option is now required due to the increasing number of ways
-#       rspec may be run, below are examples of the most common uses.
-#  * bundler: 'bundle exec rspec'
-#  * bundler binstubs: 'bin/rspec'
-#  * spring: 'bin/rsspec' (This will use spring if running and you have
-#                          installed the spring binstubs per the docs)
-#  * zeus: 'zeus rspec' (requires the server to be started separetly)
-#  * 'just' rspec: 'rspec'
 guard :rspec, cmd: 'bundle exec rspec' do
   watch(%r{^spec/.+_spec\.rb$})
   watch(%r{^lib/(.+)\.rb$}) { |m| "spec/lib/#{m[1]}_spec.rb" }
-  watch(%r{^lib/cassandra_model\.rb$}) { "spec" }
+  watch(%r{^lib/cassandra_model\.rb$}) { 'spec' }
   watch(%r{^lib/cassandra_model/(.+)\.rb}) { |m| "spec/classes/#{m[1]}_spec.rb" }
   watch(%r{^lib/cassandra_model/table_debug\.rb}) { |_| 'spec/classes/table_redux_spec.rb' }
   watch(%r{^lib/cassandra_model/table_debug\.rb}) { |_| 'spec/classes/meta_spec.rb' }
   watch(%r{^lib/cassandra_model/table_debug\.rb}) { |_| 'spec/classes/rotating_table_spec.rb' }
-  watch('spec/spec_helper.rb') { "spec" }
-  watch(%r{^spec/shared_examples/(.+)\.rb}) { "spec" }
-  watch(%r{^spec/helpers/(.+)\.rb}) { "spec" }
-  watch(%r{^spec/support/(.+)\.rb}) { "spec" }
+  watch('spec/spec_helper.rb') { 'spec' }
+  watch(%r{^spec/shared_examples/(.+)\.rb}) { 'spec' }
+  watch(%r{^spec/helpers/(.+)\.rb}) { 'spec' }
+  watch(%r{^spec/support/(.+)\.rb}) { 'spec' }
+end
 
-  # Rails example
-  watch(%r{^app/(.+)\.rb$}) { |m| "spec/#{m[1]}_spec.rb" }
-  watch(%r{^app/(.*)(\.erb|\.haml|\.slim)$}) { |m| "spec/#{m[1]}#{m[2]}_spec.rb" }
-  watch(%r{^app/controllers/(.+)_(controller)\.rb$}) { |m| ["spec/routing/#{m[1]}_routing_spec.rb", "spec/#{m[2]}s/#{m[1]}_#{m[2]}_spec.rb", "spec/acceptance/#{m[1]}_spec.rb"] }
-  watch(%r{^spec/support/(.+)\.rb$}) { "spec" }
-  watch('config/routes.rb') { "spec/routing" }
-  watch('app/controllers/application_controller.rb') { "spec/controllers" }
-  watch('spec/rails_helper.rb') { "spec" }
-
-  # Capybara features specs
-  watch(%r{^app/views/(.+)/.*\.(erb|haml|slim)$}) { |m| "spec/features/#{m[1]}_spec.rb" }
-
-  # Turnip features and steps
-  watch(%r{^spec/acceptance/(.+)\.feature$})
-  watch(%r{^spec/acceptance/steps/(.+)_steps\.rb$}) { |m| Dir[File.join("**/#{m[1]}.feature")][0] || 'spec/acceptance' }
+guard :rspec, cmd: 'bundle exec rspec', spec_paths: %w(integration) do
+  watch(%r{^integration/.+_spec\.rb$})
+  watch('spec/integration_spec_helper.rb') { 'integration' }
 end
 
 guard :bundler do
@@ -47,6 +25,5 @@ guard :bundler do
   files = ['Gemfile']
   files += Dir['*.gemspec'] if files.any? { |f| helper.uses_gemspec?(f) }
 
-  # Assume files are symlinked from somewhere
   files.each { |file| watch(helper.real_path(file)) }
 end
