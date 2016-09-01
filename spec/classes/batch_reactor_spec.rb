@@ -7,6 +7,11 @@ module CassandraModel
     class MockBatch < Array
       attr_accessor :result
 
+      def add(item)
+        self << item
+        item
+      end
+
       def statements
         self
       end
@@ -186,6 +191,27 @@ module CassandraModel
 
       it 'delegates to the provided session' do
         expect(subject.prepare(query)).to eq(prepared_statement)
+      end
+    end
+
+    describe '#execute_async' do
+      let(:statement) { double(:statement) }
+      let(:buffer) { MockBatch.new }
+
+      before do
+        allow(subject).to receive(:perform_within_batch).with(statement) do |&block|
+          result = block[buffer]
+          ThomasUtils::Future.value(result)
+        end
+      end
+
+      it 'adds the statement to the batch' do
+        subject.execute_async(statement).get
+        expect(buffer).to include(statement)
+      end
+
+      it 'returns a future resolving to the result' do
+        expect(subject.execute_async(statement).get).to eq(buffer)
       end
     end
 

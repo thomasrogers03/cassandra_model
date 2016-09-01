@@ -14,6 +14,13 @@ module CassandraModel
       super(cluster.hosts.count, options, &method(:batch_callback))
     end
 
+    def execute_async(statement)
+      perform_within_batch(statement) do |batch|
+        batch.add(statement)
+        batch
+      end
+    end
+
     private
 
     def partition(statement)
