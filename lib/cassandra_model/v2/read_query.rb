@@ -14,7 +14,7 @@ module CassandraModel
       end
 
       def select_clause
-        "SELECT #{select_columns} FROM #{@table_name}"
+        "SELECT #{select_columns_clause} FROM #{@table_name}"
       end
 
       def restriction_clause
@@ -28,6 +28,18 @@ module CassandraModel
       def limit_clause
         ' LIMIT ?' if @limit
       end
+
+      def eql?(rhs)
+        rhs.table_name == table_name &&
+            rhs.select_columns == select_columns &&
+            rhs.restrict_columns == restrict_columns &&
+            rhs.order == order &&
+            rhs.limit == limit
+      end
+
+      protected
+
+      attr_reader :table_name, :select_columns, :restrict_columns, :order, :limit
 
       private
 
@@ -54,7 +66,7 @@ module CassandraModel
         "#{column} (#{%w(?) * column.key.count * ','})"
       end
 
-      def select_columns
+      def select_columns_clause
         @select_columns.any? ? @select_columns * ',' : '*'
       end
 

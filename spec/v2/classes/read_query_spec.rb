@@ -102,6 +102,43 @@ module CassandraModel
 
           its(:hash) { is_expected.to eq(expected_hash) }
         end
+
+        describe '#eql?' do
+          let(:select_columns_two) { select_columns }
+          let(:restrict_columns_two) { restrict_columns }
+          let(:order_two) { order }
+          let(:limit_two) { limit }
+          let(:table_name_two) { table_name }
+          let(:table_two) { double(:table, name: table_name_two, columns: table_columns) }
+          let(:rhs) { ReadQuery.new(table_two, select_columns_two, restrict_columns_two, order_two, limit_two) }
+
+          it { is_expected.to be_eql(rhs) }
+
+          context 'with a different table' do
+            let(:table_name_two) { Faker::Lorem.sentence }
+            it { is_expected.not_to be_eql(rhs) }
+          end
+
+          context 'with different select columns' do
+            let(:select_columns_two) { generate_names }
+            it { is_expected.not_to be_eql(rhs) }
+          end
+
+          context 'with different restriction columns' do
+            let(:restrict_columns_two) { generate_names }
+            it { is_expected.not_to be_eql(rhs) }
+          end
+
+          context 'with different ordering columns' do
+            let(:order_two) { generate_names }
+            it { is_expected.not_to be_eql(rhs) }
+          end
+
+          context 'with configured with a different limit option' do
+            let(:limit_two) { !limit }
+            it { is_expected.not_to be_eql(rhs) }
+          end
+        end
       end
 
     end
