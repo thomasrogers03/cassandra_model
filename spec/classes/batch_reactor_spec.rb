@@ -27,8 +27,9 @@ module CassandraModel
     let(:max_batch_size) { 10 }
     let(:batch_klass) { SingleTokenUnloggedBatch }
     let(:query_result) { MockPage.new(true, nil, []) }
+    let(:reactor) { BatchReactor.new(cluster, session, batch_klass, max_batch_size: max_batch_size) }
 
-    subject { BatchReactor.new(cluster, session, batch_klass, max_batch_size: max_batch_size) }
+    subject { reactor }
 
     before do
       allow(cluster).to receive(:find_replicas) do |statement_keyspace, statement|
@@ -58,8 +59,10 @@ module CassandraModel
         execution_result << batch
         Cassandra::Future.value(query_result)
       end
-      subject.start.get
+      reactor.start.get
     end
+
+    after { reactor.stop.get }
 
     it { is_expected.to be_a_kind_of(::BatchReactor::ReactorCluster) }
 
@@ -76,7 +79,7 @@ module CassandraModel
         end
         unless statements.empty?
           futures = statements.map do |statement|
-            subject.perform_within_batch(statement) { |batch| batch << statement }
+            reactor.perform_within_batch(statement) { |batch| batch << statement }
           end
           ThomasUtils::Future.all(futures).get
         end
@@ -87,7 +90,7 @@ module CassandraModel
       end
 
       it 'should return a ThomasUtils::Observation' do
-        expect(subject.perform_within_batch(0) {}).to be_a_kind_of(ThomasUtils::Observation)
+        expect(reactor.perform_within_batch(0) {}).to be_a_kind_of(ThomasUtils::Observation)
       end
 
       describe 'batch execution' do
@@ -100,27 +103,21 @@ module CassandraModel
 
         describe 'performance tracking' do
           let(:statements) { (0..rand(1..10)).to_a }
-          let(:log_item) do
-            {
-                sender: subject,
-                method: :batch_callback,
-                name: :batching,
-                size: statements.count,
-                started_at: time_one,
-                completed_at: time_two,
-                duration: time_two - time_one,
-                error: nil
-            }
-          end
 
-          it 'should keep track of the performance' do
-            expect(performance_logger.log).to include(log_item)
-          end
+          subject { performance_logger.log.find { |item| item[:name] == :batching } }
+
+          it { expect(subject[:sender]).to eq(reactor) }
+          it { expect(subject[:method]).to eq(:batch_callback) }
+          it { expect(subject[:size]).to eq(statements.count) }
+          it { expect(subject[:started_at]).to be_within(0.001).of(time_one) }
+          it { expect(subject[:completed_at]).to be_within(0.1).of(time_two) }
+          it { expect(subject[:duration]).to be_within(0.001).of(time_two - time_one) }
+          it { expect(subject[:error]).to be_nil }
         end
 
         describe 'batch results' do
           it 'should save the query result to the batch' do
-            batch = subject.perform_within_batch(0) { |batch| batch }.get
+            batch = reactor.perform_within_batch(0) { |batch| batch }.get
             expect(batch.result).to eq(query_result)
           end
         end
@@ -134,7 +131,7 @@ module CassandraModel
           end
 
           it 'should return a future resolving to a failed result' do
-            expect { (subject.perform_within_batch(0) {}.get) }.to raise_error(StandardError, 'Batch blew up!')
+            expect { (reactor.perform_within_batch(0) {}.get) }.to raise_error(StandardError, 'Batch blew up!')
           end
         end
       end
@@ -190,7 +187,7 @@ module CassandraModel
       before { allow(session).to receive(:prepare).with(query).and_return(prepared_statement) }
 
       it 'delegates to the provided session' do
-        expect(subject.prepare(query)).to eq(prepared_statement)
+        expect(reactor.prepare(query)).to eq(prepared_statement)
       end
     end
 
@@ -199,19 +196,19 @@ module CassandraModel
       let(:buffer) { MockBatch.new }
 
       before do
-        allow(subject).to receive(:perform_within_batch).with(statement) do |&block|
+        allow(reactor).to receive(:perform_within_batch).with(statement) do |&block|
           result = block[buffer]
           ThomasUtils::Future.value(result)
         end
       end
 
       it 'adds the statement to the batch' do
-        subject.execute_async(statement).get
+        reactor.execute_async(statement).get
         expect(buffer).to include(statement)
       end
 
       it 'returns a future resolving to the result' do
-        expect(subject.execute_async(statement).get).to eq(buffer)
+        expect(reactor.execute_async(statement).get).to eq(buffer)
       end
     end
 
