@@ -8,7 +8,7 @@ module CassandraModel
       let(:table) { double(:table, name: table_name) }
       let(:select_columns) { [] }
       let(:restrict_columns) { [] }
-      let(:order) { {} }
+      let(:order) { [] }
       let(:limit) { false }
 
       subject { ReadQuery.new(table, select_columns, restrict_columns, order, limit) }
@@ -60,6 +60,17 @@ module CassandraModel
           end
         end
       end
+
+      describe '#ordering_clause' do
+        its(:ordering_clause) { is_expected.to be_nil }
+
+        context 'with some ordering columns' do
+          let(:order) { generate_names }
+
+          its(:ordering_clause) { is_expected.to eq("ORDER BY #{order * ','}") }
+        end
+      end
+
     end
   end
 end

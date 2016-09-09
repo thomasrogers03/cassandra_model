@@ -18,6 +18,10 @@ module CassandraModel
         "WHERE #{restriction}" if @restrict_columns.any?
       end
 
+      def ordering_clause
+        "ORDER BY #{@order * ','}" if @order.any?
+      end
+
       private
 
       def restriction
