@@ -16,22 +16,35 @@ module CassandraModel
 
       def restriction_clause
         if @restrict_columns.any?
-          restriction = @restrict_columns.map do |column|
-            column = column.to_sym.eq unless column.is_a?(ThomasUtils::KeyComparer)
-            if column.key.is_a?(Array)
-              "(#{column.key * ', '}) <= (#{%w(?) * column.key.count * ', '})"
-            else
-              "#{column} ?"
-            end
-          end * ' AND '
           "WHERE #{restriction}"
         end
       end
 
       private
 
+      def restriction
+        @restrict_columns.map do |column|
+          unless column.is_a?(ThomasUtils::KeyComparer)
+            column = column.is_a?(Array) ? ThomasUtils::KeyComparer.new(column, 'IN') : column.to_sym.eq
+          end
+          if column.key.is_a?(Array)
+            range_restriction(column)
+          else
+            single_column_restriction(column)
+          end
+        end * ' AND '
+      end
+
+      def single_column_restriction(column)
+        "#{column} ?"
+      end
+
+      def range_restriction(column)
+        "#{column} (#{%w(?) * column.key.count * ','})"
+      end
+
       def select_column
-        @select_columns.any? ? @select_columns * ', ' : '*'
+        @select_columns.any? ? @select_columns * ',' : '*'
       end
 
     end

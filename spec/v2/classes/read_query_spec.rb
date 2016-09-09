@@ -18,7 +18,7 @@ module CassandraModel
 
         context 'with some select columns' do
           let(:select_columns) { generate_names }
-          its(:select_clause) { is_expected.to eq("SELECT #{select_columns * ', '} FROM #{table_name}") }
+          its(:select_clause) { is_expected.to eq("SELECT #{select_columns * ','} FROM #{table_name}") }
         end
       end
 
@@ -33,6 +33,16 @@ module CassandraModel
 
           its(:restriction_clause) { is_expected.to eq("WHERE #{expected_restriction}") }
 
+          context 'when the key is an array' do
+            let(:range_restrict_columns) { generate_names }
+            let(:restrict_columns) { [range_restrict_columns] }
+            let(:expected_restriction) do
+              "(#{range_restrict_columns * ','}) IN (#{%w(?) * range_restrict_columns.count * ','})"
+            end
+
+            its(:restriction_clause) { is_expected.to eq("WHERE #{expected_restriction}") }
+          end
+
           context 'when the restriction contains non-equal comparisons' do
             let(:restrict_columns) { [:column.gt] }
 
@@ -42,7 +52,7 @@ module CassandraModel
               let(:range_restrict_columns) { generate_names }
               let(:restrict_columns) { [range_restrict_columns.le] }
               let(:expected_restriction) do
-                "(#{range_restrict_columns * ', '}) <= (#{%w(?) * range_restrict_columns.count * ', '})"
+                "(#{range_restrict_columns * ','}) <= (#{%w(?) * range_restrict_columns.count * ','})"
               end
 
               its(:restriction_clause) { is_expected.to eq("WHERE #{expected_restriction}") }
