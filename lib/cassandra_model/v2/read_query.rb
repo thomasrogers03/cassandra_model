@@ -1,7 +1,7 @@
 module CassandraModel
   module V2
     class ReadQuery
-      attr_reader :column_names
+      attr_reader :column_names, :hash
 
       def initialize(table, select_columns, restrict_columns, order, limit)
         @table_name = table.name
@@ -10,6 +10,7 @@ module CassandraModel
         @restrict_columns = restrict_columns
         @order = order
         @limit = limit
+        @hash = [@table_name, @select_columns, @restrict_columns, @order, @limit].map(&:hash).reduce(&:+)
       end
 
       def select_clause

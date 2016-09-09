@@ -89,6 +89,21 @@ module CassandraModel
         end
       end
 
+      describe 'a query with full options' do
+        let(:select_columns) { generate_names }
+        let(:restrict_columns) { generate_names }
+        let(:order) { generate_names }
+        let(:limit) { true }
+
+        describe '#hash' do
+          let(:expected_hash) do
+            [table_name, select_columns, restrict_columns, order, limit].map(&:hash).reduce(&:+)
+          end
+
+          its(:hash) { is_expected.to eq(expected_hash) }
+        end
+      end
+
     end
   end
 end
