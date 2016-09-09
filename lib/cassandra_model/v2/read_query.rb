@@ -37,6 +37,10 @@ module CassandraModel
             rhs.limit == limit
       end
 
+      def to_s
+        "#{select_clause}#{restriction_clause}#{ordering_clause}#{limit_clause}"
+      end
+
       protected
 
       attr_reader :table_name, :select_columns, :restrict_columns, :order, :limit

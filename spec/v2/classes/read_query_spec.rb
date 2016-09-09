@@ -139,6 +139,19 @@ module CassandraModel
             it { is_expected.not_to be_eql(rhs) }
           end
         end
+
+        describe '#to_s' do
+          let(:query_to_cql) do
+            [
+                subject.select_clause,
+                subject.restriction_clause,
+                subject.ordering_clause,
+                subject.limit_clause
+            ] * ''
+          end
+
+          its(:to_s) { is_expected.to eq(query_to_cql) }
+        end
       end
 
     end
