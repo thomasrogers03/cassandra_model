@@ -71,6 +71,16 @@ module CassandraModel
         end
       end
 
+      describe '#limit_clause' do
+        its(:limit_clause) { is_expected.to be_nil }
+
+        context 'with limitting enabled' do
+          let(:limit) { true }
+
+          its(:limit_clause) { is_expected.to eq('LIMIT ?') }
+        end
+      end
+
     end
   end
 end

@@ -22,6 +22,10 @@ module CassandraModel
         "ORDER BY #{@order * ','}" if @order.any?
       end
 
+      def limit_clause
+        'LIMIT ?' if @limit
+      end
+
       private
 
       def restriction
