@@ -5,13 +5,21 @@ module CassandraModel
     describe ReadQuery do
 
       let(:table_name) { Faker::Lorem.word }
-      let(:table) { double(:table, name: table_name) }
+      let(:table_column_names) { generate_names }
+      let(:table_columns) do
+        table_column_names.map { |column| Cassandra::Column.new(column, :text, :asc) }
+      end
+      let(:table) { double(:table, name: table_name, columns: table_columns) }
       let(:select_columns) { [] }
       let(:restrict_columns) { [] }
       let(:order) { [] }
       let(:limit) { false }
 
       subject { ReadQuery.new(table, select_columns, restrict_columns, order, limit) }
+
+      describe '#column_names' do
+        its(:column_names) { is_expected.to eq(table_column_names) }
+      end
 
       describe '#select_clause' do
         its(:select_clause) { is_expected.to eq("SELECT * FROM #{table_name}") }

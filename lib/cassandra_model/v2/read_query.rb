@@ -1,17 +1,19 @@
 module CassandraModel
   module V2
     class ReadQuery
+      attr_reader :column_names
 
       def initialize(table, select_columns, restrict_columns, order, limit)
         @table_name = table.name
         @select_columns = select_columns
+        @column_names = @select_columns.any? ? @select_columns : table.columns.map(&:name)
         @restrict_columns = restrict_columns
         @order = order
         @limit = limit
       end
 
       def select_clause
-        "SELECT #{select_column} FROM #{@table_name}"
+        "SELECT #{select_columns} FROM #{@table_name}"
       end
 
       def restriction_clause
@@ -51,7 +53,7 @@ module CassandraModel
         "#{column} (#{%w(?) * column.key.count * ','})"
       end
 
-      def select_column
+      def select_columns
         @select_columns.any? ? @select_columns * ',' : '*'
       end
 
