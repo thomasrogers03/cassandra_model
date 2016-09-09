@@ -39,7 +39,7 @@ module CassandraModel
             restrict_columns.map { |column| "#{column} = ?" } * ' AND '
           end
 
-          its(:restriction_clause) { is_expected.to eq("WHERE #{expected_restriction}") }
+          its(:restriction_clause) { is_expected.to eq(" WHERE #{expected_restriction}") }
 
           context 'when the key is an array' do
             let(:range_restrict_columns) { generate_names }
@@ -48,13 +48,13 @@ module CassandraModel
               "(#{range_restrict_columns * ','}) IN (#{%w(?) * range_restrict_columns.count * ','})"
             end
 
-            its(:restriction_clause) { is_expected.to eq("WHERE #{expected_restriction}") }
+            its(:restriction_clause) { is_expected.to eq(" WHERE #{expected_restriction}") }
           end
 
           context 'when the restriction contains non-equal comparisons' do
             let(:restrict_columns) { [:column.gt] }
 
-            its(:restriction_clause) { is_expected.to eq('WHERE column > ?') }
+            its(:restriction_clause) { is_expected.to eq(' WHERE column > ?') }
 
             context 'when the key is an array' do
               let(:range_restrict_columns) { generate_names }
@@ -63,7 +63,7 @@ module CassandraModel
                 "(#{range_restrict_columns * ','}) <= (#{%w(?) * range_restrict_columns.count * ','})"
               end
 
-              its(:restriction_clause) { is_expected.to eq("WHERE #{expected_restriction}") }
+              its(:restriction_clause) { is_expected.to eq(" WHERE #{expected_restriction}") }
             end
           end
         end
@@ -75,7 +75,7 @@ module CassandraModel
         context 'with some ordering columns' do
           let(:order) { generate_names }
 
-          its(:ordering_clause) { is_expected.to eq("ORDER BY #{order * ','}") }
+          its(:ordering_clause) { is_expected.to eq(" ORDER BY #{order * ','}") }
         end
       end
 
@@ -85,7 +85,7 @@ module CassandraModel
         context 'with limitting enabled' do
           let(:limit) { true }
 
-          its(:limit_clause) { is_expected.to eq('LIMIT ?') }
+          its(:limit_clause) { is_expected.to eq(' LIMIT ?') }
         end
       end
 

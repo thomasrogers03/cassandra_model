@@ -17,15 +17,15 @@ module CassandraModel
       end
 
       def restriction_clause
-        "WHERE #{restriction}" if @restrict_columns.any?
+        " WHERE #{restriction}" if @restrict_columns.any?
       end
 
       def ordering_clause
-        "ORDER BY #{@order * ','}" if @order.any?
+        " ORDER BY #{@order * ','}" if @order.any?
       end
 
       def limit_clause
-        'LIMIT ?' if @limit
+        ' LIMIT ?' if @limit
       end
 
       private
