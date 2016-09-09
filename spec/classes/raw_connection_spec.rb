@@ -282,16 +282,32 @@ module CassandraModel
 
     describe '#statement' do
       let(:query) { 'SELECT * FROM everything' }
+      let(:statement_query) { 'SELECT * FROM everything' }
       let!(:statement) { mock_prepare(query) }
 
       it 'should prepare a statement using the created connection' do
-        expect(raw_connection.statement(query)).to eq(statement)
+        expect(raw_connection.statement(statement_query)).to eq(statement)
       end
 
       it 'should cache the statement for later use' do
-        raw_connection.statement(query)
+        raw_connection.statement(statement_query)
         expect(connection).not_to receive(:prepare)
-        raw_connection.statement(query)
+        raw_connection.statement(statement_query)
+      end
+
+      context 'when the query is not a string' do
+        let(:query_klass) do
+          Struct.new(:query) do
+            def to_s
+              query
+            end
+          end
+        end
+        let(:statement_query) { query_klass.new(query) }
+
+        it 'should convert it to a string first' do
+          expect(raw_connection.statement(statement_query)).to eq(statement)
+        end
       end
     end
 

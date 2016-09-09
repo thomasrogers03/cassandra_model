@@ -77,7 +77,7 @@ module CassandraModel
     end
 
     def statement(query)
-      statement_cache.fetch_or_store(query) { session.prepare(query) }
+      statement_cache.fetch_or_store(query) { session.prepare(query.to_s) }
     end
 
     def shutdown
