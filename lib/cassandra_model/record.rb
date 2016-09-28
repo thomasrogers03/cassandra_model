@@ -309,7 +309,7 @@ module CassandraModel
     end
 
     def execute_async_in_batch(statement, column_values)
-      bound_statement = statement.bind(*column_values)
+      bound_statement = statement.bind(column_values)
       batch_reactor.perform_within_batch(bound_statement) do |batch|
         batch.add(bound_statement)
         batch

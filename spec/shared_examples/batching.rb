@@ -57,7 +57,7 @@ module CassandraModel
     let(:bound_statement) { double(:bound_statement) }
 
     before do
-      allow(statement).to receive(:bind).with(*statement_args).and_return(bound_statement)
+      allow(statement).to receive(:bind).with(statement_args).and_return(bound_statement)
       mock_reactor(cluster, batch_klass, {})
       allow(global_reactor).to receive(:perform_within_batch).with(bound_statement) do |&block|
         result = block.call(batch)

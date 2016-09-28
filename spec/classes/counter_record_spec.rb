@@ -87,7 +87,7 @@ module CassandraModel
         subject { CounterRecord }
 
         before do
-          allow(statement).to receive(:bind).with(1, 'Partition Key').and_return(bound_statement)
+          allow(statement).to receive(:bind).with([1, 'Partition Key']).and_return(bound_statement)
           mock_reactor(cluster, batch_klass, {})
           allow(global_reactor).to receive(:perform_within_batch).with(bound_statement).and_yield(batch).and_return(Cassandra::Future.value(['OK']))
           subject.save_in_batch
