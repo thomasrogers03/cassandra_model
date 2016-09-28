@@ -7,11 +7,11 @@ GIT
 
 GIT
   remote: git://github.com/thomasrogers03/cassandra_mocks.git
-  revision: c773dcdafc43c076bfffbbab7002918c82016c2a
+  revision: 8bc6502a0e7995f927eebc3d12fdbb0c580f7671
   specs:
-    cassandra_mocks (1.0.9)
+    cassandra_mocks (1.0.10)
       activesupport (~> 4.0)
-      cassandra-driver (>= 1.1, <= 2.0.1)
+      cassandra-driver (~> 2.0.0)
       concurrent-ruby (~> 1.0.0)
       thomas_utils (>= 0.2.5, <= 0.3)
 
@@ -26,7 +26,7 @@ GIT
 PATH
   remote: .
   specs:
-    cassandra_model (1.1.2)
+    cassandra_model (1.1.3)
       activesupport (~> 4.0)
       batch_reactor (~> 0.1.0)
       cassandra-driver (~> 2.0.0)
@@ -43,6 +43,8 @@ GEM
       thread_safe (~> 0.3, >= 0.3.4)
       tzinfo (~> 1.1)
     cassandra-driver (2.0.1)
+      ione (~> 1.2)
+    cassandra-driver (2.0.1-java)
       ione (~> 1.2)
     coderay (1.1.1)
     concurrent-ruby (1.0.2)

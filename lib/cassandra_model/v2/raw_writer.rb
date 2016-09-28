@@ -9,7 +9,7 @@ module CassandraModel
       end
 
       def write(column_values)
-        bound_statement = @statement.bind(*column_values)
+        bound_statement = @statement.bind(column_values)
         future = @session.execute_async(bound_statement)
         Observable.create_observation(future)
       end
