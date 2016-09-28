@@ -29,7 +29,7 @@ PATH
     cassandra_model (1.1.1)
       activesupport (~> 4.0)
       batch_reactor (~> 0.1.0)
-      cassandra-driver (>= 1.1, <= 2.0.1)
+      cassandra-driver (~> 2.0.0)
       concurrent-ruby (~> 1.0.0)
       thomas_utils (>= 0.2.11, <= 0.3)
 
@@ -43,8 +43,6 @@ GEM
       thread_safe (~> 0.3, >= 0.3.4)
       tzinfo (~> 1.1)
     cassandra-driver (2.0.1)
-      ione (~> 1.2)
-    cassandra-driver (2.0.1-java)
       ione (~> 1.2)
     coderay (1.1.1)
     concurrent-ruby (1.0.2)
