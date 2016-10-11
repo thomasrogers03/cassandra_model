@@ -2,13 +2,16 @@ require 'spec_helper'
 
 module CassandraModel
   describe ResultPaginator do
+
     let(:first_page_results) { ['Record 1'] }
     let(:last_page) { true }
     let(:second_page_future) { nil }
     let(:execution_info) { 'EXECUTION' }
     let(:first_page) { MockPage.new(last_page, second_page_future, first_page_results, execution_info) }
     let(:first_page_future) { Cassandra::Future.value(first_page) }
-    subject { ResultPaginator.new(first_page_future) { |result, execution_info| "Modified #{result} #{execution_info}" } }
+    let(:paginator) { ResultPaginator.new(first_page_future) { |result, execution_info| "Modified #{result} #{execution_info}" } }
+
+    subject { paginator }
 
     it { should be_a_kind_of(Enumerable) }
 
@@ -49,6 +52,24 @@ module CassandraModel
           end
           expect(results).to eq(['Modified Record 1 EXECUTION', 'Modified Record 2 EXEC 2'])
         end
+      end
+    end
+
+    describe '#with_index' do
+      let(:first_page_results) { Faker::Lorem.words }
+      let(:paginator) { ResultPaginator.new(first_page_future) { |result, _| result } }
+
+      subject { paginator.with_index.to_a }
+
+      it { is_expected.to eq(first_page_results.each.with_index.to_a) }
+
+      context 'with a block given' do
+        let(:results) { [] }
+        subject { results }
+
+        before { paginator.with_index { |*result| results << result } }
+
+        it { is_expected.to eq(first_page_results.each.with_index.to_a) }
       end
     end
 

@@ -13,6 +13,10 @@ module CassandraModel
       each_slice { |slice| slice.each(&block) }
     end
 
+    def with_index(&block)
+      each.with_index(&block)
+    end
+
     def each_slice(&block)
       return to_enum(:each_slice) unless block_given?
 
