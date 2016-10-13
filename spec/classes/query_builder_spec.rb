@@ -595,9 +595,10 @@ module CassandraModel
     end
 
     it_behaves_like 'a comma separated option', :select, :select
+    it_behaves_like 'a comma separated option', :select_columns, :select
     it_behaves_like 'a comma separated option', :order, :order_by
 
-    describe '#select' do
+    shared_examples_for 'a method selecting columns' do |method|
       context 'when the columns are specified using a hash' do
         let(:first_column_key) { Faker::Lorem.word.to_sym }
         let(:second_column_key) { (Faker::Lorem.words * '_').to_sym }
@@ -609,14 +610,18 @@ module CassandraModel
 
         it 'should split the hash into multiple ordering clauses' do
           expect(record).to receive(:request).with({}, {select: [first_column, second_column]})
-          subject.select(select_columns).get
+          subject.public_send(method, select_columns).get
         end
 
         it 'should convert the input column names to symbols' do
           expect(record).to receive(:request).with({}, {select: [first_column, second_column]})
-          subject.select(select_columns.stringify_keys).get
+          subject.public_send(method, select_columns.stringify_keys).get
         end
       end
+    end
+
+    describe '#select' do
+      it_behaves_like 'a method selecting columns', :select
     end
 
     describe '#order' do

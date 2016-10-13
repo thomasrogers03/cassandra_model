@@ -128,6 +128,8 @@ module CassandraModel
       append_option(columns, :select)
     end
 
+    alias :select_columns :select
+
     def order(*columns)
       append_option(columns, :order_by)
     end
