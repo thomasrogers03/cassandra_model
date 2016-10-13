@@ -17,9 +17,9 @@ GIT
 
 GIT
   remote: git://github.com/thomasrogers03/thomas_utils.git
-  revision: 2b49fa27c102073a080c90e05ec3de7493d8fd63
+  revision: ae02b9d935000a25bf9d845e4d54a4086d943385
   specs:
-    thomas_utils (0.2.12)
+    thomas_utils (0.2.13)
       concurrent-ruby (~> 1.0.0)
       workers (~> 0.3)
 
@@ -31,7 +31,7 @@ PATH
       batch_reactor (~> 0.1.0)
       cassandra-driver (~> 2.0.0)
       concurrent-ruby (~> 1.0.0)
-      thomas_utils (>= 0.2.11, <= 0.3)
+      thomas_utils (>= 0.2.13, <= 0.3)
 
 GEM
   remote: https://rubygems.org/
