@@ -40,9 +40,8 @@ module CassandraModel
       end
 
       context 'without a block given' do
-        it 'returns an Enumerator enumerating the limited result set' do
-          results = result_limiter.each.map { |value| value }
-          expect(results).to eq(enum.to_a)
+        it 'returns itself' do
+          expect(result_limiter.each).to eq(result_limiter)
         end
       end
     end

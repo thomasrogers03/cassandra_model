@@ -95,15 +95,9 @@ module CassandraModel
       end
 
       describe 'the enumerator' do
-        let(:key) { Faker::Lorem.word }
-        let(:value) { Faker::Lorem.word }
-        let(:attributes) { {key: key, value: value} }
-        let(:row) { record_klass.new(attributes) }
-        let(:enum) { [[0, [row]]] }
-
-        subject { reducer.each.to_a }
-
-        it { is_expected.to eq([row]) }
+        it 'returns itself' do
+          expect(reducer.each).to eq(reducer)
+        end
       end
     end
 

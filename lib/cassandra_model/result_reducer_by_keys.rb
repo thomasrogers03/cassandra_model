@@ -8,7 +8,7 @@ module CassandraModel
     end
 
     def each(&block)
-      return to_enum(:each) unless block_given?
+      return self unless block_given?
 
       if keys.any?
         seen = Set.new

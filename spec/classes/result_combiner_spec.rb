@@ -33,18 +33,8 @@ module CassandraModel
       end
 
       describe 'the enumerator' do
-        subject { combiner.each.to_a }
-
-        it { is_expected.to eq(results) }
-
-        context 'when the first one has results' do
-          let(:enum) { Faker::Lorem.words }
-          it { is_expected.to eq(enum) }
-
-          context 'when the second one has results' do
-            let(:enum_two) { Faker::Lorem.words }
-            it { is_expected.to eq(enum + enum_two) }
-          end
+        it 'returns itself' do
+          expect(combiner.each).to eq(combiner)
         end
       end
 

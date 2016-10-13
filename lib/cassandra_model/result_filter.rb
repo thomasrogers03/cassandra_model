@@ -8,7 +8,7 @@ module CassandraModel
     end
 
     def each
-      return to_enum(:each) unless block_given?
+      return self unless block_given?
 
       enum.each do |*_, value|
         yield value if filter[value]

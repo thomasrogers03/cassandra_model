@@ -8,7 +8,7 @@ module CassandraModel
     end
 
     def each
-      return to_enum(:each) unless block_given?
+      return self unless block_given?
 
       @enum.each.with_index do |value, index|
         break if index >= @limit

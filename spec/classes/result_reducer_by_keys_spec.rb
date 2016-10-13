@@ -45,12 +45,9 @@ module CassandraModel
         end
 
         describe 'the enumerator' do
-          let(:enum) { [record_klass.new('hello'), record_klass.new('hello')] }
-          let(:keys) { [:hello] }
-
-          subject { reducer.each.to_a }
-
-          it { is_expected.to eq([record_klass.new('hello')]) }
+          it 'returns itself' do
+            expect(reducer.each).to eq(reducer)
+          end
         end
       end
     end

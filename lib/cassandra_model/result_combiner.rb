@@ -8,7 +8,7 @@ module CassandraModel
     end
 
     def each(&block)
-      return to_enum(:each) unless block_given?
+      return self unless block_given?
 
       lhs.each(&block)
       rhs.each(&block)

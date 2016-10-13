@@ -43,15 +43,9 @@ module CassandraModel
       end
 
       describe 'the enumerator' do
-        let(:enum) { Faker::Lorem.words }
-        let(:filter_list) { enum.sample(2) }
-        let(:filter_block) { ->(value) { !filter_list.include?(value) } }
-
-        subject { filter.each }
-
-        it { is_expected.to be_a_kind_of(Enumerator) }
-
-        its(:to_a) { is_expected.to eq(enum - filter_list) }
+        it 'returns itself' do
+          expect(filter.each).to eq(filter)
+        end
       end
 
     end
