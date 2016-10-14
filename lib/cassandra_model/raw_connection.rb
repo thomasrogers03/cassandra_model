@@ -30,7 +30,7 @@ module CassandraModel
       @config_mutex = Mutex.new
       @reactor_mutex = Mutex.new
 
-      @executor = Concurrent::Delay.new { Concurrent::CachedThreadPool.new }
+      @executor = Concurrent::Delay.new { ThomasUtils::ExecutorCollection.build(executor_name) }
       @futures_factory = Concurrent::Delay.new { Cassandra::Future::Factory.new(executor) }
     end
 
@@ -105,6 +105,10 @@ module CassandraModel
     private
 
     attr_reader :statement_cache
+
+    def executor_name
+      @config_name ? :"cassandra_driver_for_#{@config_name}" : :cassandra_driver
+    end
 
     def create_keyspace
       cluster.connect.execute(create_keyspace_query)

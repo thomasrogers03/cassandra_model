@@ -140,6 +140,21 @@ module CassandraModel
         expect(Concurrent::CachedThreadPool).not_to receive(:new)
         raw_connection.executor
       end
+
+      it 'should register this executor to the default ExecutorCollection' do
+        subject
+        expect(ThomasUtils::ExecutorCollection[:cassandra_driver]).to eq(raw_connection.executor)
+      end
+
+      context 'with a named connection' do
+        let(:connection_name) { Faker::Lorem.word }
+        let(:raw_connection) { RawConnection.new(connection_name) }
+
+        it 'should register this named executor to the default ExecutorCollection' do
+          subject
+          expect(ThomasUtils::ExecutorCollection[:"cassandra_driver_for_#{connection_name}"]).to eq(raw_connection.executor)
+        end
+      end
     end
 
     describe '#futures_factory' do
@@ -148,7 +163,7 @@ module CassandraModel
       it { is_expected.to be_a_kind_of(Cassandra::Future::Factory) }
 
       it 'should use our executor' do
-        expect(subject.instance_variable_get(:@executor)).to eq(raw_connection.executor)
+        expect(subject.instance_eval { @executor }).to eq(raw_connection.executor)
       end
 
       it 'should instance cache the value' do
