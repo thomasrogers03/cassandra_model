@@ -399,9 +399,16 @@ module CassandraModel
 
       describe 'saving the execution info for a single result' do
         let(:limit_clause) { ' LIMIT 1' }
+        let(:duration) { rand }
 
         it 'should return a ThomasUtils::Observation' do
           expect(klass.request_async(clause, limit: 1)).to be_a_kind_of(ThomasUtils::Observation)
+        end
+
+        it 'should log the time it took the request to complete' do
+          allow_any_instance_of(ThomasUtils::Observation).to receive(:on_timed).and_yield(nil, nil, duration, nil, nil)
+          expect(Logging.logger).to receive(:debug).with("#{klass} Load: #{duration * 1000}ms")
+          klass.request_async(clause, limit: 1)
         end
 
         it 'should save the execution info from the query result when querying for one record' do

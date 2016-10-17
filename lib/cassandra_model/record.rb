@@ -482,6 +482,9 @@ module CassandraModel
 
         future = session.execute_async(statement, *where_values, query_options)
         future = Observable.create_observation(future)
+        future.on_timed do |_, _, duration, _, _|
+          Logging.logger.debug("#{self} Load: #{duration * 1000}ms")
+        end
         if options[:limit] == 1
           single_result_row_future(future, invalidated_result)
         else
