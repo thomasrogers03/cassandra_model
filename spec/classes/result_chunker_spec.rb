@@ -7,6 +7,7 @@ module CassandraModel
     let(:cluster) { [] }
     let(:enum) { [] }
     let(:chunker) { ResultChunker.new(enum, cluster) }
+    let(:enum_modifier) { chunker }
 
     subject { chunker }
 
@@ -87,5 +88,6 @@ module CassandraModel
       end
     end
 
+    it_behaves_like 'an Enumerable modifier'
   end
 end

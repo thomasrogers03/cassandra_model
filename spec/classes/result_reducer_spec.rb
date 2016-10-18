@@ -7,6 +7,7 @@ module CassandraModel
     let(:enum) { [] }
     let(:filter_keys) { [] }
     let(:reducer) { ResultReducer.new(enum, filter_keys) }
+    let(:enum_modifier) { reducer }
 
     subject { reducer }
 
@@ -101,5 +102,6 @@ module CassandraModel
       end
     end
 
+    it_behaves_like 'an Enumerable modifier'
   end
 end

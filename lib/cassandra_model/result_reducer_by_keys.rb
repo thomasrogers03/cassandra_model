@@ -1,6 +1,7 @@
 module CassandraModel
   class ResultReducerByKeys
     include Enumerable
+    include ThomasUtils::Enum::Indexing
 
     def initialize(enum, keys)
       @enum = enum

@@ -1,6 +1,7 @@
 module CassandraModel
   class ResultChunker
     include Enumerable
+    include ThomasUtils::Enum::Indexing
 
     def initialize(enum, cluster)
       @enum = enum

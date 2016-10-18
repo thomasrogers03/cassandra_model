@@ -8,6 +8,7 @@ module CassandraModel
     let(:keys) { [] }
     let(:enum) { [] }
     let(:reducer) { ResultReducerByKeys.new(enum, keys) }
+    let(:enum_modifier) { reducer }
 
     subject { reducer }
 
@@ -78,6 +79,8 @@ module CassandraModel
         it { is_expected.to eq(false) }
       end
     end
+
+    it_behaves_like 'an Enumerable modifier'
 
   end
 end
