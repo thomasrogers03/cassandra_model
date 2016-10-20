@@ -24,8 +24,8 @@ module CassandraModel
       current_page_future = @page
       page_count = 0
       while current_page_future
-        current_page_future.on_timed do |_, _, duration, _, _|
-          Logging.logger.debug("#{@model_klass} Load (Page #{page_count += 1}): #{duration * 1000}ms")
+        current_page_future.on_timed do |_, _, duration, value, _|
+          Logging.logger.debug("#{@model_klass} Load (Page #{page_count += 1} with count #{value.count}): #{duration * 1000}ms")
         end
         current_page_future = iterate_page(current_page_future, &block)
       end

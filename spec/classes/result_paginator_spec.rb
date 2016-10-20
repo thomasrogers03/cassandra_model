@@ -43,8 +43,8 @@ module CassandraModel
         let(:duration) { rand }
 
         it 'should log the time it took the request to complete' do
-          allow_any_instance_of(ThomasUtils::Observation).to receive(:on_timed).and_yield(nil, nil, duration, nil, nil)
-          expect(Logging.logger).to receive(:debug).with("#{model_klass} Load (Page 1): #{duration * 1000}ms")
+          allow_any_instance_of(ThomasUtils::Observation).to receive(:on_timed).and_yield(nil, nil, duration, first_page_results, nil)
+          expect(Logging.logger).to receive(:debug).with("#{model_klass} Load (Page 1 with count 1): #{duration * 1000}ms")
           subject.each {}
         end
       end
@@ -70,8 +70,8 @@ module CassandraModel
           before { allow(Logging.logger).to receive(:debug) }
 
           it 'should log the time it took the request to complete' do
-            allow_any_instance_of(ThomasUtils::Observation).to receive(:on_timed).and_yield(nil, nil, duration, nil, nil)
-            expect(Logging.logger).to receive(:debug).with("#{model_klass} Load (Page 2): #{duration * 1000}ms")
+            allow_any_instance_of(ThomasUtils::Observation).to receive(:on_timed).and_yield(nil, nil, duration, second_page_results, nil)
+            expect(Logging.logger).to receive(:debug).with("#{model_klass} Load (Page 2 with count 1): #{duration * 1000}ms")
             subject.each {}
           end
         end
