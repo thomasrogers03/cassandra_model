@@ -12,8 +12,8 @@ module CassandraModel
 
     let(:results) { %w(results) }
     let(:page_result) { MockPage.new(true, nil, results) }
-    let(:page_result_future) { MockFuture.new(page_result) }
-    let(:result_paginator) { ResultPaginator.new(page_result_future) { |row| row } }
+    let(:page_result_future) { ThomasUtils::Future.value(page_result) }
+    let(:result_paginator) { ResultPaginator.new(page_result_future, nil) { |row| row } }
     let(:single_result_future) { MockFuture.new(results.first) }
     let(:create_result) { double(:record) }
     let(:create_result_future) { MockFuture.new(create_result) }
