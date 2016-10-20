@@ -482,11 +482,10 @@ module CassandraModel
 
         future = session.execute_async(statement, *where_values, query_options)
         future = Observable.create_observation(future)
-        future.on_timed do |_, _, duration, _, _|
-          Logging.logger.debug("#{self} Load: #{duration * 1000}ms")
-        end
         if options[:limit] == 1
-          single_result_row_future(future, invalidated_result)
+          single_result_row_future(future, invalidated_result).on_timed do |_, _, duration, _, _|
+            Logging.logger.debug("#{self} Load: #{duration * 1000}ms")
+          end
         else
           paginator_result_future(future, invalidated_result)
         end
@@ -580,7 +579,7 @@ module CassandraModel
       end
 
       def paginator_result_future(future, invalidated_result)
-        ResultPaginator.new(future) { |row, execution_info| record_from_result(row, execution_info, invalidated_result) }
+        ResultPaginator.new(future, self) { |row, execution_info| record_from_result(row, execution_info, invalidated_result) }
       end
 
       def single_result_row_future(future, invalidated_result)

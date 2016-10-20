@@ -387,6 +387,7 @@ module CassandraModel
       let(:execution_info) { result_page.execution_info }
       let(:record) { klass.new(partition: 'Partition Key') }
       let(:remaining_columns) { [:time_stamp] }
+      let(:duration) { rand }
 
       before do
         klass.table_name = table_name
@@ -397,9 +398,14 @@ module CassandraModel
         expect(klass.request_async(clause).get.first).to eq(record)
       end
 
+      it 'should log the time it took the request to complete' do
+        allow_any_instance_of(ThomasUtils::Observation).to receive(:on_timed).and_yield(nil, nil, duration, page_results, nil)
+        expect(Logging.logger).to receive(:debug).with("#{klass} Load (Page 1 with count 1): #{duration * 1000}ms")
+        klass.request_async(clause).get
+      end
+
       describe 'saving the execution info for a single result' do
         let(:limit_clause) { ' LIMIT 1' }
-        let(:duration) { rand }
 
         it 'should return a ThomasUtils::Observation' do
           expect(klass.request_async(clause, limit: 1)).to be_a_kind_of(ThomasUtils::Observation)
