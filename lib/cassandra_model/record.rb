@@ -484,7 +484,7 @@ module CassandraModel
         future = Observable.create_observation(future)
         if options[:limit] == 1
           single_result_row_future(future, invalidated_result).on_timed do |_, _, duration, _, _|
-            Logging.logger.debug("#{self} Load: #{duration * 1000}ms")
+            Logging.logger.debug { "#{self} Load: #{duration * 1000}ms" }
           end
         else
           paginator_result_future(future, invalidated_result)

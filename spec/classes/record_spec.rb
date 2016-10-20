@@ -400,7 +400,9 @@ module CassandraModel
 
       it 'should log the time it took the request to complete' do
         allow_any_instance_of(ThomasUtils::Observation).to receive(:on_timed).and_yield(nil, nil, duration, page_results, nil)
-        expect(Logging.logger).to receive(:debug).with("#{klass} Load (Page 1 with count 1): #{duration * 1000}ms")
+        expect(Logging.logger).to receive(:debug) do |&block|
+          expect(block.call).to eq("#{klass} Load (Page 1 with count 1): #{duration * 1000}ms")
+        end
         klass.request_async(clause).get
       end
 
@@ -413,7 +415,9 @@ module CassandraModel
 
         it 'should log the time it took the request to complete' do
           allow_any_instance_of(ThomasUtils::Observation).to receive(:on_timed).and_yield(nil, nil, duration, nil, nil)
-          expect(Logging.logger).to receive(:debug).with("#{klass} Load: #{duration * 1000}ms")
+          expect(Logging.logger).to receive(:debug) do |&block|
+            expect(block.call).to eq("#{klass} Load: #{duration * 1000}ms")
+          end
           klass.request_async(clause, limit: 1)
         end
 
