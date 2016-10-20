@@ -9,7 +9,8 @@ module CassandraModel
     let(:execution_info) { 'EXECUTION' }
     let(:first_page) { MockPage.new(last_page, second_page_future, first_page_results, execution_info) }
     let(:first_page_future) { ThomasUtils::Future.value(first_page) }
-    let(:paginator) { ResultPaginator.new(first_page_future) { |result, execution_info| "Modified #{result} #{execution_info}" } }
+    let(:model_klass) { Faker::Lorem.sentence }
+    let(:paginator) { ResultPaginator.new(first_page_future, model_klass) { |result, execution_info| "Modified #{result} #{execution_info}" } }
 
     subject { paginator }
 
@@ -38,6 +39,16 @@ module CassandraModel
         end
       end
 
+      describe 'recording the duration of the page request' do
+        let(:duration) { rand }
+
+        it 'should log the time it took the request to complete' do
+          allow_any_instance_of(ThomasUtils::Observation).to receive(:on_timed).and_yield(nil, nil, duration, nil, nil)
+          expect(Logging.logger).to receive(:debug).with("#{model_klass} Load (Page 1): #{duration * 1000}ms")
+          subject.each {}
+        end
+      end
+
       context 'with multiple pages' do
         let(:last_page) { false }
         let(:second_page_results) { ['Record 2'] }
@@ -52,12 +63,24 @@ module CassandraModel
           end
           expect(results).to eq(['Modified Record 1 EXECUTION', 'Modified Record 2 EXEC 2'])
         end
+
+        describe 'recording the duration of the page request' do
+          let(:duration) { rand }
+
+          before { allow(Logging.logger).to receive(:debug) }
+
+          it 'should log the time it took the request to complete' do
+            allow_any_instance_of(ThomasUtils::Observation).to receive(:on_timed).and_yield(nil, nil, duration, nil, nil)
+            expect(Logging.logger).to receive(:debug).with("#{model_klass} Load (Page 2): #{duration * 1000}ms")
+            subject.each {}
+          end
+        end
       end
     end
 
     describe '#with_index' do
       let(:first_page_results) { Faker::Lorem.words }
-      let(:paginator) { ResultPaginator.new(first_page_future) { |result, _| result } }
+      let(:paginator) { ResultPaginator.new(first_page_future, model_klass) { |result, _| result } }
 
       subject { paginator.with_index.to_a }
 

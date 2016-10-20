@@ -2,8 +2,9 @@ module CassandraModel
   class ResultPaginator
     include Enumerable
 
-    def initialize(first_page, &callback)
+    def initialize(first_page, model_klass, &callback)
       @page = first_page
+      @model_klass = model_klass
       @callback = callback
     end
 
@@ -21,7 +22,11 @@ module CassandraModel
       return to_enum(:each_slice) unless block_given?
 
       current_page_future = @page
+      page_count = 0
       while current_page_future
+        current_page_future.on_timed do |_, _, duration, _, _|
+          Logging.logger.debug("#{@model_klass} Load (Page #{page_count += 1}): #{duration * 1000}ms")
+        end
         current_page_future = iterate_page(current_page_future, &block)
       end
     end
@@ -43,6 +48,7 @@ module CassandraModel
         nil
       else
         next_page_future = page_results.next_page_async
+        next_page_future = Observable.create_observation(next_page_future)
         modify_and_yield_page_results(page_results, &block)
         next_page_future
       end
