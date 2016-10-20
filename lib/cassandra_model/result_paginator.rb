@@ -20,9 +20,9 @@ module CassandraModel
     def each_slice(&block)
       return to_enum(:each_slice) unless block_given?
 
-      current_page = @page
-      while current_page
-        current_page = iterate_page(current_page, &block)
+      current_page_future = @page
+      while current_page_future
+        current_page_future = iterate_page(current_page_future, &block)
       end
     end
 
@@ -42,9 +42,9 @@ module CassandraModel
         modify_and_yield_page_results(page_results, &block)
         nil
       else
-        current_page = page_results.next_page_async
+        next_page_future = page_results.next_page_async
         modify_and_yield_page_results(page_results, &block)
-        current_page
+        next_page_future
       end
     end
 

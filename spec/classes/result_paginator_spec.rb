@@ -8,7 +8,7 @@ module CassandraModel
     let(:second_page_future) { nil }
     let(:execution_info) { 'EXECUTION' }
     let(:first_page) { MockPage.new(last_page, second_page_future, first_page_results, execution_info) }
-    let(:first_page_future) { Cassandra::Future.value(first_page) }
+    let(:first_page_future) { ThomasUtils::Future.value(first_page) }
     let(:paginator) { ResultPaginator.new(first_page_future) { |result, execution_info| "Modified #{result} #{execution_info}" } }
 
     subject { paginator }
